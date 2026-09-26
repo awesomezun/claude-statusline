@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/reel.gif" alt="Awesome Statusline — 30초 모션 릴" width="820"/>
+
 # ⚡ Awesome Statusline
 
 **[Claude Code](https://claude.com/claude-code)를 위한 아름다운 상태줄 — 컨텍스트, 사용량 한도, 비용, 추론 강도(`⚡effort`)를 한눈에. macOS·Linux·Windows 한 줄 설치.**
