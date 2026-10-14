@@ -19,11 +19,6 @@ input=$(cat)
 MODEL=$(echo "$input" | jq -r '.model.display_name // "Unknown"')
 CURRENT_DIR=$(echo "$input" | jq -r '.workspace.current_dir // "."')
 CONTEXT_SIZE=$(echo "$input" | jq -r '.context_window.context_window_size // 200000')
-
-# fable and opus 4.8 ship 1m context, but the harness can report 200k for them
-if echo "$MODEL" | grep -Eqi "fable|opus 4\.8|opus-4-8|claude-opus-4-8"; then
-    CONTEXT_SIZE=1000000
-fi
 CURRENT_USAGE=$(echo "$input" | jq -r '.context_window.current_usage // null')
 
 # Rate limits (official API - available for Pro/Max subscribers)
