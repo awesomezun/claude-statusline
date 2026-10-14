@@ -236,6 +236,14 @@ if ($null -ne $CurrentUsage) {
     $CurrentTokens = As-Number $CurrentUsage
   }
 }
+
+# harness sometimes reports a stale 200k window even when the model is
+# actually running the 1m context beta (seen on opus and fable alike) --
+# usage exceeding the declared window is proof the declared size is wrong
+if ($CurrentTokens -gt $ContextSize) {
+  $ContextSize = 1000000
+}
+
 $ContextPct = if ($ContextSize -gt 0) { Clamp-Pct ($CurrentTokens * 100 / $ContextSize) } else { 0 }
 $CurrentK = [int]($CurrentTokens / 1000)
 $ContextK = [int]($ContextSize / 1000)

@@ -201,6 +201,12 @@ if [[ "$CURRENT_USAGE" != "null" && -n "$CURRENT_USAGE" ]]; then
     CACHE_CREATE=$(echo "$CURRENT_USAGE" | jq -r '.cache_creation_input_tokens // 0')
     CACHE_READ=$(echo "$CURRENT_USAGE" | jq -r '.cache_read_input_tokens // 0')
     CURRENT_TOKENS=$((INPUT_TOKENS + CACHE_CREATE + CACHE_READ))
+
+    # harness sometimes reports a stale 200k window even when the model is
+    # actually running the 1m context beta (seen on opus and fable alike) --
+    # usage exceeding the declared window is proof the declared size is wrong
+    [[ "$CURRENT_TOKENS" -gt "$CONTEXT_SIZE" ]] && CONTEXT_SIZE=1000000
+
     [[ "$CONTEXT_SIZE" -gt 0 ]] && CONTEXT_PERCENT=$((CURRENT_TOKENS * 100 / CONTEXT_SIZE))
 fi
 
