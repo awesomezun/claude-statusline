@@ -7,6 +7,8 @@
 </p>
 <!-- gitreels:end -->
 
+<div align="center">
+
 # ⚡ Awesome Statusline
 
 **A beautiful statusline for [Claude Code](https://claude.com/claude-code) — context, usage limits, cost & reasoning `⚡effort`, all at a glance. One line to install on macOS, Linux & Windows.**
