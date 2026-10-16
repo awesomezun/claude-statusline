@@ -7,8 +7,6 @@
 
 <div align="center">
 
-<img src="assets/reel.gif" alt="Awesome Statusline — 30-second motion reel" width="820"/>
-
 # ⚡ Awesome Statusline
 
 **A beautiful statusline for [Claude Code](https://claude.com/claude-code) — context, usage limits, cost & reasoning `⚡effort`, all at a glance. One line to install on macOS, Linux & Windows.**
