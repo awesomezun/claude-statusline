@@ -1,11 +1,4 @@
-<p align="center">
 
-  <br>
-  <a href="https://gitreels.com"><img src="https://gitreels.com/badge.svg" alt="Made with GitReels" height="24"></a>
-  <a href="https://gitreels.com/awesomezun/claude-statusline"><img src="https://gitreels.com/api/badges/rotw/awesomezun/claude-statusline.svg" alt="Reel of the Week #2 on GitReels" height="24"></a>
-</p>
-
-<div align="center">
 
 # ⚡ Awesome Statusline
 
