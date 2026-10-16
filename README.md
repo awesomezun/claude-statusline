@@ -1,4 +1,11 @@
-
+<!-- gitreels:start -->
+<p align="center">
+  <a href="https://gitreels.com/awesomezun/claude-statusline"><img src="https://gitreels.com/awesomezun/claude-statusline.webp" alt="awesomezun/claude-statusline in 15 seconds" width="100%"></a>
+  <br>
+  <a href="https://gitreels.com"><img src="https://gitreels.com/badge.svg" alt="Made with GitReels" height="24"></a>
+  <a href="https://gitreels.com/awesomezun/claude-statusline"><img src="https://gitreels.com/api/badges/rotw/awesomezun/claude-statusline.svg" alt="Reel of the Week #2 on GitReels" height="24"></a>
+</p>
+<!-- gitreels:end -->
 
 # ⚡ Awesome Statusline
 
@@ -14,14 +21,7 @@
 
 <br/><br/>
 
-<!-- gitreels:start -->
-<p align="center">
-  <a href="https://gitreels.com/awesomezun/claude-statusline"><img src="https://gitreels.com/awesomezun/claude-statusline.webp" alt="awesomezun/claude-statusline in 15 seconds" width="100%"></a>
-  <br>
-  <a href="https://gitreels.com"><img src="https://gitreels.com/badge.svg" alt="Made with GitReels" height="24"></a>
-  <a href="https://gitreels.com/awesomezun/claude-statusline"><img src="https://gitreels.com/api/badges/rotw/awesomezun/claude-statusline.svg" alt="Reel of the Week #2 on GitReels" height="24"></a>
-</p>
-<!-- gitreels:end -->
+
 
 <img src="assets/presets/presets.png" alt="Five presets — xsmall to xlarge, with live ⚡effort and 💡thinking" width="820"/>
 
