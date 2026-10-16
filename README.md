@@ -1,5 +1,5 @@
 <p align="center">
-  <a href="https://gitreels.com/AwesomeZun/CC-statusline"><img src="https://gitreels.com/AwesomeZun/CC-statusline.webp" alt="AwesomeZun/CC-statusline in 15 seconds" width="100%"></a>
+<img src="assets/reel.gif" alt="Awesome Statusline — 30-second motion reel" width="820"/>
   <br>
   <a href="https://gitreels.com"><img src="https://gitreels.com/badge.svg" alt="Made with GitReels" height="24"></a>
   <a href="https://gitreels.com/awesomezun/claude-statusline"><img src="https://gitreels.com/api/badges/rotw/awesomezun/claude-statusline.svg" alt="Reel of the Week #2 on GitReels" height="24"></a>
