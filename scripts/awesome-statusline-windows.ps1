@@ -29,7 +29,13 @@ function Normalize-Mode([string]$s) {
 }
 
 $Mode = Normalize-Mode $Size
-$InputJson = [Console]::In.ReadToEnd()
+# Read stdin as UTF-8 explicitly. Windows PowerShell 5.1 otherwise decodes it
+# with the system ANSI code page (e.g. CP949 on Korean systems), so any
+# non-ASCII text in the payload (such as a Korean session_name) corrupts the
+# JSON and the status line silently falls back to defaults. Wrapping the raw
+# stream also avoids [Console]::InputEncoding, which can throw without a console.
+$StdinReader = [System.IO.StreamReader]::new([Console]::OpenStandardInput(), [System.Text.UTF8Encoding]::new($false))
+$InputJson = $StdinReader.ReadToEnd()
 try {
   $Data = $InputJson | ConvertFrom-Json
 } catch {

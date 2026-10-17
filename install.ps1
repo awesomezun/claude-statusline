@@ -200,7 +200,9 @@ $slObj = [pscustomobject]@{ type = 'command'; command = $Command }
 if (Test-Path $Settings) {
   $backup = "$Settings.backup-" + (Get-Date -Format 'yyyyMMdd-HHmmss')
   Copy-Item $Settings $backup -Force
-  $json = Get-Content $Settings -Raw | ConvertFrom-Json
+  # -Encoding UTF8: PS 5.1 would otherwise read settings.json with the ANSI code
+  # page and fail on any non-ASCII text already in it.
+  $json = Get-Content $Settings -Raw -Encoding UTF8 | ConvertFrom-Json
   if ($json.PSObject.Properties.Name -contains 'statusLine') {
     $json.statusLine = $slObj
   } else {
