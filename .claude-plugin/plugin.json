@@ -1,12 +1,12 @@
 {
   "name": "awesome-statusline",
-  "version": "3.3.3",
+  "version": "3.3.4",
   "description": "A Claude Code statusline that shows reasoning effort (⚡) and thinking (💡). 5 presets (xsmall-xlarge), Catppuccin theme, no Node/Nerd Font, native PowerShell on Windows.",
   "author": {
     "name": "AwesomeJun",
     "email": "sjkang89@gmail.com",
-    "github": "AwesomeJun"
+    "github": "awesomezun"
   },
-  "homepage": "https://github.com/AwesomeJun/CC-statusline",
+  "homepage": "https://github.com/awesomezun/claude-statusline",
   "keywords": ["statusline", "catppuccin", "effort", "thinking", "context-window", "terminal"]
 }

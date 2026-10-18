@@ -11,7 +11,7 @@
 Download the installer first, inspect it, then run the local file:
 
 ```powershell
-Invoke-WebRequest -Uri https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main/install.ps1 -OutFile .\install.ps1
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.ps1 -OutFile .\install.ps1
 notepad .\install.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 ```
@@ -156,7 +156,7 @@ uses fewer wide glyphs.
 Running the recommended one-line installer dies immediately:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main/install.sh | bash -s -- xs
+curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.sh | bash -s -- xs
 ```
 
 ```
@@ -180,7 +180,7 @@ Download and run the file instead of piping, which gives `BASH_SOURCE` a real
 value:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main/install.sh -o install.sh
+curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.sh -o install.sh
 bash install.sh xs
 ```
 
@@ -246,7 +246,7 @@ declines to do it unattended.
    ```
    ```
    # Windows PowerShell
-   ! irm https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main/install.ps1 | iex
+   ! irm https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.ps1 | iex
    ```
 2. **Leave auto mode for the one install step.** Press `shift+tab` to cycle out
    of auto mode, let Claude run the installer with a normal one-time permission

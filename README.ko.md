@@ -8,7 +8,7 @@
 
 [🇺🇸 English](README.md) · [빠른 설치](#-빠른-설치) · [프리셋](#-5가지-프리셋) · [표시 항목](#-무엇을-보여주나요) · [FAQ](#-faq)
 
-<img src="https://img.shields.io/github/stars/AwesomeJun/CC-statusline?style=flat-square&color=cba6f7" alt="Stars"/>
+<img src="https://img.shields.io/github/stars/awesomezun/claude-statusline?style=flat-square&color=cba6f7" alt="Stars"/>
 <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-89b4fa?style=flat-square" alt="Platforms"/>
 <img src="https://img.shields.io/badge/theme-Catppuccin-f5c2e7?style=flat-square" alt="Catppuccin"/>
 <img src="https://img.shields.io/badge/deps-auto--installed-a6e3a1?style=flat-square" alt="Zero config"/>
@@ -18,7 +18,7 @@
 
 <img src="assets/presets/presets.png" alt="5가지 프리셋 — xsmall부터 xlarge까지, ⚡effort와 💡thinking 실시간 표시" width="820"/>
 
-<sub>▶ <a href="https://awesomejun.github.io/CC-statusline/">인터랙티브 라이브 데모</a></sub>
+<sub>▶ <a href="https://awesomezun.github.io/claude-statusline/">인터랙티브 라이브 데모</a></sub>
 
 </div>
 
@@ -30,6 +30,8 @@ Claude Code 최신 기능에 맞춰 계속 업데이트됩니다 — 최근 내�
 
 | 날짜 | 업데이트 |
 |------|----------|
+| **2026-10-17** | **한국어 등 비영어 Windows 환경** — 세션 이름에 한글 같은 비ASCII 문자가 있으면 상태줄이 `Unknown` / 0%로 표시되던 문제 수정 · 컨텍스트 창 크기가 잘못 보고될 때의 보정 추가 |
+| **2026-06-03** | **설치 크기 선택** — Claude Code로 설치할 때 5가지 프리셋 중 원하는 크기를 항상 물어봄(`large` 추천) |
 | **2026-06-02** | **Windows 네이티브 렌더러** — PowerShell 상태줄 경로, Windows에서 Git Bash나 `jq` 불필요 |
 | **2026-05-31** | **Opus 4.8** 지원 · 추론 강도 **effort**(`high`/`xhigh`/`max`) + **thinking** 표시 · 크로스플랫폼 한 줄 설치 · 5단계 프리셋(`xs`–`xl`) · JetBrains Mono |
 | **2026-04-01** | **1M 토큰 컨텍스트 창** 지원(Opus) · 첫 대화 전에도 사용량 바 표시 |
@@ -56,29 +58,29 @@ Node가 필요 없습니다. Windows에서는 `jq`, Git, Git Bash도 필요 없�
 
 **macOS / Linux**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.sh | bash
 ```
 
 **Windows (PowerShell)**
 ```powershell
-irm https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.ps1 | iex
 ```
 
 보안 프로그램이 `irm | iex`를 막으면, 먼저 파일로 내려받아 확인한 뒤 실행하세요:
 ```powershell
-Invoke-WebRequest -Uri https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main/install.ps1 -OutFile .\install.ps1
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.ps1 -OutFile .\install.ps1
 notepad .\install.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
 특정 크기를 원하면 명시적으로 붙이면 됩니다:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main/install.sh | bash -s -- xl
+curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.sh | bash -s -- xl
 ```
 
 **또는 클론 후 실행**:
 ```bash
-git clone https://github.com/AwesomeJun/CC-statusline.git && cd CC-statusline
+git clone https://github.com/awesomezun/claude-statusline.git && cd claude-statusline
 ./install.sh            # macOS / Linux
 ./install.ps1           # Windows PowerShell
 ```
@@ -203,7 +205,7 @@ Windows에서는 설치 스크립트가 네이티브 `awesome-statusline.ps1`을
 Claude Code 플러그인 시스템을 선호하신다면, 마켓플레이스 플러그인으로도 배포됩니다:
 
 ```
-/plugin marketplace add AwesomeJun/CC-statusline
+/plugin marketplace add awesomezun/claude-statusline
 /plugin install awesome-statusline
 ```
 

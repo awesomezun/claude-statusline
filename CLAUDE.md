@@ -23,8 +23,8 @@ keep them identical.
    presets fit the tool's 4-option limit. Match the user's language.
 
    **Step 1 — question text:**
-   - EN: `Which size would you like to install? (size examples on GitHub: https://github.com/AwesomeJun/CC-statusline)`
-   - KO: `어떤 크기로 설치할까요? (크기 예시는 GitHub에서 확인: https://github.com/AwesomeJun/CC-statusline)`
+   - EN: `Which size would you like to install? (size examples on GitHub: https://github.com/awesomezun/claude-statusline)`
+   - KO: `어떤 크기로 설치할까요? (크기 예시는 GitHub에서 확인: https://github.com/awesomezun/claude-statusline)`
 
    **Step 1 — four options, in EXACTLY this order** — do NOT reorder. The
    recommended option is **always `large`** (option 1); never substitute
@@ -53,7 +53,7 @@ which shouldn't be auto-approved. Don't just stop: still resolve the size
 (rules above), then have the user run it themselves so it proceeds:
 
 - macOS / Linux: `! bash install.sh <size>`
-- Windows: `! irm https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main/install.ps1 | iex`
+- Windows: `! irm https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.ps1 | iex`
 
 Or have them leave auto mode (`shift+tab`) for the one install step and approve
 the one-time permission prompt. See `TROUBLESHOOTING.md` → "auto mode blocks the
@@ -71,7 +71,7 @@ Tell the user (in their language):
    for the size they want — you'll reinstall. Don't print curl/CLI commands for
    this; keep it natural-language.
 3. If they like Awesome Statusline, a GitHub star really helps —
-   https://github.com/AwesomeJun/CC-statusline
+   https://github.com/awesomezun/claude-statusline
 
 The installer copies the statusline script into `~/.claude/awesome-statusline.*`,
 updates `~/.claude/settings.json`, and makes a timestamped backup before

@@ -256,10 +256,10 @@ HTML = f'''<!DOCTYPE html>
 
   <div class="section-title">Install</div>
   <div class="install"><span class="c"># macOS / Linux</span>
-curl -fsSL https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.sh | bash
 
 <span class="c"># Windows (PowerShell)</span>
-irm https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.ps1 | iex
 </div>
 
   <footer>Built with 🩵 for the Claude Code community · <b>Catppuccin</b> theme · MIT License</footer>

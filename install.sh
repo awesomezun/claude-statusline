@@ -42,8 +42,8 @@
 # 3. Otherwise ASK with the AskUserQuestion tool, in TWO steps so all five
 #    presets fit the tool's 4-option limit. Match the user's language.
 #    Step 1 — question text (use exactly this, on one line):
-#      EN: Which size would you like to install? (size examples on GitHub: https://github.com/AwesomeJun/CC-statusline)
-#      KO: 어떤 크기로 설치할까요? (크기 예시는 GitHub에서 확인: https://github.com/AwesomeJun/CC-statusline)
+#      EN: Which size would you like to install? (size examples on GitHub: https://github.com/awesomezun/claude-statusline)
+#      KO: 어떤 크기로 설치할까요? (크기 예시는 GitHub에서 확인: https://github.com/awesomezun/claude-statusline)
 #    Step 1 — four options, in EXACTLY this order (do NOT reorder). The
 #    recommended option is ALWAYS large (option 1) — never substitute medium
 #    or anything else as the recommendation:
@@ -66,7 +66,7 @@
 #    launch — declining to auto-approve that is correct), do NOT just stop:
 #    still resolve the size, then have the user run it themselves so it proceeds:
 #      macOS / Linux:  ! bash install.sh <size>
-#      Windows:        ! irm https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main/install.ps1 | iex
+#      Windows:        ! irm https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.ps1 | iex
 #    or have them leave auto mode (shift+tab) for the one install step.
 #
 # 6. Only a truly headless one-shot run (claude -p / hook / cron, no way to get
@@ -87,7 +87,7 @@ else
   SCRIPT_DIR=""
 fi
 SRC_DIR="$SCRIPT_DIR/scripts"
-REPO_RAW="${AWESOME_STATUSLINE_RAW:-https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main}"
+REPO_RAW="${AWESOME_STATUSLINE_RAW:-https://raw.githubusercontent.com/awesomezun/claude-statusline/main}"
 
 # --- output helpers ---------------------------------------------------------
 err()  { printf '\033[31m%s\033[0m\n' "$*" >&2; }
@@ -151,7 +151,7 @@ prompt_size() {
   echo
   if is_korean_locale; then
     echo "statusline을 어떤 사이즈로 설치할까요? (XSmall-Small-Medium-Large-XLarge, 예시는 github에서 확인)"
-    echo "  예시: https://github.com/AwesomeJun/CC-statusline"
+    echo "  예시: https://github.com/awesomezun/claude-statusline"
     echo
     echo "  1. xsmall (xs)"
     echo "     가장 작게 — 핵심 정보만 최소 표시. 좁은 화면용."
@@ -167,7 +167,7 @@ prompt_size() {
     printf '선택 [기본값: 4]: '
   else
     echo "Which size would you like to install? (XSmall-Small-Medium-Large-XLarge; see examples on GitHub)"
-    echo "  Examples: https://github.com/AwesomeJun/CC-statusline"
+    echo "  Examples: https://github.com/awesomezun/claude-statusline"
     echo
     echo "  1. xsmall (xs)"
     echo "     Smallest — only the essentials. For narrow screens."
@@ -259,4 +259,4 @@ echo "Restart Claude Code (or reload) to see it."
 echo "To switch size later, just ask your AI agent to reinstall at the size you want."
 echo
 echo "⭐ If you like Awesome Statusline, a GitHub star really helps:"
-echo "   https://github.com/AwesomeJun/CC-statusline"
+echo "   https://github.com/awesomezun/claude-statusline"

@@ -15,7 +15,7 @@
 
 [🇰🇷 한국어](README.ko.md) · [Quick Install](#-quick-install) · [Presets](#-five-presets) · [What it shows](#-what-it-shows) · [FAQ](#-faq)
 
-<img src="https://img.shields.io/github/stars/AwesomeJun/CC-statusline?style=flat-square&color=cba6f7" alt="Stars"/>
+<img src="https://img.shields.io/github/stars/awesomezun/claude-statusline?style=flat-square&color=cba6f7" alt="Stars"/>
 <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-89b4fa?style=flat-square" alt="Platforms"/>
 <img src="https://img.shields.io/badge/theme-Catppuccin-f5c2e7?style=flat-square" alt="Catppuccin"/>
 <img src="https://img.shields.io/badge/deps-auto--installed-a6e3a1?style=flat-square" alt="Zero config"/>
@@ -27,7 +27,7 @@
 
 <img src="assets/presets/presets.png" alt="Five presets — xsmall to xlarge, with live ⚡effort and 💡thinking" width="820"/>
 
-<sub>▶ <a href="https://awesomejun.github.io/CC-statusline/">Interactive live demo</a></sub>
+<sub>▶ <a href="https://awesomezun.github.io/claude-statusline/">Interactive live demo</a></sub>
 
 </div>
 
@@ -39,6 +39,8 @@ Built to keep pace with Claude Code — recent updates:
 
 | Date | Update |
 |------|--------|
+| **2026-10-17** | **Windows on non-English locales** — the statusline no longer drops to `Unknown` / 0% when Claude Code sends non-ASCII text (e.g. a Korean session name) · context gauge guards against stale window-size reports |
+| **2026-06-03** | **Install size picker** — installing through Claude Code always asks which of the five presets you want (`large` recommended) |
 | **2026-06-02** | **Windows native renderer** — PowerShell statusline path, no Git Bash or `jq` required on Windows |
 | **2026-05-31** | **Opus 4.8** support · reasoning **effort** (`high`/`xhigh`/`max`) + **thinking** indicators · one-line cross-platform installer · 5 size presets (`xs`–`xl`) · JetBrains Mono |
 | **2026-04-01** | **1M-token context window** support (Opus) · usage bars render before the first chat |
@@ -65,29 +67,29 @@ You don't need Node. On Windows, you also don't need `jq`, Git, or Git Bash — 
 
 **macOS / Linux**
 ```bash
-curl -fsSL https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.sh | bash
 ```
 
 **Windows (PowerShell)**
 ```powershell
-irm https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.ps1 | iex
 ```
 
 If your security software blocks `irm | iex`, download the installer first, inspect it, then run it:
 ```powershell
-Invoke-WebRequest -Uri https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main/install.ps1 -OutFile .\install.ps1
+Invoke-WebRequest -Uri https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.ps1 -OutFile .\install.ps1
 notepad .\install.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
 To choose a specific size, append it explicitly:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main/install.sh | bash -s -- xl
+curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.sh | bash -s -- xl
 ```
 
 **Or clone and run**:
 ```bash
-git clone https://github.com/AwesomeJun/CC-statusline.git && cd CC-statusline
+git clone https://github.com/awesomezun/claude-statusline.git && cd claude-statusline
 ./install.sh            # macOS / Linux
 ./install.ps1           # Windows PowerShell
 ```
@@ -212,7 +214,7 @@ On Windows, the installer writes a native `awesome-statusline.ps1` and points Cl
 Prefer Claude Code's plugin system? It's also published as a marketplace plugin:
 
 ```
-/plugin marketplace add AwesomeJun/CC-statusline
+/plugin marketplace add awesomezun/claude-statusline
 /plugin install awesome-statusline
 ```
 

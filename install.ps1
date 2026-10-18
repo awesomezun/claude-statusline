@@ -34,8 +34,8 @@
 # 3. Otherwise ASK with the AskUserQuestion tool, in TWO steps so all five
 #    presets fit the tool's 4-option limit. Match the user's language.
 #    Step 1 — question text (use exactly this, on one line):
-#      EN: Which size would you like to install? (size examples on GitHub: https://github.com/AwesomeJun/CC-statusline)
-#      KO: 어떤 크기로 설치할까요? (크기 예시는 GitHub에서 확인: https://github.com/AwesomeJun/CC-statusline)
+#      EN: Which size would you like to install? (size examples on GitHub: https://github.com/awesomezun/claude-statusline)
+#      KO: 어떤 크기로 설치할까요? (크기 예시는 GitHub에서 확인: https://github.com/awesomezun/claude-statusline)
 #    Step 1 — four options, in EXACTLY this order (do NOT reorder). The
 #    recommended option is ALWAYS large (option 1) — never substitute medium
 #    or anything else as the recommendation:
@@ -58,7 +58,7 @@
 #    launch — declining to auto-approve that is correct), do NOT just stop:
 #    still resolve the size, then have the user run it themselves so it proceeds:
 #      macOS / Linux:  ! bash install.sh <size>
-#      Windows:        ! irm https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main/install.ps1 | iex
+#      Windows:        ! irm https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.ps1 | iex
 #    or have them leave auto mode (shift+tab) for the one install step.
 #
 # 6. Only a truly headless one-shot run (claude -p / hook / cron, no way to get
@@ -94,7 +94,7 @@ $Dest      = Join-Path $ClaudeDir 'awesome-statusline.ps1'
 $ScriptPath = $MyInvocation.MyCommand.Path
 $ScriptDir = if ($ScriptPath) { Split-Path -Parent $ScriptPath } else { (Get-Location).Path }
 $SrcDir    = Join-Path $ScriptDir 'scripts'
-$RepoRaw   = if ($env:AWESOME_STATUSLINE_RAW) { $env:AWESOME_STATUSLINE_RAW } else { 'https://raw.githubusercontent.com/AwesomeJun/CC-statusline/main' }
+$RepoRaw   = if ($env:AWESOME_STATUSLINE_RAW) { $env:AWESOME_STATUSLINE_RAW } else { 'https://raw.githubusercontent.com/awesomezun/claude-statusline/main' }
 
 # --- pick size --------------------------------------------------------------
 # Precedence: explicit argument > interactive prompt > 'large' default.
@@ -115,7 +115,7 @@ if ($Size) {
   Write-Host ""
   if ($isKo) {
     Write-Host "statusline을 어떤 사이즈로 설치할까요? (XSmall-Small-Medium-Large-XLarge, 예시는 github에서 확인)"
-    Write-Host "  예시: https://github.com/AwesomeJun/CC-statusline"
+    Write-Host "  예시: https://github.com/awesomezun/claude-statusline"
     Write-Host ""
     Write-Host "  1. xsmall (xs)"
     Write-Host "     가장 작게 — 핵심 정보만 최소 표시. 좁은 화면용."
@@ -131,7 +131,7 @@ if ($Size) {
     Write-Host -NoNewline "선택 [기본값: 4]: "
   } else {
     Write-Host "Which size would you like to install? (XSmall-Small-Medium-Large-XLarge; see examples on GitHub)"
-    Write-Host "  Examples: https://github.com/AwesomeJun/CC-statusline"
+    Write-Host "  Examples: https://github.com/awesomezun/claude-statusline"
     Write-Host ""
     Write-Host "  1. xsmall (xs)"
     Write-Host "     Smallest — only the essentials. For narrow screens."
@@ -223,4 +223,4 @@ Write-Host "Restart Claude Code to see it."
 Write-Host "To switch size later, just ask your AI agent to reinstall at the size you want."
 Write-Host ""
 Write-Host "Star this repo if you find it useful - it really helps:"
-Write-Host "  https://github.com/AwesomeJun/CC-statusline"
+Write-Host "  https://github.com/awesomezun/claude-statusline"

@@ -6,7 +6,7 @@
 
 The statusline is font-agnostic — it just uses your terminal's font. Here's how it looks across 10 cross-platform webfonts plus Menlo and MesloLGS.
 
-[← Back to README](README.md) · [▶ Live HTML](https://awesomejun.github.io/CC-statusline/fonts.html)
+[← Back to README](README.md) · [▶ Live HTML](https://awesomezun.github.io/claude-statusline/fonts.html)
 
 <img src="assets/fonts-demo.png" alt="The large preset rendered in 12 monospace fonts" width="900"/>
 
