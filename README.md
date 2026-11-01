@@ -39,6 +39,7 @@ Built to keep pace with Claude Code — recent updates:
 
 | Date | Update |
 |------|--------|
+| **2026-10-31** | **Ultra plan support** — the new Ultra plan has no 5-hour limit (weekly only), and the usage bars used to freeze at `0% (loading..)` there. Each limit window is now read on its own: Ultra shows just the weekly bar, Pro/Max keep 5H + 7D · sturdier parsing of fractional / string limit values |
 | **2026-10-17** | **Windows on non-English locales** — the statusline no longer drops to `Unknown` / 0% when Claude Code sends non-ASCII text (e.g. a Korean session name) · context gauge guards against stale window-size reports |
 | **2026-06-03** | **Install size picker** — installing through Claude Code always asks which of the five presets you want (`large` recommended) |
 | **2026-06-02** | **Windows native renderer** — PowerShell statusline path, no Git Bash or `jq` required on Windows |
@@ -165,7 +166,7 @@ xlarge ─ 5 lines
 | 🐍 **Env** | Active conda / virtualenv |
 | 🧠 **Context** | Context-window usage bar with token count |
 | 💰 **Cost / ⏰ Time** | Session cost (USD) and duration |
-| 🚀 **5h / 🌟 7d** | Usage-limit bars + reset time (Pro/Max, from the official rate-limit API) |
+| 🚀 **5h / 🌟 7d** | Usage-limit bars + reset time (Pro/Max/Ultra, from the official statusline JSON). Ultra has no 5-hour limit, so only the weekly bar is shown. |
 
 All colors follow the [Catppuccin](https://catppuccin.com/) palette. No Nerd Font required — every glyph is a standard emoji/Unicode block.
 
@@ -198,6 +199,8 @@ On Windows, the installer writes a native `awesome-statusline.ps1` and points Cl
 **Does it slow Claude Code down?** No — it's a small local script that runs per refresh.
 
 **I don't see `⚡effort`.** Your current model doesn't expose the effort parameter, so the field is intentionally hidden. Switch to a model that supports `/effort` (e.g. Opus 4.x).
+
+**Usage bars stuck at `0% (loading..)`, or only the 7D bar shows?** `loading..` appears until Claude Code sends the first usage data of the session (after your first message), and only for claude.ai subscribers. On the **Ultra** plan there is no 5-hour limit, so only the weekly (7D) bar is shown — that's expected. If bars stayed at `loading..` on Ultra, update to the latest version (2026-10-31 fix): just ask your AI agent to reinstall.
 
 **Why emoji instead of Nerd Font icons?** So it looks right out of the box on any terminal, with zero font setup.
 

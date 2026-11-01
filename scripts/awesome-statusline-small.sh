@@ -13,6 +13,8 @@
 # even when Claude Code launches the statusline with a minimal PATH — common on
 # Windows / GUI launches where a winget-installed jq is not on PATH yet.
 export PATH="$(dirname "$0"):$PATH"
+# printf "%.0f" must parse "23.5" the same way on every locale (de_DE etc.).
+export LC_NUMERIC=C
 
 input=$(cat)
 
@@ -23,11 +25,16 @@ CONTEXT_SIZE=$(echo "$input" | jq -r '.context_window.context_window_size // 200
 CURRENT_USAGE=$(echo "$input" | jq -r '.context_window.current_usage // null')
 OUTPUT_STYLE=$(echo "$input" | jq -r '.output_style.name // ""')
 
-# Rate limits (official API - available for Pro/Max subscribers)
-FIVE_HOUR_PCT=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
-FIVE_HOUR_RESET=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
-SEVEN_DAY_PCT=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
-SEVEN_DAY_RESET=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty')
+# Rate limits (official statusline JSON - claude.ai Pro / Max / Ultra).
+# Each window is optional on its own: Ultra has no 5-hour limit (weekly only),
+# and Claude Code drops a window once its resets_at passes. So render only the
+# windows that are present, and show "loading.." only while rate_limits is
+# missing altogether (before the first API response of the session).
+HAS_RATE_LIMITS=$(echo "$input" | jq -r 'if (.rate_limits | type) == "object" and (.rate_limits | length) > 0 then "1" else empty end')
+FIVE_HOUR_PCT=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty | tonumber? // empty')
+FIVE_HOUR_RESET=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty | tonumber? // fromdateiso8601? // empty | floor')
+SEVEN_DAY_PCT=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty | tonumber? // empty')
+SEVEN_DAY_RESET=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty | tonumber? // fromdateiso8601? // empty | floor')
 
 # ============================================================================
 # Colors (variables instead of functions to avoid newline issues)
@@ -242,24 +249,38 @@ format_reset_day() {
     _date_fmt "$reset_epoch" "%a"
 }
 
-# Usage from rate_limits
-if [[ -n "$FIVE_HOUR_PCT" ]]; then
-    FIVE_HOUR=$(printf "%.0f" "$FIVE_HOUR_PCT")
-    SEVEN_DAY=$(printf "%.0f" "${SEVEN_DAY_PCT:-0}")
+# Percent as an integer clamped to 0-100 (the API may send 23.5)
+clamp_pct() {
+    local p
+    p=$(printf "%.0f" "$1" 2>/dev/null) || p=0
+    [[ $p -lt 0 ]] && p=0
+    [[ $p -gt 100 ]] && p=100
+    echo "$p"
+}
 
-    FIVE_RESET_FMT=$(format_time_remaining "$FIVE_HOUR_RESET")
-    SEVEN_RESET_FMT=$(format_reset_day "$SEVEN_DAY_RESET")
+# Usage from rate_limits — show only the windows that are present
+if [[ -n "$HAS_RATE_LIMITS" ]]; then
+    LINE2="${CTX_DISPLAY}"
 
-    FIVE_BAR=$(generate_bar "$FIVE_HOUR" 10 "5h")
-    SEVEN_BAR=$(generate_bar "$SEVEN_DAY" 10 "7d")
+    if [[ -n "$FIVE_HOUR_PCT" ]]; then
+        FIVE_HOUR=$(clamp_pct "$FIVE_HOUR_PCT")
+        FIVE_RESET_FMT=$(format_time_remaining "$FIVE_HOUR_RESET")
+        FIVE_BAR=$(generate_bar "$FIVE_HOUR" 10 "5h")
+        FIVE_END_COLOR=$(get_usage_gradient_color "$FIVE_HOUR")
+        FIVE_DISPLAY="${C_LAVENDER}5H${RESET} ${FIVE_BAR} ${BOLD}\033[38;2;${FIVE_END_COLOR}m${FIVE_HOUR}%${RESET}"
+        [[ -n "$FIVE_RESET_FMT" ]] && FIVE_DISPLAY+=" (${FIVE_RESET_FMT})"
+        LINE2+=" │ ${FIVE_DISPLAY}"
+    fi
 
-    FIVE_END_COLOR=$(get_usage_gradient_color "$FIVE_HOUR")
-    SEVEN_END_COLOR=$(get_usage_7d_gradient_color "$SEVEN_DAY")
-
-    FIVE_DISPLAY="${C_LAVENDER}5H${RESET} ${FIVE_BAR} ${BOLD}\033[38;2;${FIVE_END_COLOR}m${FIVE_HOUR}%${RESET} (${FIVE_RESET_FMT})"
-    SEVEN_DISPLAY="${C_YELLOW}7D${RESET} ${SEVEN_BAR} ${BOLD}\033[38;2;${SEVEN_END_COLOR}m${SEVEN_DAY}%${RESET} (${SEVEN_RESET_FMT})"
-
-    LINE2="${CTX_DISPLAY} │ ${FIVE_DISPLAY} │ ${SEVEN_DISPLAY}"
+    if [[ -n "$SEVEN_DAY_PCT" ]]; then
+        SEVEN_DAY=$(clamp_pct "$SEVEN_DAY_PCT")
+        SEVEN_RESET_FMT=$(format_reset_day "$SEVEN_DAY_RESET")
+        SEVEN_BAR=$(generate_bar "$SEVEN_DAY" 10 "7d")
+        SEVEN_END_COLOR=$(get_usage_7d_gradient_color "$SEVEN_DAY")
+        SEVEN_DISPLAY="${C_YELLOW}7D${RESET} ${SEVEN_BAR} ${BOLD}\033[38;2;${SEVEN_END_COLOR}m${SEVEN_DAY}%${RESET}"
+        [[ -n "$SEVEN_RESET_FMT" ]] && SEVEN_DISPLAY+=" (${SEVEN_RESET_FMT})"
+        LINE2+=" │ ${SEVEN_DISPLAY}"
+    fi
 else
     FIVE_BAR=$(generate_bar 0 10 "5h")
     SEVEN_BAR=$(generate_bar 0 10 "7d")

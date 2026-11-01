@@ -14,6 +14,8 @@
 # even when Claude Code launches the statusline with a minimal PATH — common on
 # Windows / GUI launches where a winget-installed jq is not on PATH yet.
 export PATH="$(dirname "$0"):$PATH"
+# printf "%.0f" must parse "23.5" the same way on every locale (de_DE etc.).
+export LC_NUMERIC=C
 
 input=$(cat)
 
@@ -26,11 +28,16 @@ OUTPUT_STYLE=$(echo "$input" | jq -r '.output_style.name // ""')
 TOTAL_COST=$(echo "$input" | jq -r '.cost.total_cost_usd // 0')
 TOTAL_DURATION=$(echo "$input" | jq -r '.cost.total_duration_ms // 0')
 
-# Rate limits (official API - available for Pro/Max subscribers)
-FIVE_HOUR_PCT=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
-FIVE_HOUR_RESET=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
-SEVEN_DAY_PCT=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
-SEVEN_DAY_RESET=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty')
+# Rate limits (official statusline JSON - claude.ai Pro / Max / Ultra).
+# Each window is optional on its own: Ultra has no 5-hour limit (weekly only),
+# and Claude Code drops a window once its resets_at passes. So render only the
+# windows that are present, and show "loading.." only while rate_limits is
+# missing altogether (before the first API response of the session).
+HAS_RATE_LIMITS=$(echo "$input" | jq -r 'if (.rate_limits | type) == "object" and (.rate_limits | length) > 0 then "1" else empty end')
+FIVE_HOUR_PCT=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty | tonumber? // empty')
+FIVE_HOUR_RESET=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty | tonumber? // fromdateiso8601? // empty | floor')
+SEVEN_DAY_PCT=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty | tonumber? // empty')
+SEVEN_DAY_RESET=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty | tonumber? // fromdateiso8601? // empty | floor')
 
 # ============================================================================
 # Colors
@@ -342,29 +349,43 @@ format_reset_datetime() {
     echo "${month_day} at ${hour_12}${ampm}"
 }
 
-# Usage from rate_limits
-if [[ -n "$FIVE_HOUR_PCT" ]]; then
-    FIVE_HOUR=$(printf "%.0f" "$FIVE_HOUR_PCT")
-    SEVEN_DAY=$(printf "%.0f" "${SEVEN_DAY_PCT:-0}")
+# Percent as an integer clamped to 0-100 (the API may send 23.5)
+clamp_pct() {
+    local p
+    p=$(printf "%.0f" "$1" 2>/dev/null) || p=0
+    [[ $p -lt 0 ]] && p=0
+    [[ $p -gt 100 ]] && p=100
+    echo "$p"
+}
 
-    FIVE_RESET_FMT=$(format_time_remaining "$FIVE_HOUR_RESET")
-    SEVEN_RESET_FMT=$(format_reset_datetime "$SEVEN_DAY_RESET")
-
-    FIVE_BAR=$(generate_bar "$FIVE_HOUR" 40 "5h")
-    SEVEN_BAR=$(generate_bar "$SEVEN_DAY" 40 "7d")
-
-    FIVE_END_COLOR=$(get_usage_gradient_color "$FIVE_HOUR")
-    SEVEN_END_COLOR=$(get_usage_7d_gradient_color "$SEVEN_DAY")
-
-    LINE4="🚀 $(cat_lavender)5H Limit${RESET} ${FIVE_BAR} ${BOLD}\033[38;2;${FIVE_END_COLOR}m${FIVE_HOUR}%${RESET} (Resets ${FIVE_RESET_FMT})"
-    LINE5="🌟 $(cat_yellow)7D Limit${RESET} ${SEVEN_BAR} ${BOLD}\033[38;2;${SEVEN_END_COLOR}m${SEVEN_DAY}%${RESET} (Resets ${SEVEN_RESET_FMT})"
-else
+# Usage from rate_limits — one line per window that is actually present
+LIMIT_LINES=()
+if [[ -z "$HAS_RATE_LIMITS" ]]; then
     FIVE_BAR=$(generate_bar 0 40 "5h")
     SEVEN_BAR=$(generate_bar 0 40 "7d")
     FIVE_END_COLOR=$(get_usage_gradient_color 0)
     SEVEN_END_COLOR=$(get_usage_7d_gradient_color 0)
-    LINE4="🚀 $(cat_lavender)5H Limit${RESET} ${FIVE_BAR} ${BOLD}\033[38;2;${FIVE_END_COLOR}m0%${RESET} $(cat_overlay)(loading..)${RESET}"
-    LINE5="🌟 $(cat_yellow)7D Limit${RESET} ${SEVEN_BAR} ${BOLD}\033[38;2;${SEVEN_END_COLOR}m0%${RESET} $(cat_overlay)(loading..)${RESET}"
+    LIMIT_LINES+=("🚀 $(cat_lavender)5H Limit${RESET} ${FIVE_BAR} ${BOLD}\033[38;2;${FIVE_END_COLOR}m0%${RESET} $(cat_overlay)(loading..)${RESET}")
+    LIMIT_LINES+=("🌟 $(cat_yellow)7D Limit${RESET} ${SEVEN_BAR} ${BOLD}\033[38;2;${SEVEN_END_COLOR}m0%${RESET} $(cat_overlay)(loading..)${RESET}")
+else
+    if [[ -n "$FIVE_HOUR_PCT" ]]; then
+        FIVE_HOUR=$(clamp_pct "$FIVE_HOUR_PCT")
+        FIVE_RESET_FMT=$(format_time_remaining "$FIVE_HOUR_RESET")
+        FIVE_BAR=$(generate_bar "$FIVE_HOUR" 40 "5h")
+        FIVE_END_COLOR=$(get_usage_gradient_color "$FIVE_HOUR")
+        FIVE_LINE="🚀 $(cat_lavender)5H Limit${RESET} ${FIVE_BAR} ${BOLD}\033[38;2;${FIVE_END_COLOR}m${FIVE_HOUR}%${RESET}"
+        [[ -n "$FIVE_RESET_FMT" ]] && FIVE_LINE+=" (Resets ${FIVE_RESET_FMT})"
+        LIMIT_LINES+=("$FIVE_LINE")
+    fi
+    if [[ -n "$SEVEN_DAY_PCT" ]]; then
+        SEVEN_DAY=$(clamp_pct "$SEVEN_DAY_PCT")
+        SEVEN_RESET_FMT=$(format_reset_datetime "$SEVEN_DAY_RESET")
+        SEVEN_BAR=$(generate_bar "$SEVEN_DAY" 40 "7d")
+        SEVEN_END_COLOR=$(get_usage_7d_gradient_color "$SEVEN_DAY")
+        SEVEN_LINE="🌟 $(cat_yellow)7D Limit${RESET} ${SEVEN_BAR} ${BOLD}\033[38;2;${SEVEN_END_COLOR}m${SEVEN_DAY}%${RESET}"
+        [[ -n "$SEVEN_RESET_FMT" ]] && SEVEN_LINE+=" (Resets ${SEVEN_RESET_FMT})"
+        LIMIT_LINES+=("$SEVEN_LINE")
+    fi
 fi
 
 # ============================================================================
@@ -373,5 +394,6 @@ fi
 echo -e "$LINE1"
 echo -e "$LINE2"
 echo -e "$LINE3"
-echo -e "$LINE4"
-echo -e "$LINE5"
+for LIMIT_LINE in "${LIMIT_LINES[@]}"; do
+    echo -e "$LIMIT_LINE"
+done

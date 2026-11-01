@@ -254,9 +254,17 @@ $ContextPct = if ($ContextSize -gt 0) { Clamp-Pct ($CurrentTokens * 100 / $Conte
 $CurrentK = [int]($CurrentTokens / 1000)
 $ContextK = [int]($ContextSize / 1000)
 
-$FiveHourPct = if ($null -ne $FiveHourPctRaw) { Clamp-Pct (As-Number $FiveHourPctRaw) } else { 0 }
-$SevenDayPct = if ($null -ne $SevenDayPctRaw) { Clamp-Pct (As-Number $SevenDayPctRaw) } else { 0 }
-$HasRateLimits = $null -ne $FiveHourPctRaw
+# Rate limits (official statusline JSON - claude.ai Pro / Max / Ultra).
+# Each window is optional on its own: Ultra has no 5-hour limit (weekly only),
+# and Claude Code drops a window once its resets_at passes. So render only the
+# windows that are present, and show "loading.." only while rate_limits is
+# missing altogether (before the first API response of the session).
+$RateLimits = Get-JsonValue $Data @('rate_limits') $null
+$HasRateLimits = ($null -ne $RateLimits) -and (@($RateLimits.PSObject.Properties).Count -gt 0)
+$HasFive = $null -ne $FiveHourPctRaw
+$HasSeven = $null -ne $SevenDayPctRaw
+$FiveHourPct = if ($HasFive) { Clamp-Pct (As-Number $FiveHourPctRaw) } else { 0 }
+$SevenDayPct = if ($HasSeven) { Clamp-Pct (As-Number $SevenDayPctRaw) } else { 0 }
 
 $GitAvailable = $false
 $Branch = ''
@@ -333,8 +341,13 @@ switch ($Mode) {
         $Line1 += "$($C.LatteYellow)📝$Reset"
       }
     }
-    $Line2 = "🧠 $(Bar $ContextPct 10 'context') $($C.Lavender)5H$Reset$(Bar $FiveHourPct 10 '5h') $($C.Yellow)7D$Reset$(Bar $SevenDayPct 10 '7d')"
-    if (-not $HasRateLimits) { $Line2 += " $($C.Overlay)(loading..)$Reset" }
+    $Line2 = "🧠 $(Bar $ContextPct 10 'context')"
+    if (-not $HasRateLimits) {
+      $Line2 += " $($C.Lavender)5H$Reset$(Bar 0 10 '5h') $($C.Yellow)7D$Reset$(Bar 0 10 '7d') $($C.Overlay)(loading..)$Reset"
+    } else {
+      if ($HasFive) { $Line2 += " $($C.Lavender)5H$Reset$(Bar $FiveHourPct 10 '5h')" }
+      if ($HasSeven) { $Line2 += " $($C.Yellow)7D$Reset$(Bar $SevenDayPct 10 '7d')" }
+    }
     [Console]::WriteLine("$Line1$ClearLine")
     [Console]::WriteLine("$Line2$ClearLine")
   }
@@ -348,8 +361,13 @@ switch ($Mode) {
     $CtxPct = "$Bold$(Rgb $CtxEnd[0] $CtxEnd[1] $CtxEnd[2])${ContextPct}%$Reset"
     $FivePct = "$Bold$(Rgb $FiveEnd[0] $FiveEnd[1] $FiveEnd[2])${FiveHourPct}%$Reset"
     $SevenPct = "$Bold$(Rgb $SevenEnd[0] $SevenEnd[1] $SevenEnd[2])${SevenDayPct}%$Reset"
-    $Line2 = "🧠 $($C.Pink)Context$Reset $(Bar $ContextPct 10 'context') $CtxPct │ $($C.Lavender)5H$Reset $(Bar $FiveHourPct 10 '5h') $FivePct │ $($C.Yellow)7D$Reset $(Bar $SevenDayPct 10 '7d') $SevenPct"
-    if (-not $HasRateLimits) { $Line2 += " $($C.Overlay)(loading..)$Reset" }
+    $Line2 = "🧠 $($C.Pink)Context$Reset $(Bar $ContextPct 10 'context') $CtxPct"
+    if (-not $HasRateLimits) {
+      $Line2 += " │ $($C.Lavender)5H$Reset $(Bar 0 10 '5h') $FivePct │ $($C.Yellow)7D$Reset $(Bar 0 10 '7d') $SevenPct $($C.Overlay)(loading..)$Reset"
+    } else {
+      if ($HasFive) { $Line2 += " │ $($C.Lavender)5H$Reset $(Bar $FiveHourPct 10 '5h') $FivePct" }
+      if ($HasSeven) { $Line2 += " │ $($C.Yellow)7D$Reset $(Bar $SevenDayPct 10 '7d') $SevenPct" }
+    }
     [Console]::WriteLine("$Line1$ClearLine")
     [Console]::WriteLine("$Line2$ClearLine")
   }
@@ -357,48 +375,56 @@ switch ($Mode) {
     $Line1 = "$ModelDisplay │ $GitStatus │ $EnvDisplay │ $StyleDisplay"
     $Line2 = "$DirDisplay$BranchDisplay"
     $Line3 = "📝 $($C.Pink)Context$Reset $(Bar $ContextPct 40 'context') $Bold${ContextPct}% used$Reset"
-    $Line4 = if ($HasRateLimits) {
-      "🚀 Usage 5H $(Bar $FiveHourPct 10 '5h') ${FiveHourPct}% │ 7D $(Bar $SevenDayPct 10 '7d') ${SevenDayPct}%"
+    if (-not $HasRateLimits) {
+      $Line4 = "🚀 Usage 5H $(Bar 0 10 '5h') 0% │ 7D $(Bar 0 10 '7d') 0% $($C.Overlay)(loading..)$Reset"
     } else {
-      "🚀 Usage 5H $(Bar 0 10 '5h') 0% │ 7D $(Bar 0 10 '7d') 0% $($C.Overlay)(loading..)$Reset"
+      # Only the windows that are present; the first carries the "Usage" label
+      # ("Usage 5H …", or "Usage 7D …" on Ultra, which has no 5-hour limit).
+      $Segments = @()
+      if ($HasFive) { $Segments += "Usage 5H $(Bar $FiveHourPct 10 '5h') ${FiveHourPct}%" }
+      if ($HasSeven) {
+        $Label = if ($HasFive) { '7D' } else { 'Usage 7D' }
+        $Segments += "$Label $(Bar $SevenDayPct 10 '7d') ${SevenDayPct}%"
+      }
+      $Line4 = if ($Segments.Count -gt 0) { "🚀 " + ($Segments -join ' │ ') } else { '' }
     }
     [Console]::WriteLine("$Line1$ClearLine")
     [Console]::WriteLine("$Line2$ClearLine")
     [Console]::WriteLine("$Line3$ClearLine")
-    [Console]::WriteLine("$Line4$ClearLine")
+    if ($Line4) { [Console]::WriteLine("$Line4$ClearLine") }
   }
   'xlarge' {
     $Line1 = "$ModelDisplay │ $StyleDisplay │ $GitStatus │ $EnvDisplay"
     $Line2 = "$DirDisplay$BranchDisplay │ $CostDisplay │ $DurationDisplay"
     $Line3 = "🧠 $($C.Pink)Context$Reset  $(Bar $ContextPct 40 'context') $Bold${ContextPct}% used$Reset (${CurrentK}k/${ContextK}k)"
-    if ($HasRateLimits) {
-      $Line4 = "🚀 $($C.Lavender)5H Limit$Reset $(Bar $FiveHourPct 40 '5h') $Bold${FiveHourPct}%$Reset (Resets in $(Format-Remaining $FiveHourReset))"
-      $Line5 = "🌟 $($C.Yellow)7D Limit$Reset $(Bar $SevenDayPct 40 '7d') $Bold${SevenDayPct}%$Reset (Resets $(Format-ResetDate $SevenDayReset))"
+    $LimitLines = @()
+    if (-not $HasRateLimits) {
+      $LimitLines += "🚀 $($C.Lavender)5H Limit$Reset $(Bar 0 40 '5h') 0% $($C.Overlay)(loading..)$Reset"
+      $LimitLines += "🌟 $($C.Yellow)7D Limit$Reset $(Bar 0 40 '7d') 0% $($C.Overlay)(loading..)$Reset"
     } else {
-      $Line4 = "🚀 $($C.Lavender)5H Limit$Reset $(Bar 0 40 '5h') 0% $($C.Overlay)(loading..)$Reset"
-      $Line5 = "🌟 $($C.Yellow)7D Limit$Reset $(Bar 0 40 '7d') 0% $($C.Overlay)(loading..)$Reset"
+      if ($HasFive) { $LimitLines += "🚀 $($C.Lavender)5H Limit$Reset $(Bar $FiveHourPct 40 '5h') $Bold${FiveHourPct}%$Reset (Resets in $(Format-Remaining $FiveHourReset))" }
+      if ($HasSeven) { $LimitLines += "🌟 $($C.Yellow)7D Limit$Reset $(Bar $SevenDayPct 40 '7d') $Bold${SevenDayPct}%$Reset (Resets $(Format-ResetDate $SevenDayReset))" }
     }
     [Console]::WriteLine("$Line1$ClearLine")
     [Console]::WriteLine("$Line2$ClearLine")
     [Console]::WriteLine("$Line3$ClearLine")
-    [Console]::WriteLine("$Line4$ClearLine")
-    [Console]::WriteLine("$Line5$ClearLine")
+    foreach ($LimitLine in $LimitLines) { [Console]::WriteLine("$LimitLine$ClearLine") }
   }
   default {
     $Line1 = "$ModelDisplay │ $GitStatus │ $EnvDisplay │ $StyleDisplay"
     $Line2 = "$DirDisplay$BranchDisplay │ $CostDisplay │ $DurationDisplay"
     $Line3 = "🧠 $($C.Pink)Context$Reset  $(Bar $ContextPct 20 'context') $Bold${ContextPct}% used$Reset (${CurrentK}k/${ContextK}k)"
-    if ($HasRateLimits) {
-      $Line4 = "🚀 $($C.Lavender)Usage 5H$Reset $(Bar $FiveHourPct 20 '5h') $Bold${FiveHourPct}%$Reset (Reset $(Format-Remaining $FiveHourReset))"
-      $Line5 = "⭐ $($C.Yellow)Usage 7D$Reset $(Bar $SevenDayPct 20 '7d') $Bold${SevenDayPct}%$Reset (Reset $(Format-ResetDate $SevenDayReset))"
+    $LimitLines = @()
+    if (-not $HasRateLimits) {
+      $LimitLines += "🚀 $($C.Lavender)Usage 5H$Reset $(Bar 0 20 '5h') 0% $($C.Overlay)(loading..)$Reset"
+      $LimitLines += "⭐ $($C.Yellow)Usage 7D$Reset $(Bar 0 20 '7d') 0% $($C.Overlay)(loading..)$Reset"
     } else {
-      $Line4 = "🚀 $($C.Lavender)Usage 5H$Reset $(Bar 0 20 '5h') 0% $($C.Overlay)(loading..)$Reset"
-      $Line5 = "⭐ $($C.Yellow)Usage 7D$Reset $(Bar 0 20 '7d') 0% $($C.Overlay)(loading..)$Reset"
+      if ($HasFive) { $LimitLines += "🚀 $($C.Lavender)Usage 5H$Reset $(Bar $FiveHourPct 20 '5h') $Bold${FiveHourPct}%$Reset (Reset $(Format-Remaining $FiveHourReset))" }
+      if ($HasSeven) { $LimitLines += "⭐ $($C.Yellow)Usage 7D$Reset $(Bar $SevenDayPct 20 '7d') $Bold${SevenDayPct}%$Reset (Reset $(Format-ResetDate $SevenDayReset))" }
     }
     [Console]::WriteLine("$Line1$ClearLine")
     [Console]::WriteLine("$Line2$ClearLine")
     [Console]::WriteLine("$Line3$ClearLine")
-    [Console]::WriteLine("$Line4$ClearLine")
-    [Console]::WriteLine("$Line5$ClearLine")
+    foreach ($LimitLine in $LimitLines) { [Console]::WriteLine("$LimitLine$ClearLine") }
   }
 }

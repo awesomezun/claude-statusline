@@ -12,6 +12,8 @@
 # even when Claude Code launches the statusline with a minimal PATH — common on
 # Windows / GUI launches where a winget-installed jq is not on PATH yet.
 export PATH="$(dirname "$0"):$PATH"
+# printf "%.0f" must parse "23.5" the same way on every locale (de_DE etc.).
+export LC_NUMERIC=C
 
 input=$(cat)
 
@@ -21,9 +23,14 @@ CURRENT_DIR=$(echo "$input" | jq -r '.workspace.current_dir // "."')
 CONTEXT_SIZE=$(echo "$input" | jq -r '.context_window.context_window_size // 200000')
 CURRENT_USAGE=$(echo "$input" | jq -r '.context_window.current_usage // null')
 
-# Rate limits (official API - available for Pro/Max subscribers)
-FIVE_HOUR_PCT=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
-SEVEN_DAY_PCT=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
+# Rate limits (official statusline JSON - claude.ai Pro / Max / Ultra).
+# Each window is optional on its own: Ultra has no 5-hour limit (weekly only),
+# and Claude Code drops a window once its resets_at passes. So render only the
+# windows that are present, and show "loading.." only while rate_limits is
+# missing altogether (before the first API response of the session).
+HAS_RATE_LIMITS=$(echo "$input" | jq -r 'if (.rate_limits | type) == "object" and (.rate_limits | length) > 0 then "1" else empty end')
+FIVE_HOUR_PCT=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty | tonumber? // empty')
+SEVEN_DAY_PCT=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty | tonumber? // empty')
 
 # ============================================================================
 # Colors (variables instead of functions to avoid newline issues)
@@ -202,15 +209,26 @@ fi
 
 CTX_BAR=$(generate_bar "$CONTEXT_PERCENT" 10 "context")
 
-# Usage from rate_limits
-if [[ -n "$FIVE_HOUR_PCT" ]]; then
-    FIVE_HOUR=$(printf "%.0f" "$FIVE_HOUR_PCT")
-    SEVEN_DAY=$(printf "%.0f" "${SEVEN_DAY_PCT:-0}")
+# Percent as an integer clamped to 0-100 (the API may send 23.5)
+clamp_pct() {
+    local p
+    p=$(printf "%.0f" "$1" 2>/dev/null) || p=0
+    [[ $p -lt 0 ]] && p=0
+    [[ $p -gt 100 ]] && p=100
+    echo "$p"
+}
 
-    FIVE_BAR=$(generate_bar "$FIVE_HOUR" 10 "5h")
-    SEVEN_BAR=$(generate_bar "$SEVEN_DAY" 10 "7d")
-
-    LINE2="🧠 ${CTX_BAR} ${C_LAVENDER}5H${RESET}${FIVE_BAR} ${C_YELLOW}7D${RESET}${SEVEN_BAR}"
+# Usage from rate_limits — show only the windows that are present
+if [[ -n "$HAS_RATE_LIMITS" ]]; then
+    LINE2="🧠 ${CTX_BAR}"
+    if [[ -n "$FIVE_HOUR_PCT" ]]; then
+        FIVE_BAR=$(generate_bar "$(clamp_pct "$FIVE_HOUR_PCT")" 10 "5h")
+        LINE2+=" ${C_LAVENDER}5H${RESET}${FIVE_BAR}"
+    fi
+    if [[ -n "$SEVEN_DAY_PCT" ]]; then
+        SEVEN_BAR=$(generate_bar "$(clamp_pct "$SEVEN_DAY_PCT")" 10 "7d")
+        LINE2+=" ${C_YELLOW}7D${RESET}${SEVEN_BAR}"
+    fi
 else
     FIVE_BAR=$(generate_bar 0 10 "5h")
     SEVEN_BAR=$(generate_bar 0 10 "7d")

@@ -14,6 +14,8 @@
 # even when Claude Code launches the statusline with a minimal PATH — common on
 # Windows / GUI launches where a winget-installed jq is not on PATH yet.
 export PATH="$(dirname "$0"):$PATH"
+# printf "%.0f" must parse "23.5" the same way on every locale (de_DE etc.).
+export LC_NUMERIC=C
 
 input=$(cat)
 
@@ -24,11 +26,16 @@ CONTEXT_SIZE=$(echo "$input" | jq -r '.context_window.context_window_size // 200
 CURRENT_USAGE=$(echo "$input" | jq -r '.context_window.current_usage // null')
 OUTPUT_STYLE=$(echo "$input" | jq -r '.output_style.name // ""')
 
-# Rate limits (official API - available for Pro/Max subscribers)
-FIVE_HOUR_PCT=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
-FIVE_HOUR_RESET=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
-SEVEN_DAY_PCT=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
-SEVEN_DAY_RESET=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty')
+# Rate limits (official statusline JSON - claude.ai Pro / Max / Ultra).
+# Each window is optional on its own: Ultra has no 5-hour limit (weekly only),
+# and Claude Code drops a window once its resets_at passes. So render only the
+# windows that are present, and show "loading.." only while rate_limits is
+# missing altogether (before the first API response of the session).
+HAS_RATE_LIMITS=$(echo "$input" | jq -r 'if (.rate_limits | type) == "object" and (.rate_limits | length) > 0 then "1" else empty end')
+FIVE_HOUR_PCT=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty | tonumber? // empty')
+FIVE_HOUR_RESET=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty | tonumber? // fromdateiso8601? // empty | floor')
+SEVEN_DAY_PCT=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty | tonumber? // empty')
+SEVEN_DAY_RESET=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty | tonumber? // fromdateiso8601? // empty | floor')
 
 # ============================================================================
 # Colors (variables instead of functions to avoid newline issues)
@@ -269,23 +276,43 @@ format_reset() {
     _date_fmt "$reset_epoch" "%a"
 }
 
-# Build Line 4 from rate_limits
-if [[ -n "$FIVE_HOUR_PCT" ]]; then
-    FIVE_HOUR=$(printf "%.0f" "$FIVE_HOUR_PCT")
-    SEVEN_DAY=$(printf "%.0f" "${SEVEN_DAY_PCT:-0}")
+# Percent as an integer clamped to 0-100 (the API may send 23.5)
+clamp_pct() {
+    local p
+    p=$(printf "%.0f" "$1" 2>/dev/null) || p=0
+    [[ $p -lt 0 ]] && p=0
+    [[ $p -gt 100 ]] && p=100
+    echo "$p"
+}
 
-    FIVE_RESET_FMT=$(format_time_remaining "$FIVE_HOUR_RESET")
-    SEVEN_RESET_FMT=$(format_reset "$SEVEN_DAY_RESET")
-
-    # Generate progress bars with gradient (shorter width for inline)
-    FIVE_BAR=$(generate_progress_bar "$FIVE_HOUR" 10 "usage")
-    SEVEN_BAR=$(generate_progress_bar "$SEVEN_DAY" 10 "usage")
-
-    # Get end colors for text
-    FIVE_END_COLOR=$(get_usage_gradient_color "$FIVE_HOUR")
-    SEVEN_END_COLOR=$(get_usage_gradient_color "$SEVEN_DAY")
-
-    LINE4="🚀 \033[38;2;${FIVE_END_COLOR}mUsage 5H${RESET} ${FIVE_BAR} \033[38;2;${FIVE_END_COLOR}m${FIVE_HOUR}%${RESET} ${C_OVERLAY}(${FIVE_RESET_FMT})${RESET} │ \033[38;2;${SEVEN_END_COLOR}m7D${RESET} ${SEVEN_BAR} \033[38;2;${SEVEN_END_COLOR}m${SEVEN_DAY}%${RESET} ${C_OVERLAY}(${SEVEN_RESET_FMT})${RESET}"
+# Build Line 4 from rate_limits — only the windows that are present.
+# The first segment carries the "Usage" label ("Usage 5H …" or, on Ultra,
+# which has no 5-hour limit, "Usage 7D …").
+LINE4=""
+if [[ -n "$HAS_RATE_LIMITS" ]]; then
+    SEGMENTS=""
+    if [[ -n "$FIVE_HOUR_PCT" ]]; then
+        FIVE_HOUR=$(clamp_pct "$FIVE_HOUR_PCT")
+        FIVE_RESET_FMT=$(format_time_remaining "$FIVE_HOUR_RESET")
+        FIVE_BAR=$(generate_progress_bar "$FIVE_HOUR" 10 "usage")
+        FIVE_END_COLOR=$(get_usage_gradient_color "$FIVE_HOUR")
+        SEGMENTS="\033[38;2;${FIVE_END_COLOR}mUsage 5H${RESET} ${FIVE_BAR} \033[38;2;${FIVE_END_COLOR}m${FIVE_HOUR}%${RESET}"
+        [[ -n "$FIVE_RESET_FMT" ]] && SEGMENTS+=" ${C_OVERLAY}(${FIVE_RESET_FMT})${RESET}"
+    fi
+    if [[ -n "$SEVEN_DAY_PCT" ]]; then
+        SEVEN_DAY=$(clamp_pct "$SEVEN_DAY_PCT")
+        SEVEN_RESET_FMT=$(format_reset "$SEVEN_DAY_RESET")
+        SEVEN_BAR=$(generate_progress_bar "$SEVEN_DAY" 10 "usage")
+        SEVEN_END_COLOR=$(get_usage_gradient_color "$SEVEN_DAY")
+        if [[ -n "$SEGMENTS" ]]; then
+            SEGMENTS+=" │ \033[38;2;${SEVEN_END_COLOR}m7D${RESET}"
+        else
+            SEGMENTS="\033[38;2;${SEVEN_END_COLOR}mUsage 7D${RESET}"
+        fi
+        SEGMENTS+=" ${SEVEN_BAR} \033[38;2;${SEVEN_END_COLOR}m${SEVEN_DAY}%${RESET}"
+        [[ -n "$SEVEN_RESET_FMT" ]] && SEGMENTS+=" ${C_OVERLAY}(${SEVEN_RESET_FMT})${RESET}"
+    fi
+    [[ -n "$SEGMENTS" ]] && LINE4="🚀 ${SEGMENTS}"
 else
     LINE4="${C_OVERLAY}🚀 Usage: unavailable${RESET}"
 fi
@@ -296,4 +323,4 @@ fi
 printf "%b%b\n" "$LINE1" "$CLR"
 printf "%b%b\n" "$LINE2" "$CLR"
 printf "%b%b\n" "$LINE3" "$CLR"
-printf "%b%b\n" "$LINE4" "$CLR"
+[[ -n "$LINE4" ]] && printf "%b%b\n" "$LINE4" "$CLR"
