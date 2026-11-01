@@ -131,6 +131,29 @@ $cGreen = Rgb 166 227 161; $cLav = Rgb 180 190 254; $cYellow = Rgb 249 226 175
 $cRed = Rgb 243 139 168;  $cMaroon = Rgb 235 160 172
 $cLGreen = Rgb 64 160 43; $cLYellow = Rgb 223 142 29
 
+# ---------------------------------------------------------------- colour depth
+# Claude Code drops to 256 colours whenever it runs inside tmux (unless
+# CLAUDE_CODE_TMUX_TRUECOLOR is set) and rounds each 24-bit channel separately,
+# which turns gradients into uneven bands. Then draw hand-picked 256-colour
+# ramps instead. AWESOME_STATUSLINE_COLOR=256|truecolor overrides the detection.
+$ColorMode = 'truecolor'
+switch ("$env:AWESOME_STATUSLINE_COLOR".ToLowerInvariant()) {
+  '256' { $ColorMode = '256' }
+  { $_ -in 'truecolor', '24bit' } { }
+  default { if ($env:TMUX -and -not $env:CLAUDE_CODE_TMUX_TRUECOLOR) { $ColorMode = '256' } }
+}
+# 0%, 5%, 10% … 100% → xterm-256 index
+$RampCtx = @(225, 218, 218, 211, 211, 204, 204, 203, 203, 203, 197, 197, 197, 197, 161, 161, 161, 161, 161, 161, 161)
+$Ramp5h = @(147, 147, 111, 111, 75, 69, 69, 33, 27, 27, 27, 63, 62, 98, 97, 133, 132, 168, 167, 161, 161)
+$Ramp7d = @(223, 223, 222, 222, 216, 215, 215, 209, 209, 208, 202, 202, 202, 202, 202, 196, 196, 160, 160, 161, 161)
+if ($ColorMode -eq '256') {
+  $c256 = { param($n) "${E}[38;5;${n}m" }
+  $cSub1 = & $c256 146; $cSub0 = & $c256 146; $cOv2 = & $c256 103; $cOv1 = & $c256 103
+  $cOv0 = & $c256 60; $cSurf2 = & $c256 60; $cTeal = & $c256 116; $cPink = & $c256 225
+  $cPeach = & $c256 216; $cGreen = & $c256 150; $cLav = & $c256 147; $cYellow = & $c256 223
+  $cRed = & $c256 211; $cMaroon = & $c256 217; $cLGreen = & $c256 70; $cLYellow = & $c256 172
+}
+
 $Sep = "$cSurf2 │ $Rst"
 $Dot = "$cOv0 · $Rst"
 
@@ -148,9 +171,13 @@ if ($Plain) {
 # Integer division that truncates like bash $(( a / b )) for a >= 0.
 function IDiv([long]$a, [long]$b) { return [long][Math]::Floor($a / $b) }
 
-# Same gradients as the bash renderer → "r;g;b"
+# Same gradients as the bash renderer → SGR foreground spec ("38;2;r;g;b" or "38;5;n")
 function Grad([string]$Kind, [int]$p) {
   if ($p -lt 0) { $p = 0 }; if ($p -gt 100) { $p = 100 }
+  if ($ColorMode -eq '256') {
+    $k = IDiv ($p + 2) 5
+    switch ($Kind) { 'ctx' { return "38;5;$($RampCtx[$k])" } '7d' { return "38;5;$($Ramp7d[$k])" } default { return "38;5;$($Ramp5h[$k])" } }
+  }
   switch ($Kind) {
     'ctx' {
       if ($p -lt 30) { $t = IDiv ($p * 100) 30; $r = 245 - (IDiv (15 * $t) 100); $g = 194 - (IDiv (125 * $t) 100); $b = 231 - (IDiv (148 * $t) 100) }
@@ -166,7 +193,7 @@ function Grad([string]$Kind, [int]$p) {
       else { $t = ($p - 50) * 2; $r = 30 + (IDiv (180 * $t) 100); $g = 102 - (IDiv (87 * $t) 100); $b = 245 - (IDiv (188 * $t) 100) }
     }
   }
-  return "$r;$g;$b"
+  return "38;2;$r;$g;$b"
 }
 
 function Bar([string]$Kind, [int]$p, [int]$w) {
@@ -174,14 +201,14 @@ function Bar([string]$Kind, [int]$p, [int]$w) {
   if ($f -gt $w) { $f = $w }
   $end = Grad $Kind $p
   $sb = New-Object System.Text.StringBuilder
-  for ($i = 0; $i -lt $f; $i++) { [void]$sb.Append("${E}[38;2;$(Grad $Kind (IDiv ($i * 100) $w))m█") }
-  [void]$sb.Append("${E}[38;2;${end}m")
+  for ($i = 0; $i -lt $f; $i++) { [void]$sb.Append("${E}[$(Grad $Kind (IDiv ($i * 100) $w))m█") }
+  [void]$sb.Append("${E}[${end}m")
   for ($i = $f; $i -lt $w; $i++) { [void]$sb.Append('░') }
   return $sb.ToString() + $Rst
 }
 
 # Bold, right-aligned "  7%" / " 34%" / "100%" in the bar's end colour
-function PctV([string]$Kind, [int]$p) { return "$Bld${E}[38;2;$(Grad $Kind $p)m$('{0,3}%' -f $p)$Rst" }
+function PctV([string]$Kind, [int]$p) { return "$Bld${E}[$(Grad $Kind $p)m$('{0,3}%' -f $p)$Rst" }
 
 function Rel([double]$Seconds) {
   if ($Seconds -lt 0) { $Seconds = 0 }
@@ -207,6 +234,11 @@ function PaceCol([int]$Used, $Left, [double]$Span) {
   if ($d -gt -5) { return $cYellow }
   return $cGreen
 }
+
+# Label text in colour, padding spaces outside it: a label in the same colour as
+# the first bar cell would otherwise merge with it into one run, and terminals
+# that enforce a minimum contrast (VS Code, Orca on light themes) darken it.
+function Lbl([string]$Color, [string]$Text, [int]$Width) { return "$Color$Text$Rst" + (' ' * [Math]::Max(0, $Width - $Text.Length)) }
 
 function JoinSep([string[]]$Parts) { return (@($Parts | Where-Object { $_ }) -join $Sep) }
 
@@ -353,15 +385,15 @@ switch ($Layout) {
   'xsmall' {
     $L1 = "$(Ident 'short' 'think')  $iDir$cSub0$DirBase$Rst"
     if ($GitOk -and $Branch) { $L1 += " $iBranch$cLGreen$Branch$Rst"; if ($Dirty) { $L1 += "$Bld$cYellow*$Rst" } }
-    $L2 = if ($Plain) { "${cPink}ctx $Rst" } else { "${cPink}🧠 $Rst" }
+    $L2 = if ($Plain) { "${cPink}ctx$Rst " } else { "${cPink}🧠$Rst " }
     $L2 += "$(Bar 'ctx' $CtxPct 6)$(PctV 'ctx' $CtxPct)"
     if (-not $HasRL) {
-      $L2 += "  ${cLav}5h $Rst$(Bar '5h' 0 6)$Dash  ${cYellow}7d $Rst$(Bar '7d' 0 6)$Dash  $Loading"
+      $L2 += "  ${cLav}5h$Rst $(Bar '5h' 0 6)$Dash  ${cYellow}7d$Rst $(Bar '7d' 0 6)$Dash  $Loading"
     } elseif ($null -ne $FivePct) {
-      $L2 += "  ${cLav}5h $Rst$(Bar '5h' $FivePct 6)$(PctV '5h' $FivePct)"
-      if ($null -ne $SevenPct) { $L2 += "  ${cYellow}7d $Rst$(Bar '7d' $SevenPct 6)$(PctV '7d' $SevenPct)" }
+      $L2 += "  ${cLav}5h$Rst $(Bar '5h' $FivePct 6)$(PctV '5h' $FivePct)"
+      if ($null -ne $SevenPct) { $L2 += "  ${cYellow}7d$Rst $(Bar '7d' $SevenPct 6)$(PctV '7d' $SevenPct)" }
     } elseif ($null -ne $SevenPct) {
-      $L2 += "  ${cYellow}wk $Rst$(Bar '7d' $SevenPct 6)$(PctV '7d' $SevenPct)"
+      $L2 += "  ${cYellow}wk$Rst $(Bar '7d' $SevenPct 6)$(PctV '7d' $SevenPct)"
       if ($null -ne $SevenLeft) { $L2 += " $cOv1↻$(Rel $SevenLeft)$Rst" }
     }
     $Lines.Add($L1); $Lines.Add($L2)
@@ -389,21 +421,21 @@ switch ($Layout) {
   'medium' {
     $Lines.Add((JoinSep @((Ident 'full' 'thinking'), (GitSeg ''), $ES, $SS)))
     $Lines.Add("$iDir$cSub0$DirShow$Rst$(BranchSeg $true)")
-    $Lines.Add("$iCtx$cPink$('Context'.PadRight(9))$Rst$(Bar 'ctx' $CtxPct 40) $(PctV 'ctx' $CtxPct)$cOv2  $TokK/$SizeK$Rst")
+    $Lines.Add("$iCtx$(Lbl $cPink 'Context' 9)$(Bar 'ctx' $CtxPct 40) $(PctV 'ctx' $CtxPct)$cOv2  $TokK/$SizeK$Rst")
     $UL = 'Usage'.PadRight(9)
     if (-not $HasRL) {
-      $Lines.Add("$i5h$cLav${UL}5H $Rst$(Bar '5h' 0 14)$Dash$Sep${cYellow}7D $Rst$(Bar '7d' 0 14)$Dash  $Loading")
+      $Lines.Add("$i5h$cLav${UL}5H$Rst $(Bar '5h' 0 14)$Dash$Sep${cYellow}7D$Rst $(Bar '7d' 0 14)$Dash  $Loading")
     } elseif ($null -ne $FivePct) {
-      $L4 = "$i5h$cLav${UL}5H $Rst$(Bar '5h' $FivePct 14) $(PctV '5h' $FivePct)"
+      $L4 = "$i5h$cLav${UL}5H$Rst $(Bar '5h' $FivePct 14) $(PctV '5h' $FivePct)"
       if ($null -ne $FiveLeft) { $L4 += " $cOv2$(Rel $FiveLeft)$Rst" }
       if ($null -ne $SevenPct) {
-        $L4 += "$Sep${cYellow}7D $Rst$(Bar '7d' $SevenPct 14) $(PctV '7d' $SevenPct)"
+        $L4 += "$Sep${cYellow}7D$Rst $(Bar '7d' $SevenPct 14) $(PctV '7d' $SevenPct)"
         if ($null -ne $SevenLeft) { $L4 += " $cOv2$(Fmt $SevenReset 'ddd')$Rst" }
       }
       $Lines.Add($L4)
     } elseif ($null -ne $SevenPct) {
       # Weekly only (Ultra): full-width bar in the same column as Context
-      $L4 = "$i7d$cYellow$('Weekly'.PadRight(9))$Rst$(Bar '7d' $SevenPct 40) $(PctV '7d' $SevenPct)"
+      $L4 = "$i7d$(Lbl $cYellow 'Weekly' 9)$(Bar '7d' $SevenPct 40) $(PctV '7d' $SevenPct)"
       if ($null -ne $SevenLeft) {
         $L4 += "$cOv2  $(Fmt $SevenReset 'ddd HH:mm') · $(Rel $SevenLeft)"
         if ($Budget) { $L4 += " · $Budget" }
@@ -415,19 +447,19 @@ switch ($Layout) {
   'xlarge' {
     $Lines.Add((JoinSep @((Ident 'full' 'thinking'), $SS, (GitSeg 'dirty'), $ES)))
     $Lines.Add((JoinSep @("$iDir$cSub0$DirShow$Rst$(BranchSeg $true)", "$iCost$cYellow$CostFmt$Rst", "$iTime$cSub0$Dur$Rst")))
-    $Lines.Add("$iCtx$cMaroon$('Context'.PadRight(10))$Rst$(Bar 'ctx' $CtxPct 40) $(PctV 'ctx' $CtxPct)$cOv2  used ($TokK / $(IDiv $CtxSize 1000)k)$Rst")
+    $Lines.Add("$iCtx$(Lbl $cMaroon 'Context' 10)$(Bar 'ctx' $CtxPct 40) $(PctV 'ctx' $CtxPct)$cOv2  used ($TokK / $(IDiv $CtxSize 1000)k)$Rst")
     if (-not $HasRL) {
-      $Lines.Add("$i5h$cLav$('5H Limit'.PadRight(10))$Rst$(Bar '5h' 0 40)$Dash  $Loading")
-      $Lines.Add("$i7dxl$cYellow$('7D Limit'.PadRight(10))$Rst$(Bar '7d' 0 40)$Dash  $Loading")
+      $Lines.Add("$i5h$(Lbl $cLav '5H Limit' 10)$(Bar '5h' 0 40)$Dash  $Loading")
+      $Lines.Add("$i7dxl$(Lbl $cYellow '7D Limit' 10)$(Bar '7d' 0 40)$Dash  $Loading")
     } else {
       if ($null -ne $FivePct) {
-        $L = "$i5h$cLav$('5H Limit'.PadRight(10))$Rst$(Bar '5h' $FivePct 40) $(PctV '5h' $FivePct)"
+        $L = "$i5h$(Lbl $cLav '5H Limit' 10)$(Bar '5h' $FivePct 40) $(PctV '5h' $FivePct)"
         if ($null -ne $FiveLeft) { $L += "$cOv2  resets in $(Rel $FiveLeft) ($(AmPm $FiveReset))$Rst" }
         $Lines.Add($L)
       }
       if ($null -ne $SevenPct) {
         $Lbl = if ($null -ne $FivePct) { '7D Limit' } else { 'Weekly' }
-        $L = "$i7dxl$cYellow$($Lbl.PadRight(10))$Rst$(Bar '7d' $SevenPct 40) $(PctV '7d' $SevenPct)"
+        $L = "$i7dxl$(Lbl $cYellow $Lbl 10)$(Bar '7d' $SevenPct 40) $(PctV '7d' $SevenPct)"
         if ($null -ne $SevenLeft) {
           $L += "$cOv2  resets $(LongDate $SevenReset) (in $(Rel $SevenLeft))"
           if ($null -eq $FivePct -and $Budget) { $L += " · ≈$Budget" }
@@ -440,7 +472,7 @@ switch ($Layout) {
   'small-simple' {
     $L1 = "$(Ident 'full' 'thinking')   $cSub0$DirShow$Rst"
     if ($GitOk -and $Branch) { $L1 += " $cGreen$Branch$Rst"; if ($GC) { $L1 += " $GC" } }
-    $L2 = "${cOv1}ctx $Rst$Bld${E}[38;2;$(Grad 'ctx' $CtxPct)m$CtxPct%$Rst"
+    $L2 = "${cOv1}ctx $Rst$Bld${E}[$(Grad 'ctx' $CtxPct)m$CtxPct%$Rst"
     if (-not $HasRL) {
       $L2 += "   ${cOv1}limits $Rst$Loading"
     } elseif ($null -ne $FivePct) {
@@ -462,7 +494,7 @@ switch ($Layout) {
     $Lines.Add($L1); $Lines.Add($L2)
   }
   'xsmall-simple' {
-    $L = "$(Ident 'short' 'think')$Sep${cOv1}ctx $Rst$Bld${E}[38;2;$(Grad 'ctx' $CtxPct)m$CtxPct%$Rst"
+    $L = "$(Ident 'short' 'think')$Sep${cOv1}ctx $Rst$Bld${E}[$(Grad 'ctx' $CtxPct)m$CtxPct%$Rst"
     if (-not $HasRL) {
       $L += "$Sep${cOv1}5h $Rst$cOv0--$Rst$Sep${cOv1}7d $Rst$cOv0--$Rst"
     } else {
@@ -479,7 +511,7 @@ switch ($Layout) {
   'medium-simple' {
     $Lines.Add((LedgerHead ''))
     $Lines.Add((LedgerWhere $false))
-    $Lines.Add("$cOv1$('context'.PadRight(9))$Rst$(VPad "${E}[38;2;$(Grad 'ctx' $CtxPct)m" $CtxPct)$cOv2   $TokK / $SizeK$Rst")
+    $Lines.Add("$cOv1$('context'.PadRight(9))$Rst$(VPad "${E}[$(Grad 'ctx' $CtxPct)m" $CtxPct)$cOv2   $TokK / $SizeK$Rst")
     $L = "$cOv1$('limits'.PadRight(9))$Rst"
     if (-not $HasRL) { $L += $Loading }
     elseif ($null -ne $FivePct) {
@@ -500,7 +532,7 @@ switch ($Layout) {
   'large-simple' {
     $Lines.Add((LedgerHead ''))
     $Lines.Add((LedgerWhere $true))
-    $Lines.Add("$cOv1$('context'.PadRight(9))$Rst$(VPad "${E}[38;2;$(Grad 'ctx' $CtxPct)m" $CtxPct)$cOv2   $TokK / $SizeK$Rst")
+    $Lines.Add("$cOv1$('context'.PadRight(9))$Rst$(VPad "${E}[$(Grad 'ctx' $CtxPct)m" $CtxPct)$cOv2   $TokK / $SizeK$Rst")
     if (-not $HasRL) {
       $Lines.Add("$cOv1$('5h'.PadRight(9))$Rst$Dash   $Loading")
       $Lines.Add("$cOv1$('7d'.PadRight(9))$Rst$Dash   $Loading")
@@ -526,7 +558,7 @@ switch ($Layout) {
     $Lines.Add((LedgerHead 'dirty'))
     $Lines.Add((LedgerWhere $true))
     $FreeK = [Math]::Max(0, (IDiv ($CtxSize - $CtxTok) 1000))
-    $Lines.Add("$cOv1$('context'.PadRight(10))$Rst$(VPad "${E}[38;2;$(Grad 'ctx' $CtxPct)m" $CtxPct)$cOv2   $TokK / $(IDiv $CtxSize 1000)k used · ${FreeK}k free$Rst")
+    $Lines.Add("$cOv1$('context'.PadRight(10))$Rst$(VPad "${E}[$(Grad 'ctx' $CtxPct)m" $CtxPct)$cOv2   $TokK / $(IDiv $CtxSize 1000)k used · ${FreeK}k free$Rst")
     if (-not $HasRL) {
       $Lines.Add("$cOv1$('5h limit'.PadRight(10))$Rst$Dash   $Loading")
       $Lines.Add("$cOv1$('7d limit'.PadRight(10))$Rst$Dash   $Loading")
@@ -552,19 +584,19 @@ switch ($Layout) {
     # large
     $Lines.Add((JoinSep @((Ident 'full' 'thinking'), (GitSeg ''), $ES, $SS)))
     $Lines.Add((JoinSep @("$iDir$cSub0$DirShow$Rst$(BranchSeg $true)", "$iCost$cYellow$CostFmt$Rst", "$iTime$cSub0$Dur$Rst")))
-    $Lines.Add("$iCtx$cPink$('Context'.PadRight(10))$Rst$(Bar 'ctx' $CtxPct 20) $(PctV 'ctx' $CtxPct)$cOv2  $TokK/$SizeK$Rst")
+    $Lines.Add("$iCtx$(Lbl $cPink 'Context' 10)$(Bar 'ctx' $CtxPct 20) $(PctV 'ctx' $CtxPct)$cOv2  $TokK/$SizeK$Rst")
     if (-not $HasRL) {
-      $Lines.Add("$i5h$cLav$('Usage 5H'.PadRight(10))$Rst$(Bar '5h' 0 20)$Dash  $Loading")
-      $Lines.Add("$i7d$cYellow$('Usage 7D'.PadRight(10))$Rst$(Bar '7d' 0 20)$Dash  $Loading")
+      $Lines.Add("$i5h$(Lbl $cLav 'Usage 5H' 10)$(Bar '5h' 0 20)$Dash  $Loading")
+      $Lines.Add("$i7d$(Lbl $cYellow 'Usage 7D' 10)$(Bar '7d' 0 20)$Dash  $Loading")
     } else {
       if ($null -ne $FivePct) {
-        $L = "$i5h$cLav$('Usage 5H'.PadRight(10))$Rst$(Bar '5h' $FivePct 20) $(PctV '5h' $FivePct)"
+        $L = "$i5h$(Lbl $cLav 'Usage 5H' 10)$(Bar '5h' $FivePct 20) $(PctV '5h' $FivePct)"
         if ($null -ne $FiveLeft) { $L += "$cOv2  resets in $(Rel $FiveLeft) · $(Fmt $FiveReset 'HH:mm')$Rst" }
         $Lines.Add($L)
       }
       if ($null -ne $SevenPct) {
         $Lbl = if ($null -ne $FivePct) { 'Usage 7D' } else { 'Weekly' }
-        $L = "$i7d$cYellow$($Lbl.PadRight(10))$Rst$(Bar '7d' $SevenPct 20) $(PctV '7d' $SevenPct)"
+        $L = "$i7d$(Lbl $cYellow $Lbl 10)$(Bar '7d' $SevenPct 20) $(PctV '7d' $SevenPct)"
         if ($null -ne $SevenLeft) {
           $L += "$cOv2  resets $(Fmt $SevenReset 'ddd HH:mm') · $(Rel $SevenLeft)"
           if ($null -eq $FivePct -and $Budget) { $L += " · ≈$Budget" }

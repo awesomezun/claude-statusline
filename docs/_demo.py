@@ -77,6 +77,7 @@ def mock(plan: str = "pro") -> str:
 
 def render(preset: str, plan: str = "pro") -> str:
     env = {k: v for k, v in os.environ.items() if k not in ("CONDA_DEFAULT_ENV", "VIRTUAL_ENV")}
+    env["AWESOME_STATUSLINE_COLOR"] = "truecolor"   # screenshots stay 24-bit even when built inside tmux
     p = subprocess.run(["bash", str(RENDERER), preset], input=mock(plan),
                        capture_output=True, text=True, env=env)
     out = p.stdout.replace(str(DEMO_REPO), SHOW_PATH)

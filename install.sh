@@ -287,6 +287,23 @@ else
   jq -n --argjson sl "$STATUSLINE_JSON" '{statusLine: $sl}' > "$SETTINGS"
 fi
 
+# --- tmux: keep 24-bit colour ------------------------------------------------
+# Inside tmux, Claude Code downgrades every colour to 256 unless
+# CLAUDE_CODE_TMUX_TRUECOLOR is set, which turns the gradient bars into uneven
+# bands. If this tmux passes 24-bit colour (RGB) through, switch it on (it takes
+# effect in new Claude Code sessions); otherwise the statusline falls back to
+# its own 256-colour palette and we print how to enable RGB in tmux.
+if [ -n "${TMUX:-}" ] && command -v tmux >/dev/null 2>&1; then
+  if tmux display -p '#{client_termfeatures}' 2>/dev/null | grep -q 'RGB'; then
+    jq '.env = ((.env // {}) + {"CLAUDE_CODE_TMUX_TRUECOLOR": "1"})' "$SETTINGS" > "$SETTINGS.tmp" \
+      && mv "$SETTINGS.tmp" "$SETTINGS"
+    info "tmux with 24-bit colour detected: set env.CLAUDE_CODE_TMUX_TRUECOLOR=1 so gradients stay smooth."
+  else
+    info "tmux without 24-bit colour detected: the statusline uses its 256-colour palette."
+    info "  For smooth gradients add to ~/.tmux.conf:  set -as terminal-features ',xterm*:RGB'"
+  fi
+fi
+
 ok "Installed Awesome CC Statusline (preset: $MODE)"
 echo "  script:   $DEST"
 echo "  settings: $SETTINGS  (statusLine set)"

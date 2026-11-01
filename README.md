@@ -39,7 +39,7 @@ Built to keep pace with Claude Code — recent updates:
 
 | Date | Update |
 |------|--------|
-| **2026-11-01** | **Three styles for every size** — the text-only style now covers all five sizes (`m-simple`, `l-simple`, `xl-simple` are new); `simple` / `oneline` became `s-simple` / `xs-simple` (old names still work) · installs ask size, then style |
+| **2026-11-01** | **Three styles for every size** — the text-only style now covers all five sizes (`m-simple`, `l-simple`, `xl-simple` are new); `simple` / `oneline` became `s-simple` / `xs-simple` (old names still work) · installs ask size, then style · **gradients stay clean inside tmux** (Claude Code drops to 256 colours there; the bars now switch to their own 256-colour ramps, and the installer turns on `CLAUDE_CODE_TMUX_TRUECOLOR` when tmux supports it) and on light themes with minimum contrast (VS Code, Orca) |
 | **2026-10-31** | **Ultra plan support + redesign** — Ultra has no 5-hour limit, so it now gets a weekly bar with a per-day budget (the bars used to freeze at `0% (loading..)`) · every size redesigned: aligned columns, fixed-width %, resets shown as *in 2h10m · 01:50*, empty fields hidden · **no-emoji option** for every size (`-plain`) · two new text presets, **`simple`** and **`oneline`** · one renderer for every preset, ~4× faster per refresh |
 | **2026-10-17** | **Windows on non-English locales** — the statusline no longer drops to `Unknown` / 0% when Claude Code sends non-ASCII text (e.g. a Korean session name) · context gauge guards against stale window-size reports |
 | **2026-06-03** | **Install size picker** — installing through Claude Code always asks which of the five presets you want (`large` recommended) |
@@ -270,6 +270,8 @@ On Windows, the installer writes a native `awesome-statusline.ps1` and points Cl
 **Where are my old settings?** Every install backs up `settings.json` to `settings.json.backup-<timestamp>` before touching it.
 
 **Statusline is blank, or blank terminal windows keep popping up (Windows)?** Re-run `./install.ps1` — it now installs a native PowerShell renderer and removes the Git Bash / `jq` dependency from the statusline path. Details: [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+
+**Bars look banded or yellow turns olive inside tmux?** Claude Code switches to 256 colours inside tmux. The statusline now adapts automatically; for the full gradient set `"env": {"CLAUDE_CODE_TMUX_TRUECOLOR": "1"}` in `~/.claude/settings.json` (the installer does it when tmux supports 24-bit colour). Details: [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 **Characters stack vertically inside tmux?** Enable truecolor in `~/.tmux.conf` (`set -ga terminal-overrides ",xterm-256color:RGB"`) and reload tmux. Details: [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 

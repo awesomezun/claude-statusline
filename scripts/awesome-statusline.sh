@@ -108,6 +108,30 @@ c_green="${E}[38;2;166;227;161m"; c_lav="${E}[38;2;180;190;254m";   c_yellow="${
 c_red="${E}[38;2;243;139;168m";   c_maroon="${E}[38;2;235;160;172m"
 c_lgreen="${E}[38;2;64;160;43m";  c_lyellow="${E}[38;2;223;142;29m"
 
+# ---------------------------------------------------------------- colour depth
+# Claude Code drops to 256 colours whenever it runs inside tmux (unless
+# CLAUDE_CODE_TMUX_TRUECOLOR is set) and then rounds each 24-bit colour channel
+# separately — gradients collapse into uneven bands and yellows turn olive.
+# In that case draw with hand-picked 256-colour ramps instead, so the result is
+# still a clean, monotonic gradient. AWESOME_STATUSLINE_COLOR=256|truecolor
+# overrides the detection.
+COLOR_MODE=truecolor
+case "${AWESOME_STATUSLINE_COLOR:-auto}" in
+    256)            COLOR_MODE=256 ;;
+    truecolor|24bit) ;;
+    *) [[ -n "${TMUX:-}" && -z "${CLAUDE_CODE_TMUX_TRUECOLOR:-}" ]] && COLOR_MODE=256 ;;
+esac
+# 0%, 5%, 10% … 100% → xterm-256 index
+RAMP_CTX=(225 218 218 211 211 204 204 203 203 203 197 197 197 197 161 161 161 161 161 161 161)
+RAMP_5H=(147 147 111 111 75 69 69 33 27 27 27 63 62 98 97 133 132 168 167 161 161)
+RAMP_7D=(223 223 222 222 216 215 215 209 209 208 202 202 202 202 202 196 196 160 160 161 161)
+if [[ "$COLOR_MODE" == 256 ]]; then
+    c_sub1="${E}[38;5;146m";  c_sub0="${E}[38;5;146m";  c_ov2="${E}[38;5;103m";  c_ov1="${E}[38;5;103m"
+    c_ov0="${E}[38;5;60m";    c_surf2="${E}[38;5;60m";  c_teal="${E}[38;5;116m"; c_pink="${E}[38;5;225m"
+    c_peach="${E}[38;5;216m"; c_green="${E}[38;5;150m"; c_lav="${E}[38;5;147m";  c_yellow="${E}[38;5;223m"
+    c_red="${E}[38;5;211m";   c_maroon="${E}[38;5;217m"; c_lgreen="${E}[38;5;70m"; c_lyellow="${E}[38;5;172m"
+fi
+
 SEP="${c_surf2} │ ${RST}"
 DOT="${c_ov0} · ${RST}"
 
@@ -122,11 +146,20 @@ else
 fi
 
 # ---------------------------------------------------------------- helpers (no subshells)
-# grad <ctx|5h|7d> <pct>  → G="r;g;b"   (same gradients as earlier versions)
+# grad <ctx|5h|7d> <pct>  → G = SGR foreground spec ("38;2;r;g;b" or "38;5;n")
 grad() {
     local p=$2 t r g b
     (( p < 0 )) && p=0
     (( p > 100 )) && p=100
+    if [[ "$COLOR_MODE" == 256 ]]; then
+        t=$(( (p + 2) / 5 ))
+        case "$1" in
+            ctx) G="38;5;${RAMP_CTX[$t]}" ;;
+            7d)  G="38;5;${RAMP_7D[$t]}" ;;
+            *)   G="38;5;${RAMP_5H[$t]}" ;;
+        esac
+        return
+    fi
     case "$1" in
         ctx)
             if (( p < 30 )); then
@@ -149,7 +182,7 @@ grad() {
                 t=$(( (p - 50) * 2 ));        r=$(( 30 + 180 * t / 100 ));  g=$(( 102 - 87 * t / 100 ));  b=$(( 245 - 188 * t / 100 ))
             fi ;;
     esac
-    G="$r;$g;$b"
+    G="38;2;$r;$g;$b"
 }
 
 # bar <kind> <pct> <width>  → BAR (gradient █ fill, ░ rest in the end colour)
@@ -160,9 +193,9 @@ bar() {
     grad "$kind" "$p"; end=$G
     for (( i = 0; i < f; i++ )); do
         grad "$kind" $(( i * 100 / w ))
-        out+="${E}[38;2;${G}m█"
+        out+="${E}[${G}m█"
     done
-    out+="${E}[38;2;${end}m"
+    out+="${E}[${end}m"
     for (( i = f; i < w; i++ )); do out+="░"; done
     BAR="$out$RST"
 }
@@ -172,7 +205,7 @@ pctv() {
     local s
     printf -v s '%3d%%' "$2"
     grad "$1" "$2"
-    PV="${BLD}${E}[38;2;${G}m${s}${RST}"
+    PV="${BLD}${E}[${G}m${s}${RST}"
 }
 
 # rel <seconds> → R = "2d10h" | "2h05m" | "40m"
@@ -233,7 +266,8 @@ pace_col() {
     fi
 }
 
-pad() { printf -v PADDED "%-$2s" "$1"; }
+# pad <text> <width> → PADDED (text + spaces), PADDED_T (text), PADDED_S (spaces)
+pad() { PADDED_T=$1; printf -v PADDED_S "%$(( $2 > ${#1} ? $2 - ${#1} : 0 ))s" ""; PADDED="$1$PADDED_S"; }
 
 # ---------------------------------------------------------------- derived values
 SHORT=${MODEL#Claude }
@@ -400,16 +434,16 @@ xsmall)
     ident short think
     L1="$ID  ${i_dir}${c_sub0}${DIR_BASE}${RST}"
     [[ -n "$GIT_OK" && -n "$BRANCH" ]] && L1+=" ${i_branch}${c_lgreen}${BRANCH}${RST}${DIRTY:+${BLD}${c_yellow}*${RST}}"
-    if [[ -n "$PLAIN" ]]; then L2="${c_pink}ctx ${RST}"; else L2="${c_pink}🧠 ${RST}"; fi
+    if [[ -n "$PLAIN" ]]; then L2="${c_pink}ctx${RST} "; else L2="${c_pink}🧠${RST} "; fi
     bar ctx "$CTX_PCT" 6; pctv ctx "$CTX_PCT"; L2+="$BAR$PV"
     if [[ -z "$HAS_RL" ]]; then
-        bar 5h 0 6; L2+="  ${c_lav}5h ${RST}$BAR$DASH"
-        bar 7d 0 6; L2+="  ${c_yellow}7d ${RST}$BAR$DASH  $LOADING"
+        bar 5h 0 6; L2+="  ${c_lav}5h${RST} $BAR$DASH"
+        bar 7d 0 6; L2+="  ${c_yellow}7d${RST} $BAR$DASH  $LOADING"
     elif [[ -n "$FIVE_PCT" ]]; then
-        bar 5h "$FIVE_PCT" 6; pctv 5h "$FIVE_PCT"; L2+="  ${c_lav}5h ${RST}$BAR$PV"
-        if [[ -n "$SEVEN_PCT" ]]; then bar 7d "$SEVEN_PCT" 6; pctv 7d "$SEVEN_PCT"; L2+="  ${c_yellow}7d ${RST}$BAR$PV"; fi
+        bar 5h "$FIVE_PCT" 6; pctv 5h "$FIVE_PCT"; L2+="  ${c_lav}5h${RST} $BAR$PV"
+        if [[ -n "$SEVEN_PCT" ]]; then bar 7d "$SEVEN_PCT" 6; pctv 7d "$SEVEN_PCT"; L2+="  ${c_yellow}7d${RST} $BAR$PV"; fi
     elif [[ -n "$SEVEN_PCT" ]]; then
-        bar 7d "$SEVEN_PCT" 6; pctv 7d "$SEVEN_PCT"; L2+="  ${c_yellow}wk ${RST}$BAR$PV"
+        bar 7d "$SEVEN_PCT" 6; pctv 7d "$SEVEN_PCT"; L2+="  ${c_yellow}wk${RST} $BAR$PV"
         [[ -n "$SEVEN_LEFT" ]] && { rel "$SEVEN_LEFT"; L2+=" ${c_ov1}↻${R}${RST}"; }
     fi
     emit "$L1"; emit "$L2"
@@ -445,24 +479,24 @@ medium)
     join_sep "$ID" "$GS" "$ES" "$SS"; emit "$J"
     emit "${i_dir}${c_sub0}${DIR_SHOW}${RST}${BS}"
     bar ctx "$CTX_PCT" 40; pctv ctx "$CTX_PCT"; pad Context 9
-    emit "${i_ctx}${c_pink}${PADDED}${RST}$BAR $PV${c_ov2}  ${TOK_K}/${SIZE_K}${RST}"
+    emit "${i_ctx}${c_pink}${PADDED_T}${RST}${PADDED_S}$BAR $PV${c_ov2}  ${TOK_K}/${SIZE_K}${RST}"
     pad Usage 9; USAGE_LBL=$PADDED
     if [[ -z "$HAS_RL" ]]; then
-        bar 5h 0 14; L4="${i_5h}${c_lav}${USAGE_LBL}5H ${RST}$BAR$DASH"
-        bar 7d 0 14; L4+="$SEP${c_yellow}7D ${RST}$BAR$DASH  $LOADING"
+        bar 5h 0 14; L4="${i_5h}${c_lav}${USAGE_LBL}5H${RST} $BAR$DASH"
+        bar 7d 0 14; L4+="$SEP${c_yellow}7D${RST} $BAR$DASH  $LOADING"
         emit "$L4"
     elif [[ -n "$FIVE_PCT" ]]; then
-        bar 5h "$FIVE_PCT" 14; pctv 5h "$FIVE_PCT"; L4="${i_5h}${c_lav}${USAGE_LBL}5H ${RST}$BAR $PV"
+        bar 5h "$FIVE_PCT" 14; pctv 5h "$FIVE_PCT"; L4="${i_5h}${c_lav}${USAGE_LBL}5H${RST} $BAR $PV"
         [[ -n "$FIVE_LEFT" ]] && { rel "$FIVE_LEFT"; L4+=" ${c_ov2}${R}${RST}"; }
         if [[ -n "$SEVEN_PCT" ]]; then
-            bar 7d "$SEVEN_PCT" 14; pctv 7d "$SEVEN_PCT"; L4+="$SEP${c_yellow}7D ${RST}$BAR $PV"
+            bar 7d "$SEVEN_PCT" 14; pctv 7d "$SEVEN_PCT"; L4+="$SEP${c_yellow}7D${RST} $BAR $PV"
             [[ -n "$SEVEN_LEFT" ]] && { fmt_at "$SEVEN_RESET" "%a"; L4+=" ${c_ov2}${D}${RST}"; }
         fi
         emit "$L4"
     elif [[ -n "$SEVEN_PCT" ]]; then
         # Weekly only (Ultra): full-width bar in the same column as Context
         bar 7d "$SEVEN_PCT" 40; pctv 7d "$SEVEN_PCT"; pad Weekly 9
-        L4="${i_7d}${c_yellow}${PADDED}${RST}$BAR $PV"
+        L4="${i_7d}${c_yellow}${PADDED_T}${RST}${PADDED_S}$BAR $PV"
         if [[ -n "$SEVEN_LEFT" ]]; then fmt_at "$SEVEN_RESET" "%a %H:%M"; rel "$SEVEN_LEFT"; L4+="${c_ov2}  ${D} · ${R}${BUDGET:+ · $BUDGET}${RST}"; fi
         emit "$L4"
     fi
@@ -474,21 +508,21 @@ xlarge)
     join_sep "$ID" "$SS" "$GS" "$ES"; emit "$J"
     join_sep "${i_dir}${c_sub0}${DIR_SHOW}${RST}${BS}" "${i_cost}${c_yellow}${COST_FMT}${RST}" "${i_time}${c_sub0}${DUR}${RST}"; emit "$J"
     bar ctx "$CTX_PCT" 40; pctv ctx "$CTX_PCT"; pad Context 10
-    emit "${i_ctx}${c_maroon}${PADDED}${RST}$BAR $PV${c_ov2}  used (${TOK_K} / $(( CTX_SIZE / 1000 ))k)${RST}"
+    emit "${i_ctx}${c_maroon}${PADDED_T}${RST}${PADDED_S}$BAR $PV${c_ov2}  used (${TOK_K} / $(( CTX_SIZE / 1000 ))k)${RST}"
     if [[ -z "$HAS_RL" ]]; then
-        bar 5h 0 40; pad "5H Limit" 10; emit "${i_5h}${c_lav}${PADDED}${RST}$BAR$DASH  $LOADING"
-        bar 7d 0 40; pad "7D Limit" 10; emit "${i_7dxl}${c_yellow}${PADDED}${RST}$BAR$DASH  $LOADING"
+        bar 5h 0 40; pad "5H Limit" 10; emit "${i_5h}${c_lav}${PADDED_T}${RST}${PADDED_S}$BAR$DASH  $LOADING"
+        bar 7d 0 40; pad "7D Limit" 10; emit "${i_7dxl}${c_yellow}${PADDED_T}${RST}${PADDED_S}$BAR$DASH  $LOADING"
     else
         if [[ -n "$FIVE_PCT" ]]; then
             bar 5h "$FIVE_PCT" 40; pctv 5h "$FIVE_PCT"; pad "5H Limit" 10
-            L="${i_5h}${c_lav}${PADDED}${RST}$BAR $PV"
+            L="${i_5h}${c_lav}${PADDED_T}${RST}${PADDED_S}$BAR $PV"
             if [[ -n "$FIVE_LEFT" ]]; then rel "$FIVE_LEFT"; fmt_ampm "$FIVE_RESET"; L+="${c_ov2}  resets in ${R} (${D})${RST}"; fi
             emit "$L"
         fi
         if [[ -n "$SEVEN_PCT" ]]; then
             bar 7d "$SEVEN_PCT" 40; pctv 7d "$SEVEN_PCT"
             if [[ -n "$FIVE_PCT" ]]; then pad "7D Limit" 10; else pad Weekly 10; fi
-            L="${i_7dxl}${c_yellow}${PADDED}${RST}$BAR $PV"
+            L="${i_7dxl}${c_yellow}${PADDED_T}${RST}${PADDED_S}$BAR $PV"
             if [[ -n "$SEVEN_LEFT" ]]; then
                 rel "$SEVEN_LEFT"; fmt_long "$SEVEN_RESET"
                 L+="${c_ov2}  resets ${D} (in ${R})"
@@ -505,7 +539,7 @@ small-simple)
     L1="$ID   ${c_sub0}${DIR_SHOW}${RST}"
     [[ -n "$GIT_OK" && -n "$BRANCH" ]] && L1+=" ${c_green}${BRANCH}${RST}${GC:+ $GC}"
     grad ctx "$CTX_PCT"
-    L2="${c_ov1}ctx ${RST}${BLD}${E}[38;2;${G}m${CTX_PCT}%${RST}"
+    L2="${c_ov1}ctx ${RST}${BLD}${E}[${G}m${CTX_PCT}%${RST}"
     if [[ -z "$HAS_RL" ]]; then
         L2+="   ${c_ov1}limits ${RST}$LOADING"
     elif [[ -n "$FIVE_PCT" ]]; then
@@ -529,7 +563,7 @@ small-simple)
 xsmall-simple)
     ident short think
     grad ctx "$CTX_PCT"
-    L="$ID$SEP${c_ov1}ctx ${RST}${BLD}${E}[38;2;${G}m${CTX_PCT}%${RST}"
+    L="$ID$SEP${c_ov1}ctx ${RST}${BLD}${E}[${G}m${CTX_PCT}%${RST}"
     if [[ -z "$HAS_RL" ]]; then
         L+="$SEP${c_ov1}5h ${RST}${c_ov0}--${RST}$SEP${c_ov1}7d ${RST}${c_ov0}--${RST}"
     else
@@ -554,7 +588,7 @@ xsmall-simple)
 medium-simple)
     ledger_head; emit "$LH"
     ledger_where; emit "$LW"
-    grad ctx "$CTX_PCT"; vpad "${E}[38;2;${G}m" "$CTX_PCT"; pad context 9
+    grad ctx "$CTX_PCT"; vpad "${E}[${G}m" "$CTX_PCT"; pad context 9
     emit "${c_ov1}${PADDED}${RST}${VP}${c_ov2}   ${TOK_K} / ${SIZE_K}${RST}"
     pad limits 9; L="${c_ov1}${PADDED}${RST}"
     if [[ -z "$HAS_RL" ]]; then
@@ -581,7 +615,7 @@ medium-simple)
 large-simple)
     ledger_head; emit "$LH"
     ledger_where costtime; emit "$LW"
-    grad ctx "$CTX_PCT"; vpad "${E}[38;2;${G}m" "$CTX_PCT"; pad context 9
+    grad ctx "$CTX_PCT"; vpad "${E}[${G}m" "$CTX_PCT"; pad context 9
     emit "${c_ov1}${PADDED}${RST}${VP}${c_ov2}   ${TOK_K} / ${SIZE_K}${RST}"
     if [[ -z "$HAS_RL" ]]; then
         pad 5h 9; emit "${c_ov1}${PADDED}${RST}${DASH}   $LOADING"
@@ -611,7 +645,7 @@ large-simple)
 xlarge-simple)
     ledger_head dirty; emit "$LH"
     ledger_where costtime; emit "$LW"
-    grad ctx "$CTX_PCT"; vpad "${E}[38;2;${G}m" "$CTX_PCT"; pad context 10
+    grad ctx "$CTX_PCT"; vpad "${E}[${G}m" "$CTX_PCT"; pad context 10
     FREE_K=$(( (CTX_SIZE - CTX_TOK) / 1000 )); (( FREE_K < 0 )) && FREE_K=0
     emit "${c_ov1}${PADDED}${RST}${VP}${c_ov2}   ${TOK_K} / $(( CTX_SIZE / 1000 ))k used · ${FREE_K}k free${RST}"
     if [[ -z "$HAS_RL" ]]; then
@@ -645,21 +679,21 @@ xlarge-simple)
     join_sep "$ID" "$GS" "$ES" "$SS"; emit "$J"
     join_sep "${i_dir}${c_sub0}${DIR_SHOW}${RST}${BS}" "${i_cost}${c_yellow}${COST_FMT}${RST}" "${i_time}${c_sub0}${DUR}${RST}"; emit "$J"
     bar ctx "$CTX_PCT" 20; pctv ctx "$CTX_PCT"; pad Context 10
-    emit "${i_ctx}${c_pink}${PADDED}${RST}$BAR $PV${c_ov2}  ${TOK_K}/${SIZE_K}${RST}"
+    emit "${i_ctx}${c_pink}${PADDED_T}${RST}${PADDED_S}$BAR $PV${c_ov2}  ${TOK_K}/${SIZE_K}${RST}"
     if [[ -z "$HAS_RL" ]]; then
-        bar 5h 0 20; pad "Usage 5H" 10; emit "${i_5h}${c_lav}${PADDED}${RST}$BAR$DASH  $LOADING"
-        bar 7d 0 20; pad "Usage 7D" 10; emit "${i_7d}${c_yellow}${PADDED}${RST}$BAR$DASH  $LOADING"
+        bar 5h 0 20; pad "Usage 5H" 10; emit "${i_5h}${c_lav}${PADDED_T}${RST}${PADDED_S}$BAR$DASH  $LOADING"
+        bar 7d 0 20; pad "Usage 7D" 10; emit "${i_7d}${c_yellow}${PADDED_T}${RST}${PADDED_S}$BAR$DASH  $LOADING"
     else
         if [[ -n "$FIVE_PCT" ]]; then
             bar 5h "$FIVE_PCT" 20; pctv 5h "$FIVE_PCT"; pad "Usage 5H" 10
-            L="${i_5h}${c_lav}${PADDED}${RST}$BAR $PV"
+            L="${i_5h}${c_lav}${PADDED_T}${RST}${PADDED_S}$BAR $PV"
             if [[ -n "$FIVE_LEFT" ]]; then rel "$FIVE_LEFT"; fmt_at "$FIVE_RESET" "%H:%M"; L+="${c_ov2}  resets in ${R} · ${D}${RST}"; fi
             emit "$L"
         fi
         if [[ -n "$SEVEN_PCT" ]]; then
             bar 7d "$SEVEN_PCT" 20; pctv 7d "$SEVEN_PCT"
             if [[ -n "$FIVE_PCT" ]]; then pad "Usage 7D" 10; else pad Weekly 10; fi
-            L="${i_7d}${c_yellow}${PADDED}${RST}$BAR $PV"
+            L="${i_7d}${c_yellow}${PADDED_T}${RST}${PADDED_S}$BAR $PV"
             if [[ -n "$SEVEN_LEFT" ]]; then
                 fmt_at "$SEVEN_RESET" "%a %H:%M"; rel "$SEVEN_LEFT"
                 L+="${c_ov2}  resets ${D} · ${R}"

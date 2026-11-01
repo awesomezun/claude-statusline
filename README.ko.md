@@ -30,7 +30,7 @@ Claude Code 최신 기능에 맞춰 계속 업데이트됩니다 — 최근 내�
 
 | 날짜 | 업데이트 |
 |------|----------|
-| **2026-11-01** | **모든 크기에 3가지 스타일** — 텍스트형을 다섯 크기 모두로 확장(`m-simple`, `l-simple`, `xl-simple` 새로 추가) · `simple` / `oneline`은 `s-simple` / `xs-simple`로 정리(예전 이름도 그대로 동작) · 설치할 때 크기와 스타일을 차례로 물어봄 |
+| **2026-11-01** | **모든 크기에 3가지 스타일** — 텍스트형을 다섯 크기 모두로 확장(`m-simple`, `l-simple`, `xl-simple` 새로 추가) · `simple` / `oneline`은 `s-simple` / `xs-simple`로 정리(예전 이름도 그대로 동작) · 설치할 때 크기와 스타일을 차례로 물어봄 · **tmux 안에서도 깨끗한 그라데이션**(Claude Code가 tmux에서 256색으로 낮추면 막대가 자체 256색 그라데이션으로 전환되고, tmux가 24비트 색을 지원하면 설치 스크립트가 `CLAUDE_CODE_TMUX_TRUECOLOR`를 켬) · 최소 대비를 쓰는 밝은 테마(VS Code, Orca)에서도 막대 첫 칸이 어두워지지 않음 |
 | **2026-10-31** | **Ultra 요금제 지원 + 디자인 개편** — Ultra는 5시간 한도가 없어서 주간 막대와 하루 예산을 보여 줍니다(예전에는 `0% (loading..)`에서 멈췄습니다) · 모든 크기 디자인 정돈: 열 정렬, 퍼센트 칸 폭 고정, 리셋을 *2h10m 후 · 01:50*처럼 표시, 빈 정보 숨김 · 모든 크기에 **이모지 없음 옵션**(`-plain`) · 텍스트형 새 프리셋 **`simple`**, **`oneline`** · 모든 프리셋을 렌더러 하나로 통합해 갱신 속도 약 4배 향상 |
 | **2026-10-17** | **한국어 등 비영어 Windows 환경** — 세션 이름에 한글 같은 비ASCII 문자가 있으면 상태줄이 `Unknown` / 0%로 표시되던 문제 수정 · 컨텍스트 창 크기가 잘못 보고될 때의 보정 추가 |
 | **2026-06-03** | **설치 크기 선택** — Claude Code로 설치할 때 5가지 프리셋 중 원하는 크기를 항상 물어봄(`large` 추천) |
@@ -261,6 +261,8 @@ Windows에서는 설치 스크립트가 네이티브 `awesome-statusline.ps1`을
 **기존 설정은 어디 갔나요?** 설치할 때마다 `settings.json`을 `settings.json.backup-<타임스탬프>`로 백업한 뒤 건드립니다.
 
 **상태줄이 비어 보이거나, 빈 터미널 창이 계속 떠요 (Windows).** `./install.ps1`을 다시 실행하세요 — 이제 네이티브 PowerShell 렌더러를 설치해서 Git Bash와 `jq` 의존성을 제거합니다. 자세히: [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
+
+**tmux 안에서 막대가 띠처럼 끊기거나 노랑이 올리브색이 돼요.** Claude Code는 tmux 안에서 256색으로 낮춰 그립니다. 상태줄이 이제 자동으로 맞춰 그리고, 완전한 그라데이션을 원하시면 `~/.claude/settings.json`에 `"env": {"CLAUDE_CODE_TMUX_TRUECOLOR": "1"}`를 넣으세요(tmux가 24비트 색을 지원하면 설치 스크립트가 자동으로 넣습니다). 자세히: [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 
 **tmux 안에서 글자가 세로로 한 줄씩 쪼개져요.** `~/.tmux.conf`에 truecolor를 켜고(`set -ga terminal-overrides ",xterm-256color:RGB"`) tmux를 리로드하세요. 자세히: [TROUBLESHOOTING.md](TROUBLESHOOTING.md).
 

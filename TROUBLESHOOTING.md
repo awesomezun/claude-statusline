@@ -186,6 +186,46 @@ bash install.sh xs
 
 ---
 
+## Any OS — gradient bars look banded or the colours are off (tmux, light themes)
+
+### Symptom
+The bars show a few blocky bands instead of a smooth gradient, yellows and
+oranges turn olive or brown, or the first cell of a bar looks dark.
+
+### Cause
+1. **Claude Code inside tmux.** Claude Code downgrades every colour to the
+   256-colour palette whenever `$TMUX` is set, unless
+   `CLAUDE_CODE_TMUX_TRUECOLOR` is set — even when tmux itself passes 24-bit
+   colour. Its conversion rounds each RGB channel on its own, so a 24-bit
+   gradient collapses into uneven bands and warm hues drift.
+2. **Minimum-contrast terminals on light themes** (VS Code's integrated
+   terminal, Orca and other xterm.js terminals) darken text that is too close
+   to the background. Older versions coloured a bar's label exactly like its
+   first cell, so the two merged into one run and that cell was darkened too.
+
+### Fix
+Fixed in the renderer (2026-11-01) — re-install to pick it up:
+- inside tmux without `CLAUDE_CODE_TMUX_TRUECOLOR`, the statusline switches to
+  hand-picked 256-colour ramps that stay smooth and keep their hue;
+- labels no longer merge with the first bar cell.
+
+For the full 24-bit gradient inside tmux, let Claude Code keep truecolor. The
+installer does this for you when it runs inside a tmux that supports RGB; to do
+it by hand, add this to `~/.claude/settings.json` and restart Claude Code:
+
+```json
+{ "env": { "CLAUDE_CODE_TMUX_TRUECOLOR": "1" } }
+```
+
+tmux must pass 24-bit colour as well (tmux 3.2+):
+`set -as terminal-features ',xterm*:RGB'` in `~/.tmux.conf`
+(older tmux: `set -ga terminal-overrides ',xterm-256color:RGB'`).
+
+To force a mode regardless of detection, set `AWESOME_STATUSLINE_COLOR=256` or
+`AWESOME_STATUSLINE_COLOR=truecolor`.
+
+---
+
 ## Any OS — segment dividers look broken (gap in the middle of `|`)
 
 ### Symptoms
