@@ -5,25 +5,13 @@ Generates docs/fonts.html (captured to assets/fonts-demo.png) so users can see
 how the statusline looks in a curated set of cross-platform webfonts plus two
 common terminal defaults.
 """
-import subprocess, re, html as H, os, pathlib, time
+import sys, re, html as H, os, pathlib
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 os.chdir(ROOT)
-_BRANCH = subprocess.run(["git", "branch", "--show-current"],
-                         capture_output=True, text=True).stdout.strip()
-_now = int(time.time())
-MOCK = (
-    '{"model":{"display_name":"Opus 4.8"},'
-    '"workspace":{"current_dir":"%s"},'
-    '"context_window":{"context_window_size":1000000,'
-    '"current_usage":{"input_tokens":320000,"output_tokens":28000,'
-    '"cache_creation_input_tokens":0,"cache_read_input_tokens":0}},'
-    '"cost":{"total_cost_usd":25.29,"total_duration_ms":18960000},'
-    '"output_style":{"name":"explanatory"},'
-    '"effort":{"level":"xhigh"},"thinking":{"enabled":true},'
-    '"rate_limits":{"five_hour":{"used_percentage":34,"resets_at":%d},'
-    '"seven_day":{"used_percentage":65,"resets_at":%d}}}'
-) % (str(ROOT), _now + 16560, _now + 230400)
+sys.dont_write_bytecode = True  # keep docs/ free of __pycache__ from the import below
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from _demo import render as _render  # noqa: E402
 
 ANSI = re.compile(r'(\x1b\[[0-9;]*m)')
 CUSTOM_BLOCKS = {
@@ -34,14 +22,8 @@ CUSTOM_BLOCKS = {
 }
 
 
-def render(size: str) -> str:
-    p = subprocess.run(["bash", f"scripts/awesome-statusline-{size}.sh"],
-                       input=MOCK, capture_output=True, text=True)
-    out = p.stdout.replace(str(ROOT), "~/cc/awesome-statusline")
-    out = out.replace(os.path.expanduser("~"), "~").replace("kang", "you")
-    if _BRANCH and _BRANCH != "main":
-        out = out.replace(_BRANCH, "main")
-    return out
+def render(preset: str) -> str:
+    return _render(preset)
 
 
 def ansi_to_html(s: str) -> str:

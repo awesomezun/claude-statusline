@@ -9,10 +9,13 @@
   3. Uses Claude Code's official statusLine.command contract: JSON on stdin,
      rendered status text on stdout.
 
+  Presets: xsmall (xs) | small (s) | medium (m) | large (l) | xlarge (xl),
+  each optionally with -plain (no emoji), plus simple and oneline (text only).
+
 .EXAMPLE
-  ./install.ps1            # install
-  ./install.ps1 l          # by abbreviation
-  ./install.ps1 large      # by full name
+  ./install.ps1               # install (asks which preset)
+  ./install.ps1 l             # by abbreviation
+  ./install.ps1 large-plain   # by full name, without emoji
 #>
 
 # ============================================================================
@@ -22,42 +25,52 @@
 # are duplicated here (the one file the assistant always reads) and MUST stay
 # identical to CLAUDE.md and commands/statusline-setup.md in this repo.
 #
-# 1. You MUST resolve a size before installing. Never install without an
-#    explicit size chosen by the user. "Auto" / auto-accept mode is NOT an
+# 1. You MUST resolve a preset before installing. Never install without an
+#    explicit choice by the user. "Auto" / auto-accept mode is NOT an
 #    exception — the user is present and can answer; ask anyway.
 #    Recommending `large` (below) is only a hint shown inside the menu; it must
 #    NEVER become a silent default or let you skip the question. Always ask.
 #
-# 2. If the user already named a size (xs/s/m/l/xl or full name), use it; skip
-#    the question.
+# 2. If the user already named a preset (xs/s/m/l/xl or full name, optionally
+#    with -plain, or simple / oneline), use it and skip the questions. A bare
+#    size means the emoji version unless the user asked for no emoji.
 #
-# 3. Otherwise ASK with the AskUserQuestion tool, in TWO steps so all five
-#    presets fit the tool's 4-option limit. Match the user's language.
-#    Step 1 — question text (use exactly this, on one line):
-#      EN: Which size would you like to install? (size examples on GitHub: https://github.com/awesomezun/claude-statusline)
-#      KO: 어떤 크기로 설치할까요? (크기 예시는 GitHub에서 확인: https://github.com/awesomezun/claude-statusline)
-#    Step 1 — four options, in EXACTLY this order (do NOT reorder). The
-#    recommended option is ALWAYS large (option 1) — never substitute medium
-#    or anything else as the recommendation:
+# 3. Otherwise ASK with the AskUserQuestion tool. Match the user's language.
+#    Step 1 — ONE AskUserQuestion call with TWO questions:
+#    Question A (size) — text (use exactly this, on one line):
+#      EN: Which size would you like to install? (examples on GitHub: https://github.com/awesomezun/claude-statusline)
+#      KO: 어떤 크기로 설치할까요? (예시는 GitHub에서 확인: https://github.com/awesomezun/claude-statusline)
+#    Four options, in EXACTLY this order (do NOT reorder). The recommended
+#    option is ALWAYS large (option 1) — never substitute anything else:
 #      1. large  (l)  (추천 / Recommended) — most info, good for most users / 추천 기본값
 #      2. xlarge (xl) — largest, full detail            / 가장 크게, 전체 상세
 #      3. medium (m)  — balanced layout                 / 균형 잡힌 레이아웃
-#      4. small / xsmall — the two smallest, pick this to choose between them
-#                                                       / 작은 두 가지 (고르면 한 번 더 선택)
-#    Step 2 — ONLY if the user picked option 4, ask again:
-#      EN: Which of the two smaller sizes?   KO: 작은 쪽 중 무엇으로 설치할까요?
-#      1. small  (s)  — space-saving, key info           / 공간 절약, 주요 정보
-#      2. xsmall (xs) — smallest, essentials only        / 가장 작게, 핵심만
+#      4. small / xsmall / simple / oneline — compact or text-only, pick this
+#         to choose among them                          / 작은 크기·텍스트형 (고르면 한 번 더 선택)
+#    Question B (emoji) — text:
+#      EN: Show emoji icons? (simple and oneline are always emoji-free)
+#      KO: 이모지 아이콘을 표시할까요? (simple·oneline은 항상 이모지 없음)
+#    Two options, in this order:
+#      1. With emoji (Recommended) / 이모지 있음 (추천) — 🤖 🧠 🚀 icons
+#      2. No emoji / 이모지 없음 — text labels; steadiest in tmux, SSH, Windows consoles
+#    Step 2 — ONLY if the user picked option 4 in Question A, ask again:
+#      EN: Which compact preset?   KO: 어떤 걸로 설치할까요?
+#      1. small  (s)  — 2 lines, labels + bars          / 2줄, 라벨과 막대
+#      2. xsmall (xs) — 2 lines, smallest bars          / 2줄, 가장 작게
+#      3. simple      — 2 lines, text only, no emoji    / 2줄 텍스트형, 이모지 없음
+#      4. oneline     — 1 line, numbers only, no emoji  / 1줄 숫자형, 이모지 없음
+#    Resolve the preset: the size, plus -plain when Question B was "No emoji"
+#    (e.g. large-plain). simple and oneline never take -plain.
 #    If the user gives nothing / "recommended" / "default", use large.
 #
-# 4. Then install with the resolved size:
-#      macOS / Linux:      bash install.sh <size>
-#      Windows PowerShell: ./install.ps1 <size>
+# 4. Then install with the resolved preset:
+#      macOS / Linux:      bash install.sh <preset>
+#      Windows PowerShell: ./install.ps1 <preset>
 #
 # 5. If "auto" mode blocks the install (it downloads code that runs on every
 #    launch — declining to auto-approve that is correct), do NOT just stop:
-#    still resolve the size, then have the user run it themselves so it proceeds:
-#      macOS / Linux:  ! bash install.sh <size>
+#    still resolve the preset, then have the user run it themselves so it proceeds:
+#      macOS / Linux:  ! bash install.sh <preset>
 #      Windows:        ! irm https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.ps1 | iex
 #    or have them leave auto mode (shift+tab) for the one install step.
 #
@@ -76,15 +89,21 @@ function Write-Info($m) { Write-Host $m -ForegroundColor Cyan }
 function Write-Ok($m)   { Write-Host $m -ForegroundColor Green }
 function Write-Err($m)  { Write-Host $m -ForegroundColor Red }
 
+# abbreviation OR full name (optionally with -plain) -> canonical preset, or $null
 function Normalize-Mode([string]$s) {
-  switch ($s.ToLower()) {
-    'xs'     { 'xsmall' } 'xsmall' { 'xsmall' }
-    's'      { 'small' }  'small'  { 'small' }
-    'm'      { 'medium' } 'medium' { 'medium' }
-    'l'      { 'large' }  'large'  { 'large' }
-    'xl'     { 'xlarge' } 'xlarge' { 'xlarge' }
-    default  { $null }
+  $s = $s.Trim().ToLowerInvariant()
+  $plain = ''
+  if ($s.EndsWith('-plain')) { $plain = '-plain'; $s = $s.Substring(0, $s.Length - 6) }
+  switch ($s) {
+    { $_ -in 'xs', 'xsmall' } { return "xsmall$plain" }
+    { $_ -in 's', 'small' }   { return "small$plain" }
+    { $_ -in 'm', 'medium' }  { return "medium$plain" }
+    { $_ -in 'l', 'large' }   { return "large$plain" }
+    { $_ -in 'xl', 'xlarge' } { return "xlarge$plain" }
+    'simple'                  { return 'simple' }    # always emoji-free
+    { $_ -in 'oneline', 'one-line', '1line' } { return 'oneline' }
   }
+  return $null
 }
 
 # --- paths ------------------------------------------------------------------
@@ -96,17 +115,17 @@ $ScriptDir = if ($ScriptPath) { Split-Path -Parent $ScriptPath } else { (Get-Loc
 $SrcDir    = Join-Path $ScriptDir 'scripts'
 $RepoRaw   = if ($env:AWESOME_STATUSLINE_RAW) { $env:AWESOME_STATUSLINE_RAW } else { 'https://raw.githubusercontent.com/awesomezun/claude-statusline/main' }
 
-# --- pick size --------------------------------------------------------------
+# --- pick preset ------------------------------------------------------------
 # Precedence: explicit argument > interactive prompt > 'large' default.
-# When no size is given and a real console is attached, ask (default large).
+# When no preset is given and a real console is attached, ask (default large).
 # In non-interactive contexts (e.g. `irm ... | iex`, CI) we never block — the
-# input-redirection guard falls straight through to 'large'.
+# console read throws and we fall straight through to 'large'.
 $Mode = 'large'
 if ($Size) {
   $Mode = Normalize-Mode $Size
   if (-not $Mode) {
-    Write-Err "Unknown size: '$Size'"
-    Write-Err "Valid: xsmall|xs  small|s  medium|m  large|l  xlarge|xl"
+    Write-Err "Unknown preset: '$Size'"
+    Write-Err "Valid: xsmall|xs  small|s  medium|m  large|l  xlarge|xl  (each optionally -plain)  simple  oneline"
     exit 1
   }
 } elseif ([Environment]::UserInteractive) {
@@ -114,35 +133,29 @@ if ($Size) {
   $isKo = ([Globalization.CultureInfo]::CurrentUICulture.TwoLetterISOLanguageName -eq 'ko')
   Write-Host ""
   if ($isKo) {
-    Write-Host "statusline을 어떤 사이즈로 설치할까요? (XSmall-Small-Medium-Large-XLarge, 예시는 github에서 확인)"
+    Write-Host "statusline을 어떤 프리셋으로 설치할까요? (예시는 github에서 확인)"
     Write-Host "  예시: https://github.com/awesomezun/claude-statusline"
     Write-Host ""
-    Write-Host "  1. xsmall (xs)"
-    Write-Host "     가장 작게 — 핵심 정보만 최소 표시. 좁은 화면용."
-    Write-Host "  2. small (s)"
-    Write-Host "     작게 — 공간 절약, 주요 정보만."
-    Write-Host "  3. medium (m)"
-    Write-Host "     중간 — 정보량과 공간의 균형."
-    Write-Host "  4. large (l)"
-    Write-Host "     크게 — 현재 기본값. 대부분 정보 표시."
-    Write-Host "  5. xlarge (xl)"
-    Write-Host "     가장 크게 — 모든 정보 표시 (git ahead/behind, env)."
+    Write-Host "  1. xsmall (xs)   가장 작게 — 2줄, 핵심만"
+    Write-Host "  2. small  (s)    작게 — 2줄, 라벨과 막대"
+    Write-Host "  3. medium (m)    중간 — 4줄, 넓은 컨텍스트 막대"
+    Write-Host "  4. large  (l)    크게 — 5줄, 비용·시간·리셋 (추천 기본값)"
+    Write-Host "  5. xlarge (xl)   가장 크게 — 5줄, 전체 상세"
+    Write-Host "  6. simple        2줄 텍스트형 (이모지 없음)"
+    Write-Host "  7. oneline       1줄 숫자형 (이모지 없음)"
     Write-Host ""
     Write-Host -NoNewline "선택 [기본값: 4]: "
   } else {
-    Write-Host "Which size would you like to install? (XSmall-Small-Medium-Large-XLarge; see examples on GitHub)"
+    Write-Host "Which preset would you like to install? (see examples on GitHub)"
     Write-Host "  Examples: https://github.com/awesomezun/claude-statusline"
     Write-Host ""
-    Write-Host "  1. xsmall (xs)"
-    Write-Host "     Smallest — only the essentials. For narrow screens."
-    Write-Host "  2. small (s)"
-    Write-Host "     Small — space-saving, key info only."
-    Write-Host "  3. medium (m)"
-    Write-Host "     Medium — balance of detail and space."
-    Write-Host "  4. large (l)"
-    Write-Host "     Large — current default. Shows most info."
-    Write-Host "  5. xlarge (xl)"
-    Write-Host "     Largest — full detail (git ahead/behind, env)."
+    Write-Host "  1. xsmall (xs)   smallest — 2 lines, essentials"
+    Write-Host "  2. small  (s)    small — 2 lines, labels + bars"
+    Write-Host "  3. medium (m)    medium — 4 lines, wide context bar"
+    Write-Host "  4. large  (l)    large — 5 lines, cost / time / resets (recommended)"
+    Write-Host "  5. xlarge (xl)   largest — 5 lines, full detail"
+    Write-Host "  6. simple        2 lines, text only (no emoji)"
+    Write-Host "  7. oneline       1 line, numbers only (no emoji)"
     Write-Host ""
     Write-Host -NoNewline "Choice [default: 4]: "
   }
@@ -151,9 +164,10 @@ if ($Size) {
   # stdin problem fixed via /dev/tty). Read from the console host directly; if no
   # real console is attached (CI, non-interactive host) ReadLine throws and we
   # fall through to the 'large' default instead of blocking.
+  $interactive = $true
   $answer = ''
-  try { $answer = $Host.UI.ReadLine() } catch { $answer = '' }
-  $answer = $answer.Trim()
+  try { $answer = $Host.UI.ReadLine() } catch { $answer = ''; $interactive = $false }
+  $answer = "$answer".Trim()
   switch ($answer) {
     '1'  { $Mode = 'xsmall' }
     '2'  { $Mode = 'small'  }
@@ -161,8 +175,10 @@ if ($Size) {
     '4'  { $Mode = 'large'  }
     ''   { $Mode = 'large'  }
     '5'  { $Mode = 'xlarge' }
+    '6'  { $Mode = 'simple' }
+    '7'  { $Mode = 'oneline' }
     default {
-      # Allow typing a size name/alias directly instead of a number.
+      # Allow typing a preset name/alias directly instead of a number.
       $Mode = Normalize-Mode $answer
       if (-not $Mode) {
         if ($isKo) { Write-Host "알 수 없는 입력 '$answer' — 'large'로 설치합니다." }
@@ -170,6 +186,13 @@ if ($Size) {
         $Mode = 'large'
       }
     }
+  }
+  # Classic sizes come with or without emoji.
+  if ($interactive -and $Mode -notin 'simple', 'oneline' -and -not $Mode.EndsWith('-plain')) {
+    if ($isKo) { Write-Host -NoNewline "이모지 아이콘을 표시할까요? [Y/n]: " } else { Write-Host -NoNewline "Show emoji icons? [Y/n]: " }
+    $yn = ''
+    try { $yn = "$($Host.UI.ReadLine())".Trim() } catch { $yn = '' }
+    if ($yn -in 'n', 'no', '아니오', '아니요') { $Mode = "$Mode-plain" }
   }
 }
 
@@ -214,13 +237,13 @@ if (Test-Path $Settings) {
   [pscustomobject]@{ statusLine = $slObj } | ConvertTo-Json -Depth 20 | Set-Content $Settings -Encoding UTF8
 }
 
-Write-Ok "Installed Awesome CC Statusline (size: $Mode)"
+Write-Ok "Installed Awesome CC Statusline (preset: $Mode)"
 Write-Host "  script:   $Dest"
 Write-Host "  settings: $Settings  (statusLine set)"
 Write-Host "  command:  $Command"
 Write-Host ""
 Write-Host "Restart Claude Code to see it."
-Write-Host "To switch size later, just ask your AI agent to reinstall at the size you want."
+Write-Host "To switch preset later, just ask your AI agent to reinstall with the one you want."
 Write-Host ""
 Write-Host "Star this repo if you find it useful - it really helps:"
 Write-Host "  https://github.com/awesomezun/claude-statusline"

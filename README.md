@@ -13,7 +13,7 @@
 
 **A beautiful statusline for [Claude Code](https://claude.com/claude-code) — context, usage limits, cost & reasoning `⚡effort`, all at a glance. One line to install on macOS, Linux & Windows.**
 
-[🇰🇷 한국어](README.ko.md) · [Quick Install](#-quick-install) · [Presets](#-five-presets) · [What it shows](#-what-it-shows) · [FAQ](#-faq)
+[🇰🇷 한국어](README.ko.md) · [Quick Install](#-quick-install) · [Presets](#-presets) · [What it shows](#-what-it-shows) · [FAQ](#-faq)
 
 <img src="https://img.shields.io/github/stars/awesomezun/claude-statusline?style=flat-square&color=cba6f7" alt="Stars"/>
 <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-89b4fa?style=flat-square" alt="Platforms"/>
@@ -25,7 +25,7 @@
 
 
 
-<img src="assets/presets/presets.png" alt="Five presets — xsmall to xlarge, with live ⚡effort and 💡thinking" width="820"/>
+<img src="assets/presets/presets.png" alt="Seven presets — xsmall to xlarge plus simple and oneline, with live ⚡effort and 💡thinking" width="820"/>
 
 <sub>▶ <a href="https://awesomezun.github.io/claude-statusline/">Interactive live demo</a></sub>
 
@@ -39,7 +39,7 @@ Built to keep pace with Claude Code — recent updates:
 
 | Date | Update |
 |------|--------|
-| **2026-10-31** | **Ultra plan support** — the new Ultra plan has no 5-hour limit (weekly only), and the usage bars used to freeze at `0% (loading..)` there. Each limit window is now read on its own: Ultra shows just the weekly bar, Pro/Max keep 5H + 7D · sturdier parsing of fractional / string limit values |
+| **2026-10-31** | **Ultra plan support + redesign** — Ultra has no 5-hour limit, so it now gets a weekly bar with a per-day budget (the bars used to freeze at `0% (loading..)`) · every size redesigned: aligned columns, fixed-width %, resets shown as *in 2h10m · 01:50*, empty fields hidden · **no-emoji option** for every size (`-plain`) · two new text presets, **`simple`** and **`oneline`** · one renderer for every preset, ~4× faster per refresh |
 | **2026-10-17** | **Windows on non-English locales** — the statusline no longer drops to `Unknown` / 0% when Claude Code sends non-ASCII text (e.g. a Korean session name) · context gauge guards against stale window-size reports |
 | **2026-06-03** | **Install size picker** — installing through Claude Code always asks which of the five presets you want (`large` recommended) |
 | **2026-06-02** | **Windows native renderer** — PowerShell statusline path, no Git Bash or `jq` required on Windows |
@@ -53,10 +53,10 @@ Built to keep pace with Claude Code — recent updates:
 ## Highlights
 
 - ⚡ **Reasoning effort & thinking** — shows `/effort` (`high`/`xhigh`/`max`) and extended thinking, live from Claude Code's official statusline JSON (and hidden on models that don't support effort).
-- 📊 **5h / 7d usage** — limit bars from the official rate-limit API, so you can see how much budget is left.
-- 🖥️ **No Node, no Nerd Font** — Bash on macOS/Linux, native PowerShell on Windows, standard emoji everywhere.
-- 📦 **No Windows extras** — Windows uses built-in PowerShell; macOS/Linux auto-install `jq` if needed.
-- 📐 **Five size presets** (`xs`–`xl`) — pick how much you see with one word.
+- 📊 **Every plan's limits** — Pro / Max get 5-hour + weekly bars with time to reset; **Ultra** (weekly only) gets a weekly bar with a per-day budget.
+- 🔤 **Emoji or plain** — every size also comes without emoji (`-plain`), plus text-only `simple` and `oneline` presets.
+- 🖥️ **No Node, no Nerd Font** — Bash on macOS/Linux, native PowerShell on Windows; macOS/Linux auto-install `jq` if needed.
+- 📐 **Seven presets** — `xs` to `xl`, `simple`, `oneline`: pick how much you see with one word.
 
 > There are several great Claude Code statuslines out there — this one leans into reasoning-effort/thinking visibility and zero-setup, cross-platform install.
 
@@ -83,9 +83,9 @@ notepad .\install.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-To choose a specific size, append it explicitly:
+To choose a preset, append it explicitly:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.sh | bash -s -- xl
+curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.sh | bash -s -- l-plain
 ```
 
 **Or clone and run**:
@@ -95,22 +95,34 @@ git clone https://github.com/awesomezun/claude-statusline.git && cd claude-statu
 ./install.ps1           # Windows PowerShell
 ```
 
-Use any size explicitly — abbreviation **or** full name: `xs`/`xsmall`, `s`/`small`, `m`/`medium`, `l`/`large`, `xl`/`xlarge`.
+Use any preset explicitly — abbreviation **or** full name: `xs`/`xsmall`, `s`/`small`, `m`/`medium`, `l`/`large`, `xl`/`xlarge` (add `-plain` for no emoji, e.g. `l-plain`), or `simple` / `oneline`.
 Then restart Claude Code. That's it.
 
 ---
 
-## 📐 Five Presets
+## 📐 Presets
 
 One word picks how much you see. Smallest → largest:
 
-| Size | Lines | At a glance |
-|------|:-----:|-------------|
-| `xsmall` (`xs`) | 2 | model · effort · thinking · path · branch · 3 tiny bars |
-| `small` (`s`) | 2 | + labels, percentages, output style |
-| `medium` (`m`) | 4 | classic layout, full-width context bar |
-| `large` (`l`) | 5 | + cost, session time, 20-block usage bars |
-| `xlarge` (`xl`) | 5 | everything: git ahead/behind, env, 40-block bars, resets |
+| Preset | Lines | At a glance |
+|--------|:-----:|-------------|
+| `oneline` | 1 | numbers only, no emoji — model · effort · context · limits · branch |
+| `xsmall` (`xs`) | 2 | model · effort · thinking · folder · branch · 3 small bars |
+| `small` (`s`) | 2 | + labels, percentages, time to reset, output style |
+| `simple` | 2 | text only, no bars, no emoji — limits colored by pace |
+| `medium` (`m`) | 4 | full-width context bar, git state |
+| `large` (`l`) | 5 | + cost, session time, reset times — **recommended** |
+| `xlarge` (`xl`) | 5 | everything: 40-block bars, full reset dates |
+
+**No emoji?** Add `-plain` to any size (`xs-plain` … `xl-plain`): the same layout with text labels instead of icons — the steadiest choice in tmux, SSH and Windows consoles.
+
+### Ultra plan & no-emoji
+
+The Ultra plan has no 5-hour limit, so the weekly bar takes its place, with a per-day budget (`≈22%/day` = how much you can use per day and still stay under the weekly limit). Pro / Max keep the 5H + 7D bars. Nothing to configure — the statusline follows whatever limits Claude Code reports.
+
+<div align="center">
+<img src="assets/presets/ultra-plain.png" alt="large on Pro/Max vs Ultra, with and without emoji" width="820"/>
+</div>
 
 > 🔤 Curious how it looks in *your* font? See the **[12-font showcase →](demo.md)** — 10 cross-platform mono fonts plus Menlo and MesloLGS.
 
@@ -121,33 +133,53 @@ One word picks how much you see. Smallest → largest:
 Colors render live in your terminal:
 
 ```text
+oneline ─ 1 line, numbers only
+Opus · xhigh · think │ ctx 32% │ 5h 34% │ 7d 65% │ main*
+
 xsmall ─ 2 lines
-🤖Opus ⚡high 💡 📂~/project 🌿(main)
-🧠████░░░░░░ 5H████░░░░░░ 7D██░░░░░░░░
+🤖 Opus ⚡xhigh 💡  📂 awesome-statusline 🌿main*
+🧠 ██░░░░ 32%  5h ██░░░░ 34%  7d ████░░ 65%
 
 small ─ 2 lines
-🤖 Opus 4.8 ⚡high 💡 │ 🎨 default │ 📂 ~/project 🌿(main)
-🧠 Context ████░░░░░░ 43% │ 5H ████░░░░░░ 42% │ 7D ██░░░░░░░░ 18%
+🤖 Opus 5.5 ⚡xhigh 💡 │ 📂 ~/cc/awesome-statusline 🌿(main) +2 !3 ?1 │ 🎨 explanatory
+🧠 Context ███░░░░░░░  32% │ 5H ███░░░░░░░  34% 2h10m │ 7D ███████░░░  65% Tue
+
+simple ─ 2 lines, text only
+Opus 5.5 · xhigh · thinking   ~/cc/awesome-statusline main +2 !3 ?1
+ctx 32%   5h 34% 2h10m   7d 65% Tue 12:40   cost $25.29   time 5h16m
 
 medium ─ 4 lines
-🧠 Opus 4.8 ⚡high 💡 │ 🚧 dirty │ no conda │ 🎨 default
-📂 ~/project 🌿(main)
-📝 Context █████████████████░░░░░░░░░░░░░░░░░░░░░░░ 43% used
-🚀 Usage 5H ████░░░░░░ 42% │ 7D ██░░░░░░░░ 18%
+🤖 Opus 5.5 ⚡xhigh 💡 │ 📝 +2 !3 ?1 │ 🎨 explanatory
+📂 ~/cc/awesome-statusline 🌿(main ↑1)
+🧠 Context  █████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░  32%  320k/1M
+🚀 Usage    5H █████░░░░░░░░░  34% 2h10m │ 7D █████████░░░░░  65% Tue
 
 large ─ 5 lines
-🤖 Opus 4.8 ⚡high 💡 │ 📝 +5 !12 │ 🐍 venv │ 🎨 default
-📂 ~/project 🌿(main) │ 💰 1.23$ │ ⏰ 1h2m
-🧠 Context  █████████░░░░░░░░░░░ 43% used (87k/200k)
-🚀 Usage 5H ████████░░░░░░░░░░░░ 42% (Reset 2h15m left)
-⭐ Usage 7D ████░░░░░░░░░░░░░░░░ 18% (Reset Thu 19:00)
+🤖 Opus 5.5 ⚡xhigh 💡 │ 📝 +2 !3 ?1 │ 🎨 explanatory
+📂 ~/cc/awesome-statusline 🌿(main ↑1) │ 💰 $25.29 │ ⏰ 5h16m
+🧠 Context   ██████░░░░░░░░░░░░░░  32%  320k/1M
+🚀 Usage 5H  ███████░░░░░░░░░░░░░  34%  resets in 2h10m · 01:50
+⭐ Usage 7D  █████████████░░░░░░░  65%  resets Tue 12:40 · 2d14h
+
+large on Ultra ─ weekly only
+🤖 Opus 5.5 ⚡xhigh 💡 │ 📝 +2 !3 ?1 │ 🎨 explanatory
+📂 ~/cc/awesome-statusline 🌿(main ↑1) │ 💰 $25.29 │ ⏰ 5h16m
+🧠 Context   ██████░░░░░░░░░░░░░░  32%  320k/1M
+⭐ Weekly    ██████████░░░░░░░░░░  48%  resets Tue 08:40 · 2d10h · ≈22%/day
+
+large-plain ─ no emoji
+Opus 5.5 · xhigh · thinking │ +2 !3 ?1 │ explanatory
+~/cc/awesome-statusline (main ↑1) │ $25.29 │ 5h16m
+Context   ██████░░░░░░░░░░░░░░  32%  320k/1M
+Usage 5H  ███████░░░░░░░░░░░░░  34%  resets in 2h10m · 01:50
+Usage 7D  █████████████░░░░░░░  65%  resets Tue 12:40 · 2d14h
 
 xlarge ─ 5 lines
-🤖 Opus 4.8 ⚡high 💡 │ 🎨 default │ 📝 dirty +5 !12 │ 🐍 venv
-📂 ~/project 🌿(main) │ 💰 1.23$ │ ⏰ 1h2m
-🧠 Context  █████████████████░░░░░░░░░░░░░░░░░░░░░░░ 43% used (87k/200k)
-🚀 5H Limit █████████████████░░░░░░░░░░░░░░░░░░░░░░░ 42% (Resets in 2h15m)
-🌟 7D Limit ███████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 18% (Resets Dec 31 at 7pm)
+🤖 Opus 5.5 ⚡xhigh 💡 │ 🎨 explanatory │ 📝 dirty +2 !3 ?1
+📂 ~/cc/awesome-statusline 🌿(main ↑1) │ 💰 $25.29 │ ⏰ 5h16m
+🧠 Context   █████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░  32%  used (320k / 1000k)
+🚀 5H Limit  ██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░  34%  resets in 2h10m (1:50am)
+🌟 7D Limit  ██████████████████████████░░░░░░░░░░░░░░  65%  resets Tue Nov 3, 12pm (in 2d14h)
 ```
 
 </details>
@@ -158,15 +190,18 @@ xlarge ─ 5 lines
 
 | Element | Meaning |
 |---------|---------|
-| 🤖 **Model** | Current model (`Opus 4.8`, …) |
+| 🤖 **Model** | Current model (`Opus 5.5`, …) |
 | ⚡ **Effort** | Reasoning effort — `low`/`medium`/`high`/`xhigh`/`max`. Live with `/effort`. Hidden if the model has no effort param. |
 | 💡 **Thinking** | Extended thinking is on for the session |
-| 🎨 **Style** | Active output style |
-| 🌿 **Git** | Branch, dirty/clean, ahead ↑ / behind ↓ (xlarge) |
-| 🐍 **Env** | Active conda / virtualenv |
+| 🎨 **Style** | Active output style (hidden while it's `default`) |
+| 🌿 **Git** | Branch, ahead ↑ / behind ↓, staged `+` · modified `!` · untracked `?` |
+| 🐍 **Env** | Active conda / virtualenv (only when one is active) |
 | 🧠 **Context** | Context-window usage bar with token count |
 | 💰 **Cost / ⏰ Time** | Session cost (USD) and duration |
-| 🚀 **5h / 🌟 7d** | Usage-limit bars + reset time (Pro/Max/Ultra, from the official statusline JSON). Ultra has no 5-hour limit, so only the weekly bar is shown. |
+| 🚀 **5H / ⭐ 7D** | Usage-limit bars with time to reset (Pro / Max) |
+| ⭐ **Weekly** | Ultra (no 5-hour limit): weekly bar + per-day budget (`≈22%/day`) |
+
+In `simple` and `oneline`, limit values are colored by **pace** — usage compared with how much of the window has passed: green = under pace, yellow = on pace, red = ahead of time (or ≥ 90%).
 
 All colors follow the [Catppuccin](https://catppuccin.com/) palette. No Nerd Font required — every glyph is a standard emoji/Unicode block.
 
@@ -174,9 +209,10 @@ All colors follow the [Catppuccin](https://catppuccin.com/) palette. No Nerd Fon
 
 ## 🔧 Change size or remove
 
-**Change size** — just re-run the installer with a new size:
+**Change preset** — just re-run the installer with a new one (or ask your AI agent to reinstall):
 ```bash
 ./install.sh m          # or: curl … | bash -s -- m
+./install.sh l-plain    # same size, no emoji
 ```
 
 **Uninstall** — remove the `statusLine` entry from `~/.claude/settings.json` (a timestamped backup is created on every install) and delete `~/.claude/awesome-statusline.sh` or `~/.claude/awesome-statusline.ps1`.
@@ -198,11 +234,13 @@ On Windows, the installer writes a native `awesome-statusline.ps1` and points Cl
 
 **Does it slow Claude Code down?** No — it's a small local script that runs per refresh.
 
-**I don't see `⚡effort`.** Your current model doesn't expose the effort parameter, so the field is intentionally hidden. Switch to a model that supports `/effort` (e.g. Opus 4.x).
+**I don't see `⚡effort`.** Your current model doesn't expose the effort parameter, so the field is intentionally hidden. Switch to a model that supports `/effort` (e.g. Opus 5.5).
 
-**Usage bars stuck at `0% (loading..)`, or only the 7D bar shows?** `loading..` appears until Claude Code sends the first usage data of the session (after your first message), and only for claude.ai subscribers. On the **Ultra** plan there is no 5-hour limit, so only the weekly (7D) bar is shown — that's expected. If bars stayed at `loading..` on Ultra, update to the latest version (2026-10-31 fix): just ask your AI agent to reinstall.
+**Usage bars stuck at `loading..`, or only a Weekly bar shows?** `loading..` appears until Claude Code sends the first usage data of the session (after your first message), and only for claude.ai subscribers. On the **Ultra** plan there is no 5-hour limit, so you get one **Weekly** bar with a per-day budget — that's expected. If the bars stayed at `loading..` on Ultra, update to the latest version: just ask your AI agent to reinstall.
 
 **Why emoji instead of Nerd Font icons?** So it looks right out of the box on any terminal, with zero font setup.
+
+**Can I turn the emoji off?** Yes — add `-plain` to any size (`l-plain`), or pick `simple` / `oneline`, which are always emoji-free.
 
 **Where are my old settings?** Every install backs up `settings.json` to `settings.json.backup-<timestamp>` before touching it.
 
@@ -221,7 +259,7 @@ Prefer Claude Code's plugin system? It's also published as a marketplace plugin:
 /plugin install awesome-statusline
 ```
 
-Then run `/statusline-setup` to apply it, or pass any size like `/statusline-setup xl`. The one-line `install.sh` above is the primary path; this is just an alternative.
+Then run `/statusline-setup` to apply it, or pass any preset like `/statusline-setup xl` or `/statusline-setup l-plain`. The one-line `install.sh` above is the primary path; this is just an alternative.
 
 ---
 

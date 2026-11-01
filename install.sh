@@ -3,20 +3,23 @@
 # Awesome CC Statusline — installer (macOS / Linux / Windows-GitBash)
 # ----------------------------------------------------------------------------
 # Usage:
-#   ./install.sh                 # install
+#   ./install.sh                 # install (asks which preset)
 #   ./install.sh l               # install by abbreviation
-#   ./install.sh large           # install by full name
+#   ./install.sh large-plain     # install by full name, without emoji
 #
-# Sizes (smallest -> largest):
-#   xsmall (xs)   2 lines, 10-block bars, minimal
-#   small  (s)    2 lines, 10-block bars, labels + %
-#   medium (m)    4 lines, classic layout
-#   large  (l)    5 lines, 20-block bars, cost/time
-#   xlarge (xl)   5 lines, 40-block bars, full detail (git ahead/behind, env)
+# Presets (smallest -> largest):
+#   xsmall (xs)   2 lines, minimal
+#   small  (s)    2 lines, labels + bars
+#   medium (m)    4 lines, wide context bar
+#   large  (l)    5 lines, cost / time / resets   (recommended)
+#   xlarge (xl)   5 lines, 40-block bars, full detail
+#   <size>-plain  any of the above without emoji (e.g. l-plain)
+#   simple        2 lines, text only, no emoji
+#   oneline       1 line, numbers only, no emoji
 #
 # What it does:
 #   1. ensures `jq` is installed (auto-installs via the system package manager)
-#   2. copies the chosen size script to ~/.claude/awesome-statusline.sh
+#   2. copies the renderer to ~/.claude/awesome-statusline.sh
 #   3. sets settings.json -> statusLine.command (existing settings preserved,
 #      a timestamped backup is made first)
 #
@@ -30,42 +33,52 @@
 # are duplicated here (the one file the assistant always reads) and MUST stay
 # identical to CLAUDE.md and commands/statusline-setup.md in this repo.
 #
-# 1. You MUST resolve a size before installing. Never install without an
-#    explicit size chosen by the user. "Auto" / auto-accept mode is NOT an
+# 1. You MUST resolve a preset before installing. Never install without an
+#    explicit choice by the user. "Auto" / auto-accept mode is NOT an
 #    exception — the user is present and can answer; ask anyway.
 #    Recommending `large` (below) is only a hint shown inside the menu; it must
 #    NEVER become a silent default or let you skip the question. Always ask.
 #
-# 2. If the user already named a size (xs/s/m/l/xl or full name), use it; skip
-#    the question.
+# 2. If the user already named a preset (xs/s/m/l/xl or full name, optionally
+#    with -plain, or simple / oneline), use it and skip the questions. A bare
+#    size means the emoji version unless the user asked for no emoji.
 #
-# 3. Otherwise ASK with the AskUserQuestion tool, in TWO steps so all five
-#    presets fit the tool's 4-option limit. Match the user's language.
-#    Step 1 — question text (use exactly this, on one line):
-#      EN: Which size would you like to install? (size examples on GitHub: https://github.com/awesomezun/claude-statusline)
-#      KO: 어떤 크기로 설치할까요? (크기 예시는 GitHub에서 확인: https://github.com/awesomezun/claude-statusline)
-#    Step 1 — four options, in EXACTLY this order (do NOT reorder). The
-#    recommended option is ALWAYS large (option 1) — never substitute medium
-#    or anything else as the recommendation:
+# 3. Otherwise ASK with the AskUserQuestion tool. Match the user's language.
+#    Step 1 — ONE AskUserQuestion call with TWO questions:
+#    Question A (size) — text (use exactly this, on one line):
+#      EN: Which size would you like to install? (examples on GitHub: https://github.com/awesomezun/claude-statusline)
+#      KO: 어떤 크기로 설치할까요? (예시는 GitHub에서 확인: https://github.com/awesomezun/claude-statusline)
+#    Four options, in EXACTLY this order (do NOT reorder). The recommended
+#    option is ALWAYS large (option 1) — never substitute anything else:
 #      1. large  (l)  (추천 / Recommended) — most info, good for most users / 추천 기본값
 #      2. xlarge (xl) — largest, full detail            / 가장 크게, 전체 상세
 #      3. medium (m)  — balanced layout                 / 균형 잡힌 레이아웃
-#      4. small / xsmall — the two smallest, pick this to choose between them
-#                                                       / 작은 두 가지 (고르면 한 번 더 선택)
-#    Step 2 — ONLY if the user picked option 4, ask again:
-#      EN: Which of the two smaller sizes?   KO: 작은 쪽 중 무엇으로 설치할까요?
-#      1. small  (s)  — space-saving, key info           / 공간 절약, 주요 정보
-#      2. xsmall (xs) — smallest, essentials only        / 가장 작게, 핵심만
+#      4. small / xsmall / simple / oneline — compact or text-only, pick this
+#         to choose among them                          / 작은 크기·텍스트형 (고르면 한 번 더 선택)
+#    Question B (emoji) — text:
+#      EN: Show emoji icons? (simple and oneline are always emoji-free)
+#      KO: 이모지 아이콘을 표시할까요? (simple·oneline은 항상 이모지 없음)
+#    Two options, in this order:
+#      1. With emoji (Recommended) / 이모지 있음 (추천) — 🤖 🧠 🚀 icons
+#      2. No emoji / 이모지 없음 — text labels; steadiest in tmux, SSH, Windows consoles
+#    Step 2 — ONLY if the user picked option 4 in Question A, ask again:
+#      EN: Which compact preset?   KO: 어떤 걸로 설치할까요?
+#      1. small  (s)  — 2 lines, labels + bars          / 2줄, 라벨과 막대
+#      2. xsmall (xs) — 2 lines, smallest bars          / 2줄, 가장 작게
+#      3. simple      — 2 lines, text only, no emoji    / 2줄 텍스트형, 이모지 없음
+#      4. oneline     — 1 line, numbers only, no emoji  / 1줄 숫자형, 이모지 없음
+#    Resolve the preset: the size, plus -plain when Question B was "No emoji"
+#    (e.g. large-plain). simple and oneline never take -plain.
 #    If the user gives nothing / "recommended" / "default", use large.
 #
-# 4. Then install with the resolved size:
-#      macOS / Linux:      bash install.sh <size>
-#      Windows PowerShell: ./install.ps1 <size>
+# 4. Then install with the resolved preset:
+#      macOS / Linux:      bash install.sh <preset>
+#      Windows PowerShell: ./install.ps1 <preset>
 #
 # 5. If "auto" mode blocks the install (it downloads code that runs on every
 #    launch — declining to auto-approve that is correct), do NOT just stop:
-#    still resolve the size, then have the user run it themselves so it proceeds:
-#      macOS / Linux:  ! bash install.sh <size>
+#    still resolve the preset, then have the user run it themselves so it proceeds:
+#      macOS / Linux:  ! bash install.sh <preset>
 #      Windows:        ! irm https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.ps1 | iex
 #    or have them leave auto mode (shift+tab) for the one install step.
 #
@@ -86,7 +99,7 @@ if [ -n "${BASH_SOURCE:-}" ]; then
 else
   SCRIPT_DIR=""
 fi
-SRC_DIR="$SCRIPT_DIR/scripts"
+SRC="$SCRIPT_DIR/scripts/awesome-statusline.sh"
 REPO_RAW="${AWESOME_STATUSLINE_RAW:-https://raw.githubusercontent.com/awesomezun/claude-statusline/main}"
 
 # --- output helpers ---------------------------------------------------------
@@ -94,14 +107,19 @@ err()  { printf '\033[31m%s\033[0m\n' "$*" >&2; }
 ok()   { printf '\033[32m%s\033[0m\n' "$*"; }
 info() { printf '\033[36m%s\033[0m\n' "$*"; }
 
-# map abbreviation OR full name -> canonical full name
+# map abbreviation OR full name (optionally with -plain) -> canonical preset
 normalize_mode() {
-  case "$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')" in
-    xs|xsmall)  echo "xsmall" ;;
-    s|small)    echo "small"  ;;
-    m|medium)   echo "medium" ;;
-    l|large)    echo "large"  ;;
-    xl|xlarge)  echo "xlarge" ;;
+  local s plain=""
+  s="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+  case "$s" in *-plain) plain="-plain"; s="${s%-plain}" ;; esac
+  case "$s" in
+    xs|xsmall)  echo "xsmall$plain" ;;
+    s|small)    echo "small$plain"  ;;
+    m|medium)   echo "medium$plain" ;;
+    l|large)    echo "large$plain"  ;;
+    xl|xlarge)  echo "xlarge$plain" ;;
+    simple)     echo "simple"  ;;   # always emoji-free; a stray -plain is fine
+    oneline|one-line|1line) echo "oneline" ;;
     *) return 1 ;;
   esac
 }
@@ -134,7 +152,7 @@ ensure_jq() {
   fi
 }
 
-# --- pick size --------------------------------------------------------------
+# --- pick preset ------------------------------------------------------------
 # Precedence: explicit argument > interactive prompt > 'large' default.
 MODE="large"
 
@@ -146,39 +164,33 @@ is_korean_locale() {
   esac
 }
 
-# Ask the user which preset to install (default large). Reads from the given fd.
+# Ask the user which preset to install (default large). Reads from stdin.
 prompt_size() {
   echo
   if is_korean_locale; then
-    echo "statusline을 어떤 사이즈로 설치할까요? (XSmall-Small-Medium-Large-XLarge, 예시는 github에서 확인)"
+    echo "statusline을 어떤 프리셋으로 설치할까요? (예시는 github에서 확인)"
     echo "  예시: https://github.com/awesomezun/claude-statusline"
     echo
-    echo "  1. xsmall (xs)"
-    echo "     가장 작게 — 핵심 정보만 최소 표시. 좁은 화면용."
-    echo "  2. small (s)"
-    echo "     작게 — 공간 절약, 주요 정보만."
-    echo "  3. medium (m)"
-    echo "     중간 — 정보량과 공간의 균형."
-    echo "  4. large (l)"
-    echo "     크게 — 현재 기본값. 대부분 정보 표시."
-    echo "  5. xlarge (xl)"
-    echo "     가장 크게 — 모든 정보 표시 (git ahead/behind, env)."
+    echo "  1. xsmall (xs)   가장 작게 — 2줄, 핵심만"
+    echo "  2. small  (s)    작게 — 2줄, 라벨과 막대"
+    echo "  3. medium (m)    중간 — 4줄, 넓은 컨텍스트 막대"
+    echo "  4. large  (l)    크게 — 5줄, 비용·시간·리셋 (추천 기본값)"
+    echo "  5. xlarge (xl)   가장 크게 — 5줄, 전체 상세"
+    echo "  6. simple        2줄 텍스트형 (이모지 없음)"
+    echo "  7. oneline       1줄 숫자형 (이모지 없음)"
     echo
     printf '선택 [기본값: 4]: '
   else
-    echo "Which size would you like to install? (XSmall-Small-Medium-Large-XLarge; see examples on GitHub)"
+    echo "Which preset would you like to install? (see examples on GitHub)"
     echo "  Examples: https://github.com/awesomezun/claude-statusline"
     echo
-    echo "  1. xsmall (xs)"
-    echo "     Smallest — only the essentials. For narrow screens."
-    echo "  2. small (s)"
-    echo "     Small — space-saving, key info only."
-    echo "  3. medium (m)"
-    echo "     Medium — balance of detail and space."
-    echo "  4. large (l)"
-    echo "     Large — current default. Shows most info."
-    echo "  5. xlarge (xl)"
-    echo "     Largest — full detail (git ahead/behind, env)."
+    echo "  1. xsmall (xs)   smallest — 2 lines, essentials"
+    echo "  2. small  (s)    small — 2 lines, labels + bars"
+    echo "  3. medium (m)    medium — 4 lines, wide context bar"
+    echo "  4. large  (l)    large — 5 lines, cost / time / resets (recommended)"
+    echo "  5. xlarge (xl)   largest — 5 lines, full detail"
+    echo "  6. simple        2 lines, text only (no emoji)"
+    echo "  7. oneline       1 line, numbers only (no emoji)"
     echo
     printf 'Choice [default: 4]: '
   fi
@@ -190,8 +202,10 @@ prompt_size() {
     3)     MODE="medium" ;;
     4|"")  MODE="large"  ;;
     5)     MODE="xlarge" ;;
+    6)     MODE="simple"  ;;
+    7)     MODE="oneline" ;;
     *)
-      # Allow typing a size name/alias directly instead of a number.
+      # Allow typing a preset name/alias directly instead of a number.
       if ! MODE="$(normalize_mode "$answer")"; then
         if is_korean_locale; then
           echo "알 수 없는 입력 '$answer' — 'large'로 설치합니다."
@@ -202,12 +216,24 @@ prompt_size() {
       fi
       ;;
   esac
+
+  # Classic sizes come with or without emoji.
+  case "$MODE" in
+    simple|oneline|*-plain) ;;
+    *)
+      if is_korean_locale; then printf '이모지 아이콘을 표시할까요? [Y/n]: '
+      else printf 'Show emoji icons? [Y/n]: '; fi
+      local yn=""
+      read -r yn || yn=""
+      case "$yn" in n|N|no|No|NO|아니오|아니요) MODE="$MODE-plain" ;; esac
+      ;;
+  esac
 }
 
 if [ "$#" -ge 1 ]; then
   if ! MODE="$(normalize_mode "$1")"; then
-    err "Unknown size: '$1'"
-    err "Valid: xsmall|xs  small|s  medium|m  large|l  xlarge|xl"
+    err "Unknown preset: '$1'"
+    err "Valid: xsmall|xs  small|s  medium|m  large|l  xlarge|xl  (each optionally -plain)  simple  oneline"
     exit 1
   fi
 elif [ -t 0 ]; then
@@ -226,12 +252,11 @@ fi
 ensure_jq
 mkdir -p "$CLAUDE_DIR"
 
-SRC="$SRC_DIR/awesome-statusline-$MODE.sh"
-if [ -f "$SRC" ]; then
+if [ -n "$SCRIPT_DIR" ] && [ -f "$SRC" ]; then
   cp "$SRC" "$DEST"
 else
-  info "Local scripts/ not found, downloading size '$MODE' from repo…"
-  curl -fsSL "$REPO_RAW/scripts/awesome-statusline-$MODE.sh" -o "$DEST" \
+  info "Local scripts/ not found, downloading the renderer from repo…"
+  curl -fsSL "$REPO_RAW/scripts/awesome-statusline.sh" -o "$DEST" \
     || { err "Download failed. Check network or \$AWESOME_STATUSLINE_RAW."; exit 1; }
 fi
 chmod +x "$DEST"
@@ -240,7 +265,7 @@ chmod +x "$DEST"
 # identically on every platform. On Windows a bare `.sh` path is opened through
 # its file association (`bash --login -i ...`), which spawns visible terminal
 # windows and breaks stdin/stdout — calling bash explicitly avoids that.
-STATUSLINE_JSON='{"type":"command","command":"bash ~/.claude/awesome-statusline.sh"}'
+STATUSLINE_JSON="$(jq -n --arg c "bash ~/.claude/awesome-statusline.sh $MODE" '{type:"command",command:$c}')"
 if [ -f "$SETTINGS" ]; then
   BACKUP="$SETTINGS.backup-$(date +%Y%m%d-%H%M%S)"
   cp "$SETTINGS" "$BACKUP"
@@ -251,12 +276,12 @@ else
   jq -n --argjson sl "$STATUSLINE_JSON" '{statusLine: $sl}' > "$SETTINGS"
 fi
 
-ok "Installed Awesome CC Statusline (size: $MODE)"
+ok "Installed Awesome CC Statusline (preset: $MODE)"
 echo "  script:   $DEST"
 echo "  settings: $SETTINGS  (statusLine set)"
 echo
 echo "Restart Claude Code (or reload) to see it."
-echo "To switch size later, just ask your AI agent to reinstall at the size you want."
+echo "To switch preset later, just ask your AI agent to reinstall with the one you want."
 echo
 echo "⭐ If you like Awesome Statusline, a GitHub star really helps:"
 echo "   https://github.com/awesomezun/claude-statusline"

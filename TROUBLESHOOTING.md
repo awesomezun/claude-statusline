@@ -16,7 +16,7 @@ notepad .\install.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-To choose a size:
+To choose a preset (e.g. `small`, `l-plain`, `simple`):
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 small
@@ -201,16 +201,15 @@ script bug. Box-drawing `│` (U+2502) is designed to fill the full line height
 and join continuously.
 
 ### Fix
-Already fixed: **both** the macOS/Linux Bash renderers (`small` / `medium` /
-`large` / `xlarge`) **and** the Windows PowerShell renderer
+Already fixed: **both** the macOS/Linux Bash renderer
+(`awesome-statusline.sh`) **and** the Windows PowerShell renderer
 (`awesome-statusline-windows.ps1`) use box-drawing `│` (U+2502) for dividers.
-Re-run the installer to pick up the updated script. (`xsmall` uses no dividers,
-so it is unaffected.)
+Re-run the installer to pick up the updated script.
 
 > Note: the divider lives in two separate renderers (Bash + PowerShell). Both
 > must use `│`; a fix to one does not propagate to the other. If you change the
-> divider glyph, change it in every `scripts/awesome-statusline-*.sh` **and** in
-> `scripts/awesome-statusline-windows.ps1`.
+> divider glyph, change it in `scripts/awesome-statusline.sh` (`SEP`) **and** in
+> `scripts/awesome-statusline-windows.ps1` (`$Sep`).
 
 If `│` still shows a faint gap in your particular font, switch the divider
 glyph to a heavier variant — `┃` (U+2503, bold) or `║` (U+2551, double) — in
@@ -255,6 +254,6 @@ declines to do it unattended.
    invocation to `~/.claude/settings.json` (or approve it once and choose
    "always allow"), then re-run.
 
-Whichever you pick, the size question still applies — choose a size
-(`xsmall`/`small`/`medium`/`large`/`xlarge`); the installer does not silently
-assume one for you.
+Whichever you pick, the preset question still applies — choose a preset
+(`xsmall`/`small`/`medium`/`large`/`xlarge`, each optionally `-plain`, or
+`simple`/`oneline`); the installer does not silently assume one for you.

@@ -11,9 +11,13 @@
 | awesome-statusline-2.1.0-compact.sh | 2.1.1-compact로 대체 | 2026-05-30 |
 | awesome-statusline-2.1.0-default.sh | 2.1.1-default로 대체 | 2026-05-30 |
 | awesome-statusline-2.1.0-full.sh | 2.1.1-full로 대체 | 2026-05-30 |
+| awesome-statusline-xsmall-3.3.5.sh | 통합 렌더러 `awesome-statusline.sh`의 `xsmall` 프리셋으로 대체(클래식 정돈 디자인) | 2026-10-31 |
+| awesome-statusline-small-3.3.5.sh | 통합 렌더러 `awesome-statusline.sh`의 `small` 프리셋으로 대체(클래식 정돈 디자인) | 2026-10-31 |
+| awesome-statusline-medium-3.3.5.sh | 통합 렌더러 `awesome-statusline.sh`의 `medium` 프리셋으로 대체(클래식 정돈 디자인) | 2026-10-31 |
+| awesome-statusline-large-3.3.5.sh | 통합 렌더러 `awesome-statusline.sh`의 `large` 프리셋으로 대체(클래식 정돈 디자인) | 2026-10-31 |
+| awesome-statusline-xlarge-3.3.5.sh | 통합 렌더러 `awesome-statusline.sh`의 `xlarge` 프리셋으로 대체(클래식 정돈 디자인) | 2026-10-31 |
 
 ## 현역 스크립트 (참고)
 
-- `awesome-statusline-2.1.1-{compact,default,full}.sh` — 메인 3-mode 시스템
-- `awesome-statusline-2.0.1-legacy.sh` — legacy 옵션 (5줄·20블록)
-- `awesome-statusline-1.0.3-legacy.sh` — legacy 옵션 (4줄·40블록, 클래식)
+- `awesome-statusline.sh` — macOS / Linux / Git Bash 통합 렌더러입니다. 프리셋을 인자로 받습니다(`xsmall`~`xlarge`, 각 `-plain`, `simple`, `oneline`).
+- `awesome-statusline-windows.ps1` — Windows 네이티브 PowerShell 렌더러입니다. 같은 프리셋을 `-Size`로 받습니다.
