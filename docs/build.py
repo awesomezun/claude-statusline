@@ -6,8 +6,12 @@ representative mock session (see docs/_demo.py), captures the truecolor ANSI
 it prints, and converts that to HTML — so gradients and exact colors match the
 terminal pixel-for-pixel instead of being hand-approximated.
 
-The "#presets", "#simple" and "#styles" sections are what
-assets/presets/presets.png, simple.png and styles.png are captured from.
+Each section with an id is captured to assets/presets/<id>.png:
+  #hero    large, the recommended preset
+  #sizes   step 1 - the five sizes (emoji style, Pro / Max)
+  #styles  step 2 - the three styles of one size (Pro / Max)
+  #plans   automatic - the same preset on Pro / Max and on Ultra
+  #plain, #simple, #ultra   all five sizes in -plain, in -simple, and on Ultra
 """
 import sys
 sys.dont_write_bytecode = True  # keep docs/ free of __pycache__ from the import below
@@ -19,32 +23,14 @@ import re
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from _demo import ROOT, render  # noqa: E402
 
-# (preset, title, abbr, lines label)
-PRESETS = [
-    ("xsmall", "xsmall", "xs", "2 lines"),
-    ("small", "small", "s", "2 lines"),
-    ("medium", "medium", "m", "4 lines"),
-    ("large", "large", "l", "5 lines · recommended"),
-    ("xlarge", "xlarge", "xl", "5 lines · full"),
+SIZES = [  # (preset, abbr, lines)
+    ("xsmall", "xs", "2 lines"),
+    ("small", "s", "2 lines"),
+    ("medium", "m", "4 lines"),
+    ("large", "l", "5 lines"),
+    ("xlarge", "xl", "5 lines"),
 ]
-SIMPLE = [
-    ("xsmall-simple", "xs-simple", "1 line"),
-    ("small-simple", "s-simple", "2 lines"),
-    ("medium-simple", "m-simple", "4 lines"),
-    ("large-simple", "l-simple", "5 lines"),
-    ("xlarge-simple", "xl-simple", "5 lines · full"),
-]
-
-# Three styles of the same size; the Ultra plan has no 5-hour limit, so its
-# payload is weekly-only.
-VARIANTS = [
-    ("large", "pro", "large", "Pro / Max", "emoji"),
-    ("large", "ultra", "large", "Ultra", "emoji · weekly only"),
-    ("large-plain", "pro", "l-plain", "Pro / Max", "no emoji"),
-    ("large-plain", "ultra", "l-plain", "Ultra", "no emoji · weekly only"),
-    ("large-simple", "pro", "l-simple", "Pro / Max", "text only"),
-    ("large-simple", "ultra", "l-simple", "Ultra", "text only · weekly only"),
-]
+ABBR = {name: abbr for name, abbr, _ in SIZES}
 
 ANSI = re.compile(r'(\x1b\[[0-9;]*m)')
 CUSTOM_BLOCKS = {
@@ -154,9 +140,26 @@ def card(title, sub, badge, body_html, tag="") -> str:
     </div>'''
 
 
-CARDS = "\n".join(card(t, a, badge, rows(p)) for p, t, a, badge in PRESETS)
-SCARDS = "\n".join(card(t, "text only", badge, rows(p)) for p, t, badge in SIMPLE)
-VCARDS = "\n".join(card(t, plan_name, tag, rows(p, plan)) for p, plan, t, plan_name, tag in VARIANTS)
+def cards(items) -> str:
+    return "\n".join(card(*it) for it in items)
+
+
+HERO = cards([("large", "l", "recommended", rows("large"))])
+SIZE_CARDS = cards([(n, a, lines + (" · recommended" if n == "large" else ""), rows(n))
+                    for n, a, lines in SIZES])
+STYLE_CARDS = cards([
+    ("large", "emoji · default", "icons + gradient bars", rows("large")),
+    ("l-plain", "no emoji", "same layout, text labels", rows("large-plain")),
+    ("l-simple", "simple text", "no bars, no emoji", rows("large-simple")),
+])
+PLAN_CARDS = cards([
+    ("large", "on Pro / Max", "5-hour + weekly limits", rows("large", "pro")),
+    ("large", "on Ultra", "weekly limit only", rows("large", "ultra")),
+])
+PLAIN_CARDS = cards([(f"{a}-plain", "no emoji", lines, rows(f"{n}-plain")) for n, a, lines in SIZES])
+SIMPLE_CARDS = cards([(f"{a}-simple", "simple text", "1 line" if n == "xsmall" else lines, rows(f"{n}-simple"))
+                      for n, a, lines in SIZES])
+ULTRA_CARDS = cards([(n, "on Ultra", "weekly only", rows(n, "ultra")) for n, a, lines in SIZES])
 
 HTML = f'''<!DOCTYPE html>
 <html lang="en">
@@ -177,32 +180,63 @@ HTML = f'''<!DOCTYPE html>
     <div class="badges">
       <span class="badge hot">⚡ effort · 💡 thinking</span>
       <span class="badge cool">macOS · Linux · Windows</span>
-      <span class="badge">Pro · Max · Ultra</span>
-      <span class="badge">emoji · plain · text</span>
-      <span class="badge">Catppuccin</span>
       <span class="badge">5 sizes × 3 styles</span>
+      <span class="badge">Pro · Max · Ultra, automatic</span>
+      <span class="badge">Catppuccin</span>
     </div>
   </div>
 
-  <div id="presets">
-    <div class="section-title">Five sizes · one word picks how much you see</div>
-    <div class="grid">{CARDS}
+  <div id="hero">
+    <div class="grid">{HERO}
     </div>
-    <p class="note">Every size comes in three styles: emoji (above), <code>-plain</code> (no emoji) and <code>-simple</code> (text only).</p>
+  </div>
+
+  <div class="section-title">Two choices · one automatic</div>
+  <div class="axes">
+    <div class="axis"><div class="k">1 · Size</div><div class="v">xs · s · m · l · xl</div><p>How much you see. You pick it.</p></div>
+    <div class="axis"><div class="k">2 · Style</div><div class="v">emoji · -plain · -simple</div><p>How it looks. You pick it.</p></div>
+    <div class="axis auto"><div class="k">3 · Plan</div><div class="v">Pro / Max · Ultra</div><p>Which limits show. Automatic.</p></div>
+  </div>
+  <p class="note">Size + style = a preset: 5 &times; 3 = 15, e.g. <code>large</code>, <code>l-plain</code>, <code>m-simple</code>.</p>
+
+  <div id="sizes">
+    <div class="section-title">Step 1 · Size — five options</div>
+    <div class="grid">{SIZE_CARDS}
+    </div>
+    <p class="note">Shown in the default emoji style, on Pro / Max.</p>
+  </div>
+
+  <div id="styles">
+    <div class="section-title">Step 2 · Style — three options</div>
+    <div class="grid">{STYLE_CARDS}
+    </div>
+    <p class="note">Every size comes in all three styles. In <code>-simple</code>, limit values are colored by pace.</p>
+  </div>
+
+  <div id="plans">
+    <div class="section-title">Automatic · Plan — nothing to choose</div>
+    <div class="grid">{PLAN_CARDS}
+    </div>
+    <p class="note">Every preset follows the limits Claude Code reports: Ultra has no 5-hour limit, so it gets one weekly line with a per-day budget.</p>
+  </div>
+
+  <div id="plain">
+    <div class="section-title">All five sizes · -plain</div>
+    <div class="grid">{PLAIN_CARDS}
+    </div>
   </div>
 
   <div id="simple">
-    <div class="section-title">Simple text · no bars, no emoji</div>
-    <div class="grid">{SCARDS}
+    <div class="section-title">All five sizes · -simple</div>
+    <div class="grid">{SIMPLE_CARDS}
     </div>
     <p class="note">Limit values are colored by pace: green = under, yellow = on pace, red = ahead of time.</p>
   </div>
 
-  <div id="styles">
-    <div class="section-title">Three styles · Pro / Max &amp; Ultra</div>
-    <div class="grid2">{VCARDS}
+  <div id="ultra">
+    <div class="section-title">All five sizes · on Ultra</div>
+    <div class="grid">{ULTRA_CARDS}
     </div>
-    <p class="note">Ultra has no 5-hour limit, so the weekly line takes its place with a per-day budget.</p>
   </div>
 
   <div class="section-title">Why this one</div>
@@ -210,7 +244,7 @@ HTML = f'''<!DOCTYPE html>
     <div class="item"><h3>⚡ <span>Effort &amp; thinking</span></h3><p>Surfaces <b style="color:var(--peach)">/effort</b> (high · xhigh · max) and <b style="color:var(--yellow)">extended thinking</b> — live, from Claude Code's official JSON.</p></div>
     <div class="item"><h3>📊 <span>Every plan, every window</span></h3><p>Pro and Max get 5-hour + weekly bars; Ultra (weekly only) gets a weekly bar with a per-day budget. Each limit is read on its own.</p></div>
     <div class="item"><h3>🖥️ <span>Truly cross-platform</span></h3><p>Bash on macOS and Linux, a native PowerShell renderer on Windows — no Git Bash or <code>jq</code> needed there.</p></div>
-    <div class="item"><h3>📐 <span>5 sizes × 3 styles</span></h3><p>Pick how much you see with one word — <code>xs</code> to <code>xl</code> — then add <code>-plain</code> (no emoji) or <code>-simple</code> (text only) if you like.</p></div>
+    <div class="item"><h3>📐 <span>5 sizes × 3 styles</span></h3><p>Pick how much you see with one word — <code>xs</code> to <code>xl</code> — then add <code>-plain</code> (no emoji) or <code>-simple</code> (text only) if you like. The plan is detected for you.</p></div>
   </div>
 
   <div class="section-title">Install</div>
@@ -287,9 +321,17 @@ irm https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.
   .install .c{color:var(--over)}
   footer{text-align:center;color:var(--over);font-size:13px;margin-top:60px}
   footer b{color:var(--mauve)}
-  .grid2{display:grid;grid-template-columns:1fr;gap:22px}
-  #presets,#simple,#styles{padding:28px 0 18px}
-  #presets .section-title,#simple .section-title,#styles .section-title{margin-top:0}
+  #hero,#sizes,#styles,#plans,#plain,#simple,#ultra{padding:28px 0 18px}
+  #sizes .section-title,#styles .section-title,#plans .section-title,#plain .section-title,
+  #simple .section-title,#ultra .section-title{margin-top:0}
+  .axes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  @media(max-width:680px){.axes{grid-template-columns:1fr}}
+  .axis{background:var(--mantle);border:1px solid var(--s0);border-radius:14px;padding:16px 18px}
+  .axis .k{font-size:12px;text-transform:uppercase;letter-spacing:1.5px;color:var(--over)}
+  .axis .v{font-family:"JetBrains Mono",monospace;font-size:15px;color:var(--text);margin:6px 0 4px}
+  .axis p{font-size:13.5px;color:var(--sub)}
+  .axis.auto{border-style:dashed}
+  .axis.auto .v{color:var(--teal)}
   .card-head .tag{font-size:12px;color:var(--peach);margin-left:8px;font-weight:500}
   .note{text-align:center;color:var(--sub);font-size:13.5px;margin-top:14px}
   .note code{font-family:"JetBrains Mono",monospace;color:var(--peach)}

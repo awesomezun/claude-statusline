@@ -55,7 +55,8 @@ DEMO_REPO = _make_demo_repo()
 
 def mock(plan: str = "pro") -> str:
     """A representative 1M-context Opus 5.5 session. plan: 'pro' (5H + 7D) or 'ultra' (weekly only)."""
-    now = int(time.time())
+    # +30 s so every card of one build shows the same whole-minute countdown
+    now = int(time.time()) + 30
     if plan == "ultra":
         limits = {"seven_day": {"used_percentage": 48, "resets_at": now + 2 * 86400 + 10 * 3600}}
     else:
