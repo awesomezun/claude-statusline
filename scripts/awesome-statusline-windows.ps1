@@ -7,8 +7,8 @@
 # Presets (same as the bash renderer, scripts/awesome-statusline.sh):
 #   xsmall | small | medium | large | xlarge    classic layouts (xs s m l xl)
 #   <size>-plain                                 same layout without emoji
-#   simple                                       2 lines, text only (no emoji)
-#   oneline                                      1 line, numbers only (no emoji)
+#   <size>-simple                                text-only layout (no bars, no emoji)
+#   simple = small-simple, oneline = xsmall-simple   (aliases)
 #
 # Usage limits: each window (five_hour, seven_day) is optional on its own. The
 # Ultra plan has no 5-hour limit, so a seven_day-only payload gets a weekly
@@ -28,17 +28,20 @@ $Inv = [Globalization.CultureInfo]::InvariantCulture
 
 # ---------------------------------------------------------------- preset
 $Preset = if ($Size) { $Size.ToLowerInvariant() } else { 'large' }
-$Plain = $false
+$Plain = $false    # no emoji
+$Simple = $false   # text-only layout (implies no emoji)
 if ($Preset.EndsWith('-plain')) { $Plain = $true; $Preset = $Preset.Substring(0, $Preset.Length - 6) }
+elseif ($Preset.EndsWith('-simple')) { $Plain = $true; $Simple = $true; $Preset = $Preset.Substring(0, $Preset.Length - 7) }
 switch ($Preset) {
   { $_ -in 'xs', 'xsmall' }               { $Mode = 'xsmall' }
   { $_ -in 's', 'small' }                 { $Mode = 'small' }
   { $_ -in 'm', 'medium' }                { $Mode = 'medium' }
   { $_ -in 'xl', 'xlarge' }               { $Mode = 'xlarge' }
-  'simple'                                { $Mode = 'simple'; $Plain = $true }
-  { $_ -in 'oneline', 'one-line', '1line' } { $Mode = 'oneline'; $Plain = $true }
+  'simple'                                { $Mode = 'small'; $Plain = $true; $Simple = $true }    # alias of small-simple
+  { $_ -in 'oneline', 'one-line', '1line' } { $Mode = 'xsmall'; $Plain = $true; $Simple = $true } # alias of xsmall-simple
   default                                 { $Mode = 'large' }
 }
+$Layout = if ($Simple) { "$Mode-simple" } else { $Mode }
 
 # ---------------------------------------------------------------- parse
 # Read stdin as UTF-8 explicitly. Windows PowerShell 5.1 otherwise decodes it
@@ -248,6 +251,11 @@ if (-not $EnvName) { $Venv = [Environment]::GetEnvironmentVariable('VIRTUAL_ENV'
 $FiveLeft = if ($null -ne $FivePct) { SecLeft $FiveReset } else { $null }
 $SevenLeft = if ($null -ne $SevenPct) { SecLeft $SevenReset } else { $null }
 
+# Share of each window that has already passed (for the xlarge-simple detail)
+$FiveEl = $null; $SevenEl = $null
+if ($null -ne $FiveLeft) { $FiveEl = [int][Math]::Max(0, [Math]::Floor((18000 - [Math]::Floor($FiveLeft)) * 100 / 18000)) }
+if ($null -ne $SevenLeft) { $SevenEl = [int][Math]::Max(0, [Math]::Floor((604800 - [Math]::Floor($SevenLeft)) * 100 / 604800)) }
+
 # Weekly budget: "22%/day" while a day or more is left, else "9% left"
 $Budget = ''
 if ($null -ne $SevenPct -and $null -ne $SevenLeft) {
@@ -317,12 +325,31 @@ function BranchSeg([bool]$WithAB) {
 $SS = if ($Style -and $Style -ne 'default') { "$iStyle$cPeach$Style$Rst" } else { '' }
 $ES = if ($EnvName) { "$iEnv$cGreen$EnvName$Rst" } else { '' }
 
+# ---- text-only (simple) pieces: dim keys, bold values, no bars, no emoji
+function LedgerHead([string]$GitWord) {
+  $h = Ident 'full' 'thinking'
+  if ($GitOk) {
+    if ($Dirty) { $w = if ($GitWord) { "$cLYellow$GitWord$Rst " } else { '' }; $h += "   ${cOv1}git $Rst$w$GC" }
+    else { $h += "   ${cOv1}git $Rst${cLGreen}clean$Rst" }
+  }
+  if ($EnvName) { $h += "   ${cOv1}env $Rst$cGreen$EnvName$Rst" }
+  if ($Style -and $Style -ne 'default') { $h += "   ${cOv1}style $Rst$cPeach$Style$Rst" }
+  return $h
+}
+function LedgerWhere([bool]$CostTime) {
+  $w = "$cSub0$DirShow$Rst"
+  if ($GitOk -and $Branch) { $w += " $cGreen($Branch$AB)$Rst" }
+  if ($CostTime) { $w += "   ${cOv1}cost $Rst$Bld$cYellow$CostFmt$Rst   ${cOv1}time $Rst$Bld$cSub1$Dur$Rst" }
+  return $w
+}
+function VPad([string]$Color, [int]$p) { return "$Bld$Color$('{0,3}%' -f $p)$Rst" }
+
 $Loading = "${cOv0}loading..$Rst"
 $Dash = "$Bld$cOv0  --$Rst"
 $Lines = New-Object System.Collections.Generic.List[string]
 
 # ================================================================ layouts
-switch ($Mode) {
+switch ($Layout) {
   'xsmall' {
     $L1 = "$(Ident 'short' 'think')  $iDir$cSub0$DirBase$Rst"
     if ($GitOk -and $Branch) { $L1 += " $iBranch$cLGreen$Branch$Rst"; if ($Dirty) { $L1 += "$Bld$cYellow*$Rst" } }
@@ -410,7 +437,7 @@ switch ($Mode) {
       }
     }
   }
-  'simple' {
+  'small-simple' {
     $L1 = "$(Ident 'full' 'thinking')   $cSub0$DirShow$Rst"
     if ($GitOk -and $Branch) { $L1 += " $cGreen$Branch$Rst"; if ($GC) { $L1 += " $GC" } }
     $L2 = "${cOv1}ctx $Rst$Bld${E}[38;2;$(Grad 'ctx' $CtxPct)m$CtxPct%$Rst"
@@ -434,7 +461,7 @@ switch ($Mode) {
     $L2 += "   ${cOv1}cost $Rst$Bld$cYellow$CostFmt$Rst   ${cOv1}time $Rst$Bld$cSub1$Dur$Rst"
     $Lines.Add($L1); $Lines.Add($L2)
   }
-  'oneline' {
+  'xsmall-simple' {
     $L = "$(Ident 'short' 'think')$Sep${cOv1}ctx $Rst$Bld${E}[38;2;$(Grad 'ctx' $CtxPct)m$CtxPct%$Rst"
     if (-not $HasRL) {
       $L += "$Sep${cOv1}5h $Rst$cOv0--$Rst$Sep${cOv1}7d $Rst$cOv0--$Rst"
@@ -448,6 +475,78 @@ switch ($Mode) {
     }
     if ($GitOk -and $Branch) { $L += "$Sep$cLGreen$Branch$Rst"; if ($Dirty) { $L += "$Bld$cYellow*$Rst" } }
     $Lines.Add($L)
+  }
+  'medium-simple' {
+    $Lines.Add((LedgerHead ''))
+    $Lines.Add((LedgerWhere $false))
+    $Lines.Add("$cOv1$('context'.PadRight(9))$Rst$(VPad "${E}[38;2;$(Grad 'ctx' $CtxPct)m" $CtxPct)$cOv2   $TokK / $SizeK$Rst")
+    $L = "$cOv1$('limits'.PadRight(9))$Rst"
+    if (-not $HasRL) { $L += $Loading }
+    elseif ($null -ne $FivePct) {
+      $L += "${cOv1}5h $Rst$Bld$(PaceCol $FivePct $FiveLeft 18000)$FivePct%$Rst"
+      if ($null -ne $FiveLeft) { $L += " $cOv2$(Rel $FiveLeft)$Rst" }
+      if ($null -ne $SevenPct) {
+        $L += "   ${cOv1}7d $Rst$Bld$(PaceCol $SevenPct $SevenLeft 604800)$SevenPct%$Rst"
+        if ($null -ne $SevenLeft) { $L += " $cOv2$(Fmt $SevenReset 'ddd')$Rst" }
+      }
+    } elseif ($null -ne $SevenPct) {
+      $L += "${cOv1}week $Rst$Bld$(PaceCol $SevenPct $SevenLeft 604800)$SevenPct%$Rst"
+      if ($null -ne $SevenLeft) { $L += " $cOv2$(Fmt $SevenReset 'ddd HH:mm')"; if ($Budget) { $L += " · $Budget" }; $L += $Rst }
+    } else {
+      $L = ''   # rate_limits without a 5h / 7d window (e.g. spend_limit only)
+    }
+    if ($L) { $Lines.Add($L) }
+  }
+  'large-simple' {
+    $Lines.Add((LedgerHead ''))
+    $Lines.Add((LedgerWhere $true))
+    $Lines.Add("$cOv1$('context'.PadRight(9))$Rst$(VPad "${E}[38;2;$(Grad 'ctx' $CtxPct)m" $CtxPct)$cOv2   $TokK / $SizeK$Rst")
+    if (-not $HasRL) {
+      $Lines.Add("$cOv1$('5h'.PadRight(9))$Rst$Dash   $Loading")
+      $Lines.Add("$cOv1$('7d'.PadRight(9))$Rst$Dash   $Loading")
+    } else {
+      if ($null -ne $FivePct) {
+        $L = "$cOv1$('5h'.PadRight(9))$Rst$(VPad (PaceCol $FivePct $FiveLeft 18000) $FivePct)"
+        if ($null -ne $FiveLeft) { $L += "$cOv2   resets in $(Rel $FiveLeft) · $(Fmt $FiveReset 'HH:mm')$Rst" }
+        $Lines.Add($L)
+      }
+      if ($null -ne $SevenPct) {
+        $Key = if ($null -ne $FivePct) { '7d' } else { 'week' }
+        $L = "$cOv1$($Key.PadRight(9))$Rst$(VPad (PaceCol $SevenPct $SevenLeft 604800) $SevenPct)"
+        if ($null -ne $SevenLeft) {
+          $L += "$cOv2   resets $(Fmt $SevenReset 'ddd HH:mm') · $(Rel $SevenLeft)"
+          if ($null -eq $FivePct -and $Budget) { $L += " · $Budget" }
+          $L += $Rst
+        }
+        $Lines.Add($L)
+      }
+    }
+  }
+  'xlarge-simple' {
+    $Lines.Add((LedgerHead 'dirty'))
+    $Lines.Add((LedgerWhere $true))
+    $FreeK = [Math]::Max(0, (IDiv ($CtxSize - $CtxTok) 1000))
+    $Lines.Add("$cOv1$('context'.PadRight(10))$Rst$(VPad "${E}[38;2;$(Grad 'ctx' $CtxPct)m" $CtxPct)$cOv2   $TokK / $(IDiv $CtxSize 1000)k used · ${FreeK}k free$Rst")
+    if (-not $HasRL) {
+      $Lines.Add("$cOv1$('5h limit'.PadRight(10))$Rst$Dash   $Loading")
+      $Lines.Add("$cOv1$('7d limit'.PadRight(10))$Rst$Dash   $Loading")
+    } else {
+      if ($null -ne $FivePct) {
+        $L = "$cOv1$('5h limit'.PadRight(10))$Rst$(VPad (PaceCol $FivePct $FiveLeft 18000) $FivePct)"
+        if ($null -ne $FiveLeft) { $L += "$cOv2   resets in $(Rel $FiveLeft) ($(AmPm $FiveReset)) · $FiveEl% elapsed$Rst" }
+        $Lines.Add($L)
+      }
+      if ($null -ne $SevenPct) {
+        $Key = if ($null -ne $FivePct) { '7d limit' } else { 'weekly' }
+        $L = "$cOv1$($Key.PadRight(10))$Rst$(VPad (PaceCol $SevenPct $SevenLeft 604800) $SevenPct)"
+        if ($null -ne $SevenLeft) {
+          $L += "$cOv2   resets $(LongDate $SevenReset) (in $(Rel $SevenLeft)) · $SevenEl% elapsed"
+          if ($null -eq $FivePct -and $Budget) { $L += " · $Budget" }
+          $L += $Rst
+        }
+        $Lines.Add($L)
+      }
+    }
   }
   default {
     # large

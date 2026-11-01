@@ -19,5 +19,5 @@
 
 ## 현역 스크립트 (참고)
 
-- `awesome-statusline.sh` — macOS / Linux / Git Bash 통합 렌더러입니다. 프리셋을 인자로 받습니다(`xsmall`~`xlarge`, 각 `-plain`, `simple`, `oneline`).
+- `awesome-statusline.sh` — macOS / Linux / Git Bash 통합 렌더러입니다. 프리셋을 인자로 받습니다(`xsmall`~`xlarge`, 각각 `-plain`·`-simple` 스타일, 별칭 `simple`·`oneline`).
 - `awesome-statusline-windows.ps1` — Windows 네이티브 PowerShell 렌더러입니다. 같은 프리셋을 `-Size`로 받습니다.

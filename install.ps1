@@ -9,13 +9,15 @@
   3. Uses Claude Code's official statusLine.command contract: JSON on stdin,
      rendered status text on stdout.
 
-  Presets: xsmall (xs) | small (s) | medium (m) | large (l) | xlarge (xl),
-  each optionally with -plain (no emoji), plus simple and oneline (text only).
+  Sizes: xsmall (xs) | small (s) | medium (m) | large (l) | xlarge (xl).
+  Styles: emoji (default) | -plain (no emoji) | -simple (text only, no bars).
+  Aliases: simple = small-simple, oneline = xsmall-simple.
 
 .EXAMPLE
-  ./install.ps1               # install (asks which preset)
+  ./install.ps1               # install (asks size and style)
   ./install.ps1 l             # by abbreviation
   ./install.ps1 large-plain   # by full name, without emoji
+  ./install.ps1 m-simple      # text-only style
 #>
 
 # ============================================================================
@@ -31,9 +33,10 @@
 #    Recommending `large` (below) is only a hint shown inside the menu; it must
 #    NEVER become a silent default or let you skip the question. Always ask.
 #
-# 2. If the user already named a preset (xs/s/m/l/xl or full name, optionally
-#    with -plain, or simple / oneline), use it and skip the questions. A bare
-#    size means the emoji version unless the user asked for no emoji.
+# 2. If the user already named a preset — a size (xs/s/m/l/xl or full name),
+#    optionally with -plain or -simple, or the aliases simple (= small-simple)
+#    / oneline (= xsmall-simple) — use it and skip the questions. A bare size
+#    means the emoji style unless the user asked for no emoji or text only.
 #
 # 3. Otherwise ASK with the AskUserQuestion tool. Match the user's language.
 #    Step 1 — ONE AskUserQuestion call with TWO questions:
@@ -45,22 +48,21 @@
 #      1. large  (l)  (추천 / Recommended) — most info, good for most users / 추천 기본값
 #      2. xlarge (xl) — largest, full detail            / 가장 크게, 전체 상세
 #      3. medium (m)  — balanced layout                 / 균형 잡힌 레이아웃
-#      4. small / xsmall / simple / oneline — compact or text-only, pick this
-#         to choose among them                          / 작은 크기·텍스트형 (고르면 한 번 더 선택)
-#    Question B (emoji) — text:
-#      EN: Show emoji icons? (simple and oneline are always emoji-free)
-#      KO: 이모지 아이콘을 표시할까요? (simple·oneline은 항상 이모지 없음)
-#    Two options, in this order:
-#      1. With emoji (Recommended) / 이모지 있음 (추천) — 🤖 🧠 🚀 icons
-#      2. No emoji / 이모지 없음 — text labels; steadiest in tmux, SSH, Windows consoles
+#      4. small / xsmall — the two smallest, pick this to choose between them
+#                                                       / 작은 두 가지 (고르면 한 번 더 선택)
+#    Question B (style) — text:
+#      EN: Which style would you like?
+#      KO: 어떤 스타일로 할까요?
+#    Three options, in this order:
+#      1. With emoji (Recommended) / 이모지 있음 (추천) — icons + gradient bars
+#      2. No emoji / 이모지 없음 — same layout and bars, text labels instead of icons
+#      3. Simple text / 심플 텍스트형 — text only, no bars or emoji
 #    Step 2 — ONLY if the user picked option 4 in Question A, ask again:
-#      EN: Which compact preset?   KO: 어떤 걸로 설치할까요?
-#      1. small  (s)  — 2 lines, labels + bars          / 2줄, 라벨과 막대
-#      2. xsmall (xs) — 2 lines, smallest bars          / 2줄, 가장 작게
-#      3. simple      — 2 lines, text only, no emoji    / 2줄 텍스트형, 이모지 없음
-#      4. oneline     — 1 line, numbers only, no emoji  / 1줄 숫자형, 이모지 없음
-#    Resolve the preset: the size, plus -plain when Question B was "No emoji"
-#    (e.g. large-plain). simple and oneline never take -plain.
+#      EN: Which of the two smaller sizes?   KO: 작은 쪽 중 무엇으로 설치할까요?
+#      1. small  (s)  — space-saving, key info           / 공간 절약, 주요 정보
+#      2. xsmall (xs) — smallest, essentials only        / 가장 작게, 핵심만
+#    Resolve the preset: the size, plus -plain for "No emoji" or -simple for
+#    "Simple text" (e.g. large-plain, xsmall-simple).
 #    If the user gives nothing / "recommended" / "default", use large.
 #
 # 4. Then install with the resolved preset:
@@ -89,19 +91,20 @@ function Write-Info($m) { Write-Host $m -ForegroundColor Cyan }
 function Write-Ok($m)   { Write-Host $m -ForegroundColor Green }
 function Write-Err($m)  { Write-Host $m -ForegroundColor Red }
 
-# abbreviation OR full name (optionally with -plain) -> canonical preset, or $null
+# abbreviation OR full name (optionally with -plain / -simple) -> canonical preset, or $null
 function Normalize-Mode([string]$s) {
   $s = $s.Trim().ToLowerInvariant()
-  $plain = ''
-  if ($s.EndsWith('-plain')) { $plain = '-plain'; $s = $s.Substring(0, $s.Length - 6) }
+  $style = ''
+  if ($s.EndsWith('-plain')) { $style = '-plain'; $s = $s.Substring(0, $s.Length - 6) }
+  elseif ($s.EndsWith('-simple')) { $style = '-simple'; $s = $s.Substring(0, $s.Length - 7) }
   switch ($s) {
-    { $_ -in 'xs', 'xsmall' } { return "xsmall$plain" }
-    { $_ -in 's', 'small' }   { return "small$plain" }
-    { $_ -in 'm', 'medium' }  { return "medium$plain" }
-    { $_ -in 'l', 'large' }   { return "large$plain" }
-    { $_ -in 'xl', 'xlarge' } { return "xlarge$plain" }
-    'simple'                  { return 'simple' }    # always emoji-free
-    { $_ -in 'oneline', 'one-line', '1line' } { return 'oneline' }
+    { $_ -in 'xs', 'xsmall' } { return "xsmall$style" }
+    { $_ -in 's', 'small' }   { return "small$style" }
+    { $_ -in 'm', 'medium' }  { return "medium$style" }
+    { $_ -in 'l', 'large' }   { return "large$style" }
+    { $_ -in 'xl', 'xlarge' } { return "xlarge$style" }
+    'simple'                  { return 'small-simple' }    # alias
+    { $_ -in 'oneline', 'one-line', '1line' } { return 'xsmall-simple' }   # alias
   }
   return $null
 }
@@ -125,7 +128,7 @@ if ($Size) {
   $Mode = Normalize-Mode $Size
   if (-not $Mode) {
     Write-Err "Unknown preset: '$Size'"
-    Write-Err "Valid: xsmall|xs  small|s  medium|m  large|l  xlarge|xl  (each optionally -plain)  simple  oneline"
+    Write-Err "Valid: xsmall|xs  small|s  medium|m  large|l  xlarge|xl  - each optionally -plain or -simple (aliases: simple, oneline)"
     exit 1
   }
 } elseif ([Environment]::UserInteractive) {
@@ -133,7 +136,7 @@ if ($Size) {
   $isKo = ([Globalization.CultureInfo]::CurrentUICulture.TwoLetterISOLanguageName -eq 'ko')
   Write-Host ""
   if ($isKo) {
-    Write-Host "statusline을 어떤 프리셋으로 설치할까요? (예시는 github에서 확인)"
+    Write-Host "statusline을 어떤 크기로 설치할까요? (예시는 github에서 확인)"
     Write-Host "  예시: https://github.com/awesomezun/claude-statusline"
     Write-Host ""
     Write-Host "  1. xsmall (xs)   가장 작게 — 2줄, 핵심만"
@@ -141,12 +144,10 @@ if ($Size) {
     Write-Host "  3. medium (m)    중간 — 4줄, 넓은 컨텍스트 막대"
     Write-Host "  4. large  (l)    크게 — 5줄, 비용·시간·리셋 (추천 기본값)"
     Write-Host "  5. xlarge (xl)   가장 크게 — 5줄, 전체 상세"
-    Write-Host "  6. simple        2줄 텍스트형 (이모지 없음)"
-    Write-Host "  7. oneline       1줄 숫자형 (이모지 없음)"
     Write-Host ""
     Write-Host -NoNewline "선택 [기본값: 4]: "
   } else {
-    Write-Host "Which preset would you like to install? (see examples on GitHub)"
+    Write-Host "Which size would you like to install? (see examples on GitHub)"
     Write-Host "  Examples: https://github.com/awesomezun/claude-statusline"
     Write-Host ""
     Write-Host "  1. xsmall (xs)   smallest — 2 lines, essentials"
@@ -154,8 +155,6 @@ if ($Size) {
     Write-Host "  3. medium (m)    medium — 4 lines, wide context bar"
     Write-Host "  4. large  (l)    large — 5 lines, cost / time / resets (recommended)"
     Write-Host "  5. xlarge (xl)   largest — 5 lines, full detail"
-    Write-Host "  6. simple        2 lines, text only (no emoji)"
-    Write-Host "  7. oneline       1 line, numbers only (no emoji)"
     Write-Host ""
     Write-Host -NoNewline "Choice [default: 4]: "
   }
@@ -175,8 +174,6 @@ if ($Size) {
     '4'  { $Mode = 'large'  }
     ''   { $Mode = 'large'  }
     '5'  { $Mode = 'xlarge' }
-    '6'  { $Mode = 'simple' }
-    '7'  { $Mode = 'oneline' }
     default {
       # Allow typing a preset name/alias directly instead of a number.
       $Mode = Normalize-Mode $answer
@@ -187,12 +184,26 @@ if ($Size) {
       }
     }
   }
-  # Classic sizes come with or without emoji.
-  if ($interactive -and $Mode -notin 'simple', 'oneline' -and -not $Mode.EndsWith('-plain')) {
-    if ($isKo) { Write-Host -NoNewline "이모지 아이콘을 표시할까요? [Y/n]: " } else { Write-Host -NoNewline "Show emoji icons? [Y/n]: " }
-    $yn = ''
-    try { $yn = "$($Host.UI.ReadLine())".Trim() } catch { $yn = '' }
-    if ($yn -in 'n', 'no', '아니오', '아니요') { $Mode = "$Mode-plain" }
+  # A typed name may already carry its style (l-plain, m-simple, simple, ...).
+  if ($interactive -and -not ($Mode.EndsWith('-plain') -or $Mode.EndsWith('-simple'))) {
+    Write-Host ""
+    if ($isKo) {
+      Write-Host "어떤 스타일로 할까요?"
+      Write-Host "  1. 이모지 있음 — 아이콘과 그래디언트 막대 (기본값)"
+      Write-Host "  2. 이모지 없음 — 같은 배치, 아이콘 대신 글자"
+      Write-Host "  3. 심플 텍스트형 — 막대·이모지 없이 글자만"
+      Write-Host -NoNewline "선택 [기본값: 1]: "
+    } else {
+      Write-Host "Which style?"
+      Write-Host "  1. With emoji — icons and gradient bars (default)"
+      Write-Host "  2. No emoji — same layout, text labels instead of icons"
+      Write-Host "  3. Simple text — text only, no bars or emoji"
+      Write-Host -NoNewline "Choice [default: 1]: "
+    }
+    $st = ''
+    try { $st = "$($Host.UI.ReadLine())".Trim() } catch { $st = '' }
+    if ($st -eq '2') { $Mode = "$Mode-plain" }
+    elseif ($st -eq '3') { $Mode = "$Mode-simple" }
   }
 }
 

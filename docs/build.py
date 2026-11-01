@@ -6,8 +6,8 @@ representative mock session (see docs/_demo.py), captures the truecolor ANSI
 it prints, and converts that to HTML — so gradients and exact colors match the
 terminal pixel-for-pixel instead of being hand-approximated.
 
-The "#presets" and "#variants" sections are what assets/presets/presets.png and
-assets/presets/ultra-plain.png are captured from.
+The "#presets", "#simple" and "#styles" sections are what
+assets/presets/presets.png, simple.png and styles.png are captured from.
 """
 import sys
 sys.dont_write_bytecode = True  # keep docs/ free of __pycache__ from the import below
@@ -26,16 +26,24 @@ PRESETS = [
     ("medium", "medium", "m", "4 lines"),
     ("large", "large", "l", "5 lines · recommended"),
     ("xlarge", "xlarge", "xl", "5 lines · full"),
-    ("simple", "simple", "text only", "2 lines · no emoji"),
-    ("oneline", "oneline", "numbers only", "1 line · no emoji"),
+]
+SIMPLE = [
+    ("xsmall-simple", "xs-simple", "1 line"),
+    ("small-simple", "s-simple", "2 lines"),
+    ("medium-simple", "m-simple", "4 lines"),
+    ("large-simple", "l-simple", "5 lines"),
+    ("xlarge-simple", "xl-simple", "5 lines · full"),
 ]
 
-# The Ultra plan has no 5-hour limit: same large preset, weekly-only payload.
+# Three styles of the same size; the Ultra plan has no 5-hour limit, so its
+# payload is weekly-only.
 VARIANTS = [
-    ("large", "pro", "large", "Pro / Max", "5H + 7D"),
-    ("large", "ultra", "large", "Ultra", "weekly only · ≈%/day budget"),
-    ("large-plain", "pro", "large-plain", "Pro / Max", "no emoji"),
-    ("large-plain", "ultra", "large-plain", "Ultra", "no emoji · weekly only"),
+    ("large", "pro", "large", "Pro / Max", "emoji"),
+    ("large", "ultra", "large", "Ultra", "emoji · weekly only"),
+    ("large-plain", "pro", "l-plain", "Pro / Max", "no emoji"),
+    ("large-plain", "ultra", "l-plain", "Ultra", "no emoji · weekly only"),
+    ("large-simple", "pro", "l-simple", "Pro / Max", "text only"),
+    ("large-simple", "ultra", "l-simple", "Ultra", "text only · weekly only"),
 ]
 
 ANSI = re.compile(r'(\x1b\[[0-9;]*m)')
@@ -147,6 +155,7 @@ def card(title, sub, badge, body_html, tag="") -> str:
 
 
 CARDS = "\n".join(card(t, a, badge, rows(p)) for p, t, a, badge in PRESETS)
+SCARDS = "\n".join(card(t, "text only", badge, rows(p)) for p, t, badge in SIMPLE)
 VCARDS = "\n".join(card(t, plan_name, tag, rows(p, plan)) for p, plan, t, plan_name, tag in VARIANTS)
 
 HTML = f'''<!DOCTYPE html>
@@ -169,24 +178,31 @@ HTML = f'''<!DOCTYPE html>
       <span class="badge hot">⚡ effort · 💡 thinking</span>
       <span class="badge cool">macOS · Linux · Windows</span>
       <span class="badge">Pro · Max · Ultra</span>
-      <span class="badge">emoji or plain</span>
+      <span class="badge">emoji · plain · text</span>
       <span class="badge">Catppuccin</span>
-      <span class="badge">7 presets</span>
+      <span class="badge">5 sizes × 3 styles</span>
     </div>
   </div>
 
   <div id="presets">
-    <div class="section-title">Seven presets · one word picks how much you see</div>
+    <div class="section-title">Five sizes · one word picks how much you see</div>
     <div class="grid">{CARDS}
     </div>
-    <p class="note">Every size also comes without emoji — add <code>-plain</code> (e.g. <code>l-plain</code>).</p>
+    <p class="note">Every size comes in three styles: emoji (above), <code>-plain</code> (no emoji) and <code>-simple</code> (text only).</p>
   </div>
 
-  <div id="variants">
-    <div class="section-title">Ultra plan &amp; no-emoji</div>
+  <div id="simple">
+    <div class="section-title">Simple text · no bars, no emoji</div>
+    <div class="grid">{SCARDS}
+    </div>
+    <p class="note">Limit values are colored by pace: green = under, yellow = on pace, red = ahead of time.</p>
+  </div>
+
+  <div id="styles">
+    <div class="section-title">Three styles · Pro / Max &amp; Ultra</div>
     <div class="grid2">{VCARDS}
     </div>
-    <p class="note">Ultra has no 5-hour limit, so the weekly bar takes its place with a per-day budget.</p>
+    <p class="note">Ultra has no 5-hour limit, so the weekly line takes its place with a per-day budget.</p>
   </div>
 
   <div class="section-title">Why this one</div>
@@ -194,7 +210,7 @@ HTML = f'''<!DOCTYPE html>
     <div class="item"><h3>⚡ <span>Effort &amp; thinking</span></h3><p>Surfaces <b style="color:var(--peach)">/effort</b> (high · xhigh · max) and <b style="color:var(--yellow)">extended thinking</b> — live, from Claude Code's official JSON.</p></div>
     <div class="item"><h3>📊 <span>Every plan, every window</span></h3><p>Pro and Max get 5-hour + weekly bars; Ultra (weekly only) gets a weekly bar with a per-day budget. Each limit is read on its own.</p></div>
     <div class="item"><h3>🖥️ <span>Truly cross-platform</span></h3><p>Bash on macOS and Linux, a native PowerShell renderer on Windows — no Git Bash or <code>jq</code> needed there.</p></div>
-    <div class="item"><h3>📐 <span>Seven presets</span></h3><p>Pick how much you see with one word — <code>xs</code> to <code>xl</code>, <code>simple</code> or <code>oneline</code>. Add <code>-plain</code> to drop the emoji.</p></div>
+    <div class="item"><h3>📐 <span>5 sizes × 3 styles</span></h3><p>Pick how much you see with one word — <code>xs</code> to <code>xl</code> — then add <code>-plain</code> (no emoji) or <code>-simple</code> (text only) if you like.</p></div>
   </div>
 
   <div class="section-title">Install</div>
@@ -272,8 +288,8 @@ irm https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.
   footer{text-align:center;color:var(--over);font-size:13px;margin-top:60px}
   footer b{color:var(--mauve)}
   .grid2{display:grid;grid-template-columns:1fr;gap:22px}
-  #presets,#variants{padding:28px 0 18px}
-  #presets .section-title,#variants .section-title{margin-top:0}
+  #presets,#simple,#styles{padding:28px 0 18px}
+  #presets .section-title,#simple .section-title,#styles .section-title{margin-top:0}
   .card-head .tag{font-size:12px;color:var(--peach);margin-left:8px;font-weight:500}
   .note{text-align:center;color:var(--sub);font-size:13.5px;margin-top:14px}
   .note code{font-family:"JetBrains Mono",monospace;color:var(--peach)}

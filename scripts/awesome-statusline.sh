@@ -9,8 +9,8 @@
 # Presets
 #   xsmall | small | medium | large | xlarge    classic layouts (xs s m l xl)
 #   <size>-plain                                 same layout without emoji
-#   simple                                       2 lines, text only (no emoji)
-#   oneline                                      1 line, numbers only (no emoji)
+#   <size>-simple                                text-only layout (no bars, no emoji)
+#   simple = small-simple, oneline = xsmall-simple   (aliases)
 #
 # Usage limits follow the official statusline JSON: every window (five_hour,
 # seven_day) is optional on its own. The Ultra plan has no 5-hour limit, so a
@@ -34,19 +34,23 @@ CLR="${E}[K"
 
 # ---------------------------------------------------------------- preset
 PRESET=$(printf '%s' "${1:-${AWESOME_STATUSLINE_PRESET:-large}}" | tr '[:upper:]' '[:lower:]')
-PLAIN=""
+PLAIN=""      # no emoji
+SIMPLE=""     # text-only layout (implies no emoji)
 case "$PRESET" in
-    *-plain) PLAIN=1; PRESET=${PRESET%-plain} ;;
+    *-plain)  PLAIN=1; PRESET=${PRESET%-plain} ;;
+    *-simple) PLAIN=1; SIMPLE=1; PRESET=${PRESET%-simple} ;;
 esac
 case "$PRESET" in
     xs|xsmall)              SIZE=xsmall ;;
     s|small)                SIZE=small ;;
     m|medium)               SIZE=medium ;;
     xl|xlarge)              SIZE=xlarge ;;
-    simple)                 SIZE=simple;  PLAIN=1 ;;
-    oneline|one-line|1line) SIZE=oneline; PLAIN=1 ;;
+    simple)                 SIZE=small;  PLAIN=1; SIMPLE=1 ;;   # alias of small-simple
+    oneline|one-line|1line) SIZE=xsmall; PLAIN=1; SIMPLE=1 ;;   # alias of xsmall-simple
     *)                      SIZE=large ;;
 esac
+LAYOUT=$SIZE
+[[ -n "$SIMPLE" ]] && LAYOUT="$SIZE-simple"
 
 input=$(cat)
 
@@ -274,6 +278,11 @@ FIVE_LEFT=""; SEVEN_LEFT=""
 [[ -n "$FIVE_PCT" && -n "$FIVE_RESET" ]] && { FIVE_LEFT=$(( FIVE_RESET - NOW )); (( FIVE_LEFT < 0 )) && FIVE_LEFT=0; }
 [[ -n "$SEVEN_PCT" && -n "$SEVEN_RESET" ]] && { SEVEN_LEFT=$(( SEVEN_RESET - NOW )); (( SEVEN_LEFT < 0 )) && SEVEN_LEFT=0; }
 
+# Share of each window that has already passed (for the xlarge-simple detail)
+FIVE_EL=""; SEVEN_EL=""
+if [[ -n "$FIVE_LEFT" ]]; then FIVE_EL=$(( (18000 - FIVE_LEFT) * 100 / 18000 )); (( FIVE_EL < 0 )) && FIVE_EL=0; fi
+if [[ -n "$SEVEN_LEFT" ]]; then SEVEN_EL=$(( (604800 - SEVEN_LEFT) * 100 / 604800 )); (( SEVEN_EL < 0 )) && SEVEN_EL=0; fi
+
 # Weekly budget: "≈22%/day" while a day or more is left, else "9% left"
 BUDGET=""
 if [[ -n "$SEVEN_PCT" && -n "$SEVEN_LEFT" ]]; then
@@ -357,6 +366,27 @@ join_sep() {   # joins non-empty args with SEP → J
     done
 }
 
+# ---- text-only (simple) pieces: dim keys, bold values, no bars, no emoji
+# ledger_head [git word] → LH = "Opus 5.5 · xhigh · thinking   git +2 !3 ?1   env venv   style explanatory"
+ledger_head() {
+    ident full thinking
+    LH=$ID
+    if [[ -n "$GIT_OK" ]]; then
+        if [[ -n "$DIRTY" ]]; then LH+="   ${c_ov1}git ${RST}${1:+${c_lyellow}$1${RST} }${GC}"
+        else LH+="   ${c_ov1}git ${RST}${c_lgreen}clean${RST}"; fi
+    fi
+    [[ -n "$ENV_NAME" ]] && LH+="   ${c_ov1}env ${RST}${c_green}${ENV_NAME}${RST}"
+    [[ -n "$STYLE" && "$STYLE" != "default" ]] && LH+="   ${c_ov1}style ${RST}${c_peach}${STYLE}${RST}"
+}
+# ledger_where [with cost/time] → LW = "~/path (main ↑1)   cost $25.29   time 5h16m"
+ledger_where() {
+    LW="${c_sub0}${DIR_SHOW}${RST}"
+    [[ -n "$GIT_OK" && -n "$BRANCH" ]] && LW+=" ${c_green}(${BRANCH}${AB})${RST}"
+    [[ -n "$1" ]] && LW+="   ${c_ov1}cost ${RST}${BLD}${c_yellow}${COST_FMT}${RST}   ${c_ov1}time ${RST}${BLD}${c_sub1}${DUR}${RST}"
+}
+# vpad <colour> <pct> → VP = bold, right-aligned "  7%" / " 34%" / "100%"
+vpad() { local s; printf -v s '%3d%%' "$2"; VP="${BLD}$1${s}${RST}"; }
+
 LOADING="${c_ov0}loading..${RST}"
 DASH="${BLD}${c_ov0}  --${RST}"
 
@@ -364,7 +394,7 @@ LINES=()
 emit() { LINES+=("$1"); }
 
 # ================================================================ layouts
-case "$SIZE" in
+case "$LAYOUT" in
 
 xsmall)
     ident short think
@@ -470,7 +500,7 @@ xlarge)
     fi
     ;;
 
-simple)
+small-simple)
     ident full thinking
     L1="$ID   ${c_sub0}${DIR_SHOW}${RST}"
     [[ -n "$GIT_OK" && -n "$BRANCH" ]] && L1+=" ${c_green}${BRANCH}${RST}${GC:+ $GC}"
@@ -496,7 +526,7 @@ simple)
     emit "$L1"; emit "$L2"
     ;;
 
-oneline)
+xsmall-simple)
     ident short think
     grad ctx "$CTX_PCT"
     L="$ID$SEP${c_ov1}ctx ${RST}${BLD}${E}[38;2;${G}m${CTX_PCT}%${RST}"
@@ -519,6 +549,94 @@ oneline)
     fi
     [[ -n "$GIT_OK" && -n "$BRANCH" ]] && L+="$SEP${c_lgreen}${BRANCH}${RST}${DIRTY:+${BLD}${c_yellow}*${RST}}"
     emit "$L"
+    ;;
+
+medium-simple)
+    ledger_head; emit "$LH"
+    ledger_where; emit "$LW"
+    grad ctx "$CTX_PCT"; vpad "${E}[38;2;${G}m" "$CTX_PCT"; pad context 9
+    emit "${c_ov1}${PADDED}${RST}${VP}${c_ov2}   ${TOK_K} / ${SIZE_K}${RST}"
+    pad limits 9; L="${c_ov1}${PADDED}${RST}"
+    if [[ -z "$HAS_RL" ]]; then
+        L+="$LOADING"
+    elif [[ -n "$FIVE_PCT" ]]; then
+        pace_col "$FIVE_PCT" "$FIVE_LEFT" 18000
+        L+="${c_ov1}5h ${RST}${BLD}${PC}${FIVE_PCT}%${RST}"
+        [[ -n "$FIVE_LEFT" ]] && { rel "$FIVE_LEFT"; L+=" ${c_ov2}${R}${RST}"; }
+        if [[ -n "$SEVEN_PCT" ]]; then
+            pace_col "$SEVEN_PCT" "$SEVEN_LEFT" 604800
+            L+="   ${c_ov1}7d ${RST}${BLD}${PC}${SEVEN_PCT}%${RST}"
+            [[ -n "$SEVEN_LEFT" ]] && { fmt_at "$SEVEN_RESET" "%a"; L+=" ${c_ov2}${D}${RST}"; }
+        fi
+    elif [[ -n "$SEVEN_PCT" ]]; then
+        pace_col "$SEVEN_PCT" "$SEVEN_LEFT" 604800
+        L+="${c_ov1}week ${RST}${BLD}${PC}${SEVEN_PCT}%${RST}"
+        [[ -n "$SEVEN_LEFT" ]] && { fmt_at "$SEVEN_RESET" "%a %H:%M"; L+=" ${c_ov2}${D}${BUDGET:+ · $BUDGET}${RST}"; }
+    else
+        L=""   # rate_limits without a 5h / 7d window (e.g. spend_limit only)
+    fi
+    [[ -n "$L" ]] && emit "$L"
+    ;;
+
+large-simple)
+    ledger_head; emit "$LH"
+    ledger_where costtime; emit "$LW"
+    grad ctx "$CTX_PCT"; vpad "${E}[38;2;${G}m" "$CTX_PCT"; pad context 9
+    emit "${c_ov1}${PADDED}${RST}${VP}${c_ov2}   ${TOK_K} / ${SIZE_K}${RST}"
+    if [[ -z "$HAS_RL" ]]; then
+        pad 5h 9; emit "${c_ov1}${PADDED}${RST}${DASH}   $LOADING"
+        pad 7d 9; emit "${c_ov1}${PADDED}${RST}${DASH}   $LOADING"
+    else
+        if [[ -n "$FIVE_PCT" ]]; then
+            pace_col "$FIVE_PCT" "$FIVE_LEFT" 18000; vpad "$PC" "$FIVE_PCT"; pad 5h 9
+            L="${c_ov1}${PADDED}${RST}${VP}"
+            if [[ -n "$FIVE_LEFT" ]]; then rel "$FIVE_LEFT"; fmt_at "$FIVE_RESET" "%H:%M"; L+="${c_ov2}   resets in ${R} · ${D}${RST}"; fi
+            emit "$L"
+        fi
+        if [[ -n "$SEVEN_PCT" ]]; then
+            pace_col "$SEVEN_PCT" "$SEVEN_LEFT" 604800; vpad "$PC" "$SEVEN_PCT"
+            if [[ -n "$FIVE_PCT" ]]; then pad 7d 9; else pad week 9; fi
+            L="${c_ov1}${PADDED}${RST}${VP}"
+            if [[ -n "$SEVEN_LEFT" ]]; then
+                fmt_at "$SEVEN_RESET" "%a %H:%M"; rel "$SEVEN_LEFT"
+                L+="${c_ov2}   resets ${D} · ${R}"
+                [[ -z "$FIVE_PCT" && -n "$BUDGET" ]] && L+=" · ${BUDGET}"
+                L+="${RST}"
+            fi
+            emit "$L"
+        fi
+    fi
+    ;;
+
+xlarge-simple)
+    ledger_head dirty; emit "$LH"
+    ledger_where costtime; emit "$LW"
+    grad ctx "$CTX_PCT"; vpad "${E}[38;2;${G}m" "$CTX_PCT"; pad context 10
+    FREE_K=$(( (CTX_SIZE - CTX_TOK) / 1000 )); (( FREE_K < 0 )) && FREE_K=0
+    emit "${c_ov1}${PADDED}${RST}${VP}${c_ov2}   ${TOK_K} / $(( CTX_SIZE / 1000 ))k used · ${FREE_K}k free${RST}"
+    if [[ -z "$HAS_RL" ]]; then
+        pad "5h limit" 10; emit "${c_ov1}${PADDED}${RST}${DASH}   $LOADING"
+        pad "7d limit" 10; emit "${c_ov1}${PADDED}${RST}${DASH}   $LOADING"
+    else
+        if [[ -n "$FIVE_PCT" ]]; then
+            pace_col "$FIVE_PCT" "$FIVE_LEFT" 18000; vpad "$PC" "$FIVE_PCT"; pad "5h limit" 10
+            L="${c_ov1}${PADDED}${RST}${VP}"
+            if [[ -n "$FIVE_LEFT" ]]; then rel "$FIVE_LEFT"; fmt_ampm "$FIVE_RESET"; L+="${c_ov2}   resets in ${R} (${D}) · ${FIVE_EL}% elapsed${RST}"; fi
+            emit "$L"
+        fi
+        if [[ -n "$SEVEN_PCT" ]]; then
+            pace_col "$SEVEN_PCT" "$SEVEN_LEFT" 604800; vpad "$PC" "$SEVEN_PCT"
+            if [[ -n "$FIVE_PCT" ]]; then pad "7d limit" 10; else pad weekly 10; fi
+            L="${c_ov1}${PADDED}${RST}${VP}"
+            if [[ -n "$SEVEN_LEFT" ]]; then
+                rel "$SEVEN_LEFT"; fmt_long "$SEVEN_RESET"
+                L+="${c_ov2}   resets ${D} (in ${R}) · ${SEVEN_EL}% elapsed"
+                [[ -z "$FIVE_PCT" && -n "$BUDGET" ]] && L+=" · ${BUDGET}"
+                L+="${RST}"
+            fi
+            emit "$L"
+        fi
+    fi
     ;;
 
 *)  # large

@@ -16,7 +16,7 @@ notepad .\install.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-To choose a preset (e.g. `small`, `l-plain`, `simple`):
+To choose a preset (e.g. `small`, `l-plain`, `m-simple`):
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 small
@@ -255,5 +255,5 @@ declines to do it unattended.
    "always allow"), then re-run.
 
 Whichever you pick, the preset question still applies — choose a preset
-(`xsmall`/`small`/`medium`/`large`/`xlarge`, each optionally `-plain`, or
-`simple`/`oneline`); the installer does not silently assume one for you.
+(`xsmall`/`small`/`medium`/`large`/`xlarge`, each optionally `-plain` or
+`-simple`); the installer does not silently assume one for you.

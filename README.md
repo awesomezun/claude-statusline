@@ -25,7 +25,7 @@
 
 
 
-<img src="assets/presets/presets.png" alt="Seven presets — xsmall to xlarge plus simple and oneline, with live ⚡effort and 💡thinking" width="820"/>
+<img src="assets/presets/presets.png" alt="Five sizes — xsmall to xlarge, with live ⚡effort and 💡thinking" width="820"/>
 
 <sub>▶ <a href="https://awesomezun.github.io/claude-statusline/">Interactive live demo</a></sub>
 
@@ -39,6 +39,7 @@ Built to keep pace with Claude Code — recent updates:
 
 | Date | Update |
 |------|--------|
+| **2026-11-01** | **Three styles for every size** — the text-only style now covers all five sizes (`m-simple`, `l-simple`, `xl-simple` are new); `simple` / `oneline` became `s-simple` / `xs-simple` (old names still work) · installs ask size, then style |
 | **2026-10-31** | **Ultra plan support + redesign** — Ultra has no 5-hour limit, so it now gets a weekly bar with a per-day budget (the bars used to freeze at `0% (loading..)`) · every size redesigned: aligned columns, fixed-width %, resets shown as *in 2h10m · 01:50*, empty fields hidden · **no-emoji option** for every size (`-plain`) · two new text presets, **`simple`** and **`oneline`** · one renderer for every preset, ~4× faster per refresh |
 | **2026-10-17** | **Windows on non-English locales** — the statusline no longer drops to `Unknown` / 0% when Claude Code sends non-ASCII text (e.g. a Korean session name) · context gauge guards against stale window-size reports |
 | **2026-06-03** | **Install size picker** — installing through Claude Code always asks which of the five presets you want (`large` recommended) |
@@ -54,9 +55,9 @@ Built to keep pace with Claude Code — recent updates:
 
 - ⚡ **Reasoning effort & thinking** — shows `/effort` (`high`/`xhigh`/`max`) and extended thinking, live from Claude Code's official statusline JSON (and hidden on models that don't support effort).
 - 📊 **Every plan's limits** — Pro / Max get 5-hour + weekly bars with time to reset; **Ultra** (weekly only) gets a weekly bar with a per-day budget.
-- 🔤 **Emoji or plain** — every size also comes without emoji (`-plain`), plus text-only `simple` and `oneline` presets.
+- 🔤 **Three styles** — every size comes with emoji, without emoji (`-plain`), or as plain text with no bars (`-simple`).
 - 🖥️ **No Node, no Nerd Font** — Bash on macOS/Linux, native PowerShell on Windows; macOS/Linux auto-install `jq` if needed.
-- 📐 **Seven presets** — `xs` to `xl`, `simple`, `oneline`: pick how much you see with one word.
+- 📐 **Five sizes** — `xs` to `xl`: pick how much you see with one word.
 
 > There are several great Claude Code statuslines out there — this one leans into reasoning-effort/thinking visibility and zero-setup, cross-platform install.
 
@@ -95,33 +96,43 @@ git clone https://github.com/awesomezun/claude-statusline.git && cd claude-statu
 ./install.ps1           # Windows PowerShell
 ```
 
-Use any preset explicitly — abbreviation **or** full name: `xs`/`xsmall`, `s`/`small`, `m`/`medium`, `l`/`large`, `xl`/`xlarge` (add `-plain` for no emoji, e.g. `l-plain`), or `simple` / `oneline`.
+Use any preset explicitly — a size as abbreviation **or** full name (`xs`/`xsmall`, `s`/`small`, `m`/`medium`, `l`/`large`, `xl`/`xlarge`), optionally with a style: `-plain` (no emoji) or `-simple` (text only), e.g. `l-plain`, `m-simple`.
 Then restart Claude Code. That's it.
 
 ---
 
 ## 📐 Presets
 
-One word picks how much you see. Smallest → largest:
+**Five sizes × three styles.** One word picks how much you see; an optional suffix picks the style.
 
-| Preset | Lines | At a glance |
-|--------|:-----:|-------------|
-| `oneline` | 1 | numbers only, no emoji — model · effort · context · limits · branch |
+| Size | Lines | At a glance |
+|------|:-----:|-------------|
 | `xsmall` (`xs`) | 2 | model · effort · thinking · folder · branch · 3 small bars |
 | `small` (`s`) | 2 | + labels, percentages, time to reset, output style |
-| `simple` | 2 | text only, no bars, no emoji — limits colored by pace |
 | `medium` (`m`) | 4 | full-width context bar, git state |
 | `large` (`l`) | 5 | + cost, session time, reset times — **recommended** |
 | `xlarge` (`xl`) | 5 | everything: 40-block bars, full reset dates |
 
-**No emoji?** Add `-plain` to any size (`xs-plain` … `xl-plain`): the same layout with text labels instead of icons — the steadiest choice in tmux, SSH and Windows consoles.
+| Style | Example | What changes |
+|-------|---------|--------------|
+| emoji (default) | `large` | icons + gradient bars |
+| `-plain` | `l-plain` | same layout and bars, text labels instead of icons — steadiest in tmux, SSH and Windows consoles |
+| `-simple` | `l-simple` | text only: no bars, no emoji; limit values colored by pace (`xs-simple` fits on one line) |
 
-### Ultra plan & no-emoji
+`simple` and `oneline` keep working as aliases of `s-simple` and `xs-simple`.
 
-The Ultra plan has no 5-hour limit, so the weekly bar takes its place, with a per-day budget (`≈22%/day` = how much you can use per day and still stay under the weekly limit). Pro / Max keep the 5H + 7D bars. Nothing to configure — the statusline follows whatever limits Claude Code reports.
+### Simple text
 
 <div align="center">
-<img src="assets/presets/ultra-plain.png" alt="large on Pro/Max vs Ultra, with and without emoji" width="820"/>
+<img src="assets/presets/simple.png" alt="The five sizes in the -simple text style" width="820"/>
+</div>
+
+### Three styles · Pro / Max & Ultra
+
+The Ultra plan has no 5-hour limit, so the weekly line takes its place, with a per-day budget (`≈22%/day` = how much you can use per day and still stay under the weekly limit). Pro / Max keep 5H + 7D. Nothing to configure — the statusline follows whatever limits Claude Code reports.
+
+<div align="center">
+<img src="assets/presets/styles.png" alt="large in the emoji, -plain and -simple styles on Pro/Max and Ultra" width="820"/>
 </div>
 
 > 🔤 Curious how it looks in *your* font? See the **[12-font showcase →](demo.md)** — 10 cross-platform mono fonts plus Menlo and MesloLGS.
@@ -133,9 +144,6 @@ The Ultra plan has no 5-hour limit, so the weekly bar takes its place, with a pe
 Colors render live in your terminal:
 
 ```text
-oneline ─ 1 line, numbers only
-Opus · xhigh · think │ ctx 32% │ 5h 34% │ 7d 65% │ main*
-
 xsmall ─ 2 lines
 🤖 Opus ⚡xhigh 💡  📂 awesome-statusline 🌿main*
 🧠 ██░░░░ 32%  5h ██░░░░ 34%  7d ████░░ 65%
@@ -143,10 +151,6 @@ xsmall ─ 2 lines
 small ─ 2 lines
 🤖 Opus 5.5 ⚡xhigh 💡 │ 📂 ~/cc/awesome-statusline 🌿(main) +2 !3 ?1 │ 🎨 explanatory
 🧠 Context ███░░░░░░░  32% │ 5H ███░░░░░░░  34% 2h10m │ 7D ███████░░░  65% Tue
-
-simple ─ 2 lines, text only
-Opus 5.5 · xhigh · thinking   ~/cc/awesome-statusline main +2 !3 ?1
-ctx 32%   5h 34% 2h10m   7d 65% Tue 12:40   cost $25.29   time 5h16m
 
 medium ─ 4 lines
 🤖 Opus 5.5 ⚡xhigh 💡 │ 📝 +2 !3 ?1 │ 🎨 explanatory
@@ -161,25 +165,45 @@ large ─ 5 lines
 🚀 Usage 5H  ███████░░░░░░░░░░░░░  34%  resets in 2h10m · 01:50
 ⭐ Usage 7D  █████████████░░░░░░░  65%  resets Tue 12:40 · 2d14h
 
-large on Ultra ─ weekly only
-🤖 Opus 5.5 ⚡xhigh 💡 │ 📝 +2 !3 ?1 │ 🎨 explanatory
-📂 ~/cc/awesome-statusline 🌿(main ↑1) │ 💰 $25.29 │ ⏰ 5h16m
-🧠 Context   ██████░░░░░░░░░░░░░░  32%  320k/1M
-⭐ Weekly    ██████████░░░░░░░░░░  48%  resets Tue 08:40 · 2d10h · ≈22%/day
-
-large-plain ─ no emoji
-Opus 5.5 · xhigh · thinking │ +2 !3 ?1 │ explanatory
-~/cc/awesome-statusline (main ↑1) │ $25.29 │ 5h16m
-Context   ██████░░░░░░░░░░░░░░  32%  320k/1M
-Usage 5H  ███████░░░░░░░░░░░░░  34%  resets in 2h10m · 01:50
-Usage 7D  █████████████░░░░░░░  65%  resets Tue 12:40 · 2d14h
-
 xlarge ─ 5 lines
 🤖 Opus 5.5 ⚡xhigh 💡 │ 🎨 explanatory │ 📝 dirty +2 !3 ?1
 📂 ~/cc/awesome-statusline 🌿(main ↑1) │ 💰 $25.29 │ ⏰ 5h16m
 🧠 Context   █████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░  32%  used (320k / 1000k)
 🚀 5H Limit  ██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░  34%  resets in 2h10m (1:50am)
 🌟 7D Limit  ██████████████████████████░░░░░░░░░░░░░░  65%  resets Tue Nov 3, 12pm (in 2d14h)
+
+large on Ultra ─ weekly only
+🤖 Opus 5.5 ⚡xhigh 💡 │ 📝 +2 !3 ?1 │ 🎨 explanatory
+📂 ~/cc/awesome-statusline 🌿(main ↑1) │ 💰 $25.29 │ ⏰ 5h16m
+🧠 Context   ██████░░░░░░░░░░░░░░  32%  320k/1M
+⭐ Weekly    ██████████░░░░░░░░░░  48%  resets Tue 08:40 · 2d10h · ≈22%/day
+
+l-plain ─ no emoji
+Opus 5.5 · xhigh · thinking │ +2 !3 ?1 │ explanatory
+~/cc/awesome-statusline (main ↑1) │ $25.29 │ 5h16m
+Context   ██████░░░░░░░░░░░░░░  32%  320k/1M
+Usage 5H  ███████░░░░░░░░░░░░░  34%  resets in 2h10m · 01:50
+Usage 7D  █████████████░░░░░░░  65%  resets Tue 12:40 · 2d14h
+
+xs-simple ─ text only, 1 line
+Opus · xhigh · think │ ctx 32% │ 5h 34% │ 7d 65% │ main*
+
+s-simple ─ text only, 2 lines
+Opus 5.5 · xhigh · thinking   ~/cc/awesome-statusline main +2 !3 ?1
+ctx 32%   5h 34% 2h10m   7d 65% Tue 12:40   cost $25.29   time 5h16m
+
+l-simple ─ text only, 5 lines
+Opus 5.5 · xhigh · thinking   git +2 !3 ?1   style explanatory
+~/cc/awesome-statusline (main ↑1)   cost $25.29   time 5h16m
+context   32%   320k / 1M
+5h        34%   resets in 2h10m · 01:50
+7d        65%   resets Tue 12:40 · 2d14h
+
+l-simple on Ultra ─ weekly only
+Opus 5.5 · xhigh · thinking   git +2 !3 ?1   style explanatory
+~/cc/awesome-statusline (main ↑1)   cost $25.29   time 5h16m
+context   32%   320k / 1M
+week      48%   resets Tue 08:40 · 2d10h · 22%/day
 ```
 
 </details>
@@ -201,7 +225,7 @@ xlarge ─ 5 lines
 | 🚀 **5H / ⭐ 7D** | Usage-limit bars with time to reset (Pro / Max) |
 | ⭐ **Weekly** | Ultra (no 5-hour limit): weekly bar + per-day budget (`≈22%/day`) |
 
-In `simple` and `oneline`, limit values are colored by **pace** — usage compared with how much of the window has passed: green = under pace, yellow = on pace, red = ahead of time (or ≥ 90%).
+In the `-simple` style, limit values are colored by **pace** — usage compared with how much of the window has passed: green = under pace, yellow = on pace, red = ahead of time (or ≥ 90%).
 
 All colors follow the [Catppuccin](https://catppuccin.com/) palette. No Nerd Font required — every glyph is a standard emoji/Unicode block.
 
@@ -213,6 +237,7 @@ All colors follow the [Catppuccin](https://catppuccin.com/) palette. No Nerd Fon
 ```bash
 ./install.sh m          # or: curl … | bash -s -- m
 ./install.sh l-plain    # same size, no emoji
+./install.sh l-simple   # same size, text only
 ```
 
 **Uninstall** — remove the `statusLine` entry from `~/.claude/settings.json` (a timestamped backup is created on every install) and delete `~/.claude/awesome-statusline.sh` or `~/.claude/awesome-statusline.ps1`.
@@ -240,7 +265,7 @@ On Windows, the installer writes a native `awesome-statusline.ps1` and points Cl
 
 **Why emoji instead of Nerd Font icons?** So it looks right out of the box on any terminal, with zero font setup.
 
-**Can I turn the emoji off?** Yes — add `-plain` to any size (`l-plain`), or pick `simple` / `oneline`, which are always emoji-free.
+**Can I turn the emoji off?** Yes — add `-plain` to any size for the same layout without emoji (`l-plain`), or `-simple` for plain text with no bars (`l-simple`).
 
 **Where are my old settings?** Every install backs up `settings.json` to `settings.json.backup-<timestamp>` before touching it.
 
@@ -259,7 +284,7 @@ Prefer Claude Code's plugin system? It's also published as a marketplace plugin:
 /plugin install awesome-statusline
 ```
 
-Then run `/statusline-setup` to apply it, or pass any preset like `/statusline-setup xl` or `/statusline-setup l-plain`. The one-line `install.sh` above is the primary path; this is just an alternative.
+Then run `/statusline-setup` to apply it, or pass any preset like `/statusline-setup xl`, `/statusline-setup l-plain` or `/statusline-setup m-simple`. The one-line `install.sh` above is the primary path; this is just an alternative.
 
 ---
 

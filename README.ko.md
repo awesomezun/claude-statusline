@@ -16,7 +16,7 @@
 
 <br/><br/>
 
-<img src="assets/presets/presets.png" alt="7가지 프리셋 — xsmall부터 xlarge, simple, oneline까지, ⚡effort와 💡thinking 실시간 표시" width="820"/>
+<img src="assets/presets/presets.png" alt="5가지 크기 — xsmall부터 xlarge까지, ⚡effort와 💡thinking 실시간 표시" width="820"/>
 
 <sub>▶ <a href="https://awesomezun.github.io/claude-statusline/">인터랙티브 라이브 데모</a></sub>
 
@@ -30,6 +30,7 @@ Claude Code 최신 기능에 맞춰 계속 업데이트됩니다 — 최근 내�
 
 | 날짜 | 업데이트 |
 |------|----------|
+| **2026-11-01** | **모든 크기에 3가지 스타일** — 텍스트형을 다섯 크기 모두로 확장(`m-simple`, `l-simple`, `xl-simple` 새로 추가) · `simple` / `oneline`은 `s-simple` / `xs-simple`로 정리(예전 이름도 그대로 동작) · 설치할 때 크기와 스타일을 차례로 물어봄 |
 | **2026-10-31** | **Ultra 요금제 지원 + 디자인 개편** — Ultra는 5시간 한도가 없어서 주간 막대와 하루 예산을 보여 줍니다(예전에는 `0% (loading..)`에서 멈췄습니다) · 모든 크기 디자인 정돈: 열 정렬, 퍼센트 칸 폭 고정, 리셋을 *2h10m 후 · 01:50*처럼 표시, 빈 정보 숨김 · 모든 크기에 **이모지 없음 옵션**(`-plain`) · 텍스트형 새 프리셋 **`simple`**, **`oneline`** · 모든 프리셋을 렌더러 하나로 통합해 갱신 속도 약 4배 향상 |
 | **2026-10-17** | **한국어 등 비영어 Windows 환경** — 세션 이름에 한글 같은 비ASCII 문자가 있으면 상태줄이 `Unknown` / 0%로 표시되던 문제 수정 · 컨텍스트 창 크기가 잘못 보고될 때의 보정 추가 |
 | **2026-06-03** | **설치 크기 선택** — Claude Code로 설치할 때 5가지 프리셋 중 원하는 크기를 항상 물어봄(`large` 추천) |
@@ -45,9 +46,9 @@ Claude Code 최신 기능에 맞춰 계속 업데이트됩니다 — 최근 내�
 
 - ⚡ **추론 강도 & thinking** — `/effort`(`high`/`xhigh`/`max`)와 확장 사고를 Claude Code 공식 상태줄 JSON에서 실시간 표시 (effort 미지원 모델에선 자동 숨김).
 - 📊 **모든 요금제의 한도** — Pro / Max는 5시간·주간 막대와 리셋까지 남은 시간을, **Ultra**(주간 한도만 있음)는 주간 막대와 하루 예산을 보여 줍니다.
-- 🔤 **이모지 있음 / 없음** — 모든 크기를 이모지 없이도 쓸 수 있고(`-plain`), 텍스트형 `simple`·`oneline` 프리셋도 있습니다.
+- 🔤 **3가지 스타일** — 모든 크기를 이모지 있음, 이모지 없음(`-plain`), 막대 없는 텍스트형(`-simple`) 중에서 고를 수 있습니다.
 - 🖥️ **Node·Nerd Font 불필요** — macOS/Linux는 Bash, Windows는 네이티브 PowerShell을 씁니다. macOS/Linux에서는 필요하면 `jq`를 자동 설치합니다.
-- 📐 **7가지 프리셋** — `xs`~`xl`, `simple`, `oneline` 중 한 단어로 정보량을 고릅니다.
+- 📐 **5가지 크기** — `xs`~`xl` 중 한 단어로 정보량을 고릅니다.
 
 > 훌륭한 Claude Code 상태줄이 이미 여럿 있습니다. 이 프로젝트는 그중 추론 강도(effort)/thinking 가시성과 무설치 크로스플랫폼 설치에 집중합니다.
 
@@ -86,33 +87,43 @@ git clone https://github.com/awesomezun/claude-statusline.git && cd claude-statu
 ./install.ps1           # Windows PowerShell
 ```
 
-프리셋은 약어·풀네임 둘 다 됩니다: `xs`/`xsmall`, `s`/`small`, `m`/`medium`, `l`/`large`, `xl`/`xlarge`(이모지 없이 쓰려면 `l-plain`처럼 `-plain`을 붙입니다), 그리고 `simple` / `oneline`.
+크기는 약어·풀네임 둘 다 됩니다(`xs`/`xsmall`, `s`/`small`, `m`/`medium`, `l`/`large`, `xl`/`xlarge`). 뒤에 스타일을 붙일 수 있습니다: `-plain`(이모지 없음) 또는 `-simple`(텍스트형). 예: `l-plain`, `m-simple`.
 그다음 Claude Code를 재시작하면 끝입니다.
 
 ---
 
 ## 📐 프리셋
 
-한 단어로 정보량을 고릅니다. 작은 것 → 큰 것:
+**5가지 크기 × 3가지 스타일.** 한 단어로 정보량을 고르고, 원하면 뒤에 스타일을 붙입니다.
 
-| 프리셋 | 줄 | 한눈에 |
-|--------|:--:|--------|
-| `oneline` | 1 | 숫자만, 이모지 없음 — 모델 · effort · 컨텍스트 · 한도 · 브랜치 |
+| 크기 | 줄 | 한눈에 |
+|------|:--:|--------|
 | `xsmall` (`xs`) | 2 | 모델 · effort · thinking · 폴더 · 브랜치 · 작은 막대 3개 |
 | `small` (`s`) | 2 | + 라벨, 퍼센트, 리셋까지 남은 시간, 출력 스타일 |
-| `simple` | 2 | 텍스트만, 막대·이모지 없음 — 한도 값은 페이스에 따라 색 표시 |
 | `medium` (`m`) | 4 | 넓은 컨텍스트 막대, git 상태 |
 | `large` (`l`) | 5 | + 비용, 세션 시간, 리셋 시각 — **추천** |
 | `xlarge` (`xl`) | 5 | 전부: 40칸 막대, 리셋 날짜까지 |
 
-**이모지가 싫으신가요?** 어떤 크기든 `-plain`을 붙이면 됩니다(`xs-plain` … `xl-plain`). 배치는 같고 아이콘 대신 글자 라벨을 써서, tmux·SSH·Windows 콘솔에서 가장 안정적으로 보입니다.
+| 스타일 | 예 | 달라지는 점 |
+|--------|----|-------------|
+| 이모지 (기본) | `large` | 아이콘 + 그래디언트 막대 |
+| `-plain` | `l-plain` | 배치와 막대는 같고 아이콘 대신 글자 라벨 — tmux·SSH·Windows 콘솔에서 가장 안정적입니다 |
+| `-simple` | `l-simple` | 텍스트만: 막대·이모지 없음, 한도 값은 페이스에 따라 색 표시 (`xs-simple`은 한 줄) |
 
-### Ultra 요금제 & 이모지 없음
+예전 이름 `simple`, `oneline`도 `s-simple`, `xs-simple`의 별칭으로 계속 쓸 수 있습니다.
 
-Ultra 요금제는 5시간 한도가 없어서, 그 자리에 주간 막대와 하루 예산을 보여 줍니다(`≈22%/day` = 하루에 이만큼까지 써도 주간 한도 안에 들어온다는 뜻입니다). Pro / Max는 5H + 7D 막대를 그대로 보여 줍니다. 따로 설정할 것은 없습니다. Claude Code가 알려 주는 한도에 맞춰 화면이 자동으로 바뀝니다.
+### 심플 텍스트형
 
 <div align="center">
-<img src="assets/presets/ultra-plain.png" alt="large 프리셋의 Pro/Max와 Ultra 화면, 이모지 있음과 없음" width="820"/>
+<img src="assets/presets/simple.png" alt="5가지 크기의 -simple 텍스트형" width="820"/>
+</div>
+
+### 3가지 스타일 · Pro / Max와 Ultra
+
+Ultra 요금제는 5시간 한도가 없어서, 그 자리에 주간 한도와 하루 예산을 보여 줍니다(`≈22%/day` = 하루에 이만큼까지 써도 주간 한도 안에 들어온다는 뜻입니다). Pro / Max는 5H + 7D를 그대로 보여 줍니다. 따로 설정할 것은 없습니다. Claude Code가 알려 주는 한도에 맞춰 화면이 자동으로 바뀝니다.
+
+<div align="center">
+<img src="assets/presets/styles.png" alt="large의 이모지·-plain·-simple 스타일을 Pro/Max와 Ultra에서 비교" width="820"/>
 </div>
 
 > 🔤 *내* 폰트에선 어떻게 보일까요? **[12개 폰트 쇼케이스 →](demo.md)** — 크로스플랫폼 모노 폰트 10개와 Menlo, MesloLGS를 담았습니다.
@@ -124,9 +135,6 @@ Ultra 요금제는 5시간 한도가 없어서, 그 자리에 주간 막대와 �
 터미널에서는 색이 함께 표시됩니다:
 
 ```text
-oneline ─ 1줄, 숫자만
-Opus · xhigh · think │ ctx 32% │ 5h 34% │ 7d 65% │ main*
-
 xsmall ─ 2줄
 🤖 Opus ⚡xhigh 💡  📂 awesome-statusline 🌿main*
 🧠 ██░░░░ 32%  5h ██░░░░ 34%  7d ████░░ 65%
@@ -134,10 +142,6 @@ xsmall ─ 2줄
 small ─ 2줄
 🤖 Opus 5.5 ⚡xhigh 💡 │ 📂 ~/cc/awesome-statusline 🌿(main) +2 !3 ?1 │ 🎨 explanatory
 🧠 Context ███░░░░░░░  32% │ 5H ███░░░░░░░  34% 2h10m │ 7D ███████░░░  65% Tue
-
-simple ─ 2줄, 텍스트만
-Opus 5.5 · xhigh · thinking   ~/cc/awesome-statusline main +2 !3 ?1
-ctx 32%   5h 34% 2h10m   7d 65% Tue 12:40   cost $25.29   time 5h16m
 
 medium ─ 4줄
 🤖 Opus 5.5 ⚡xhigh 💡 │ 📝 +2 !3 ?1 │ 🎨 explanatory
@@ -152,25 +156,45 @@ large ─ 5줄
 🚀 Usage 5H  ███████░░░░░░░░░░░░░  34%  resets in 2h10m · 01:50
 ⭐ Usage 7D  █████████████░░░░░░░  65%  resets Tue 12:40 · 2d14h
 
-large (Ultra) ─ 주간 한도만
-🤖 Opus 5.5 ⚡xhigh 💡 │ 📝 +2 !3 ?1 │ 🎨 explanatory
-📂 ~/cc/awesome-statusline 🌿(main ↑1) │ 💰 $25.29 │ ⏰ 5h16m
-🧠 Context   ██████░░░░░░░░░░░░░░  32%  320k/1M
-⭐ Weekly    ██████████░░░░░░░░░░  48%  resets Tue 08:40 · 2d10h · ≈22%/day
-
-large-plain ─ 이모지 없음
-Opus 5.5 · xhigh · thinking │ +2 !3 ?1 │ explanatory
-~/cc/awesome-statusline (main ↑1) │ $25.29 │ 5h16m
-Context   ██████░░░░░░░░░░░░░░  32%  320k/1M
-Usage 5H  ███████░░░░░░░░░░░░░  34%  resets in 2h10m · 01:50
-Usage 7D  █████████████░░░░░░░  65%  resets Tue 12:40 · 2d14h
-
 xlarge ─ 5줄
 🤖 Opus 5.5 ⚡xhigh 💡 │ 🎨 explanatory │ 📝 dirty +2 !3 ?1
 📂 ~/cc/awesome-statusline 🌿(main ↑1) │ 💰 $25.29 │ ⏰ 5h16m
 🧠 Context   █████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░  32%  used (320k / 1000k)
 🚀 5H Limit  ██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░  34%  resets in 2h10m (1:50am)
 🌟 7D Limit  ██████████████████████████░░░░░░░░░░░░░░  65%  resets Tue Nov 3, 12pm (in 2d14h)
+
+large (Ultra) ─ 주간 한도만
+🤖 Opus 5.5 ⚡xhigh 💡 │ 📝 +2 !3 ?1 │ 🎨 explanatory
+📂 ~/cc/awesome-statusline 🌿(main ↑1) │ 💰 $25.29 │ ⏰ 5h16m
+🧠 Context   ██████░░░░░░░░░░░░░░  32%  320k/1M
+⭐ Weekly    ██████████░░░░░░░░░░  48%  resets Tue 08:40 · 2d10h · ≈22%/day
+
+l-plain ─ 이모지 없음
+Opus 5.5 · xhigh · thinking │ +2 !3 ?1 │ explanatory
+~/cc/awesome-statusline (main ↑1) │ $25.29 │ 5h16m
+Context   ██████░░░░░░░░░░░░░░  32%  320k/1M
+Usage 5H  ███████░░░░░░░░░░░░░  34%  resets in 2h10m · 01:50
+Usage 7D  █████████████░░░░░░░  65%  resets Tue 12:40 · 2d14h
+
+xs-simple ─ 텍스트형, 1줄
+Opus · xhigh · think │ ctx 32% │ 5h 34% │ 7d 65% │ main*
+
+s-simple ─ 텍스트형, 2줄
+Opus 5.5 · xhigh · thinking   ~/cc/awesome-statusline main +2 !3 ?1
+ctx 32%   5h 34% 2h10m   7d 65% Tue 12:40   cost $25.29   time 5h16m
+
+l-simple ─ 텍스트형, 5줄
+Opus 5.5 · xhigh · thinking   git +2 !3 ?1   style explanatory
+~/cc/awesome-statusline (main ↑1)   cost $25.29   time 5h16m
+context   32%   320k / 1M
+5h        34%   resets in 2h10m · 01:50
+7d        65%   resets Tue 12:40 · 2d14h
+
+l-simple (Ultra) ─ 주간 한도만
+Opus 5.5 · xhigh · thinking   git +2 !3 ?1   style explanatory
+~/cc/awesome-statusline (main ↑1)   cost $25.29   time 5h16m
+context   32%   320k / 1M
+week      48%   resets Tue 08:40 · 2d10h · 22%/day
 ```
 
 </details>
@@ -192,7 +216,7 @@ xlarge ─ 5줄
 | 🚀 **5H / ⭐ 7D** | 사용량 한도 막대 + 리셋까지 남은 시간 (Pro / Max) |
 | ⭐ **Weekly** | Ultra(5시간 한도 없음): 주간 막대 + 하루 예산(`≈22%/day`) |
 
-`simple`과 `oneline`에서는 한도 값을 **페이스**에 따라 색으로 보여 줍니다. 한도 기간 중 지나간 시간과 사용량을 비교해서, 초록 = 여유, 노랑 = 비슷, 빨강 = 시간보다 빨리 쓰는 중(또는 90% 이상)입니다.
+`-simple` 스타일에서는 한도 값을 **페이스**에 따라 색으로 보여 줍니다. 한도 기간 중 지나간 시간과 사용량을 비교해서, 초록 = 여유, 노랑 = 비슷, 빨강 = 시간보다 빨리 쓰는 중(또는 90% 이상)입니다.
 
 모든 색은 [Catppuccin](https://catppuccin.com/) 팔레트를 따릅니다. Nerd Font 불필요 — 모든 글리프는 표준 이모지/유니코드 블록입니다.
 
@@ -204,6 +228,7 @@ xlarge ─ 5줄
 ```bash
 ./install.sh m          # 또는: curl … | bash -s -- m
 ./install.sh l-plain    # 같은 크기, 이모지 없음
+./install.sh l-simple   # 같은 크기, 텍스트형
 ```
 
 **제거** — `~/.claude/settings.json`에서 `statusLine` 항목을 지우고(설치할 때마다 타임스탬프 백업이 만들어집니다) `~/.claude/awesome-statusline.sh` 또는 `~/.claude/awesome-statusline.ps1`을 삭제하면 됩니다.
@@ -231,7 +256,7 @@ Windows에서는 설치 스크립트가 네이티브 `awesome-statusline.ps1`을
 
 **왜 Nerd Font 아이콘 대신 이모지인가요?** 폰트 설치 없이 어떤 터미널에서도 바로 제대로 보이게 하려고요.
 
-**이모지를 끌 수 있나요?** 네. 어떤 크기든 `-plain`을 붙이거나(`l-plain`), 항상 이모지가 없는 `simple` / `oneline`을 고르시면 됩니다.
+**이모지를 끌 수 있나요?** 네. 어떤 크기든 `-plain`을 붙이면 같은 배치에서 이모지만 빠지고(`l-plain`), `-simple`을 붙이면 막대 없는 텍스트형이 됩니다(`l-simple`).
 
 **기존 설정은 어디 갔나요?** 설치할 때마다 `settings.json`을 `settings.json.backup-<타임스탬프>`로 백업한 뒤 건드립니다.
 
@@ -250,7 +275,7 @@ Claude Code 플러그인 시스템을 선호하신다면, 마켓플레이스 플
 /plugin install awesome-statusline
 ```
 
-설치 후 `/statusline-setup`을 실행하면 적용됩니다. `/statusline-setup xl`이나 `/statusline-setup l-plain`처럼 프리셋을 넘길 수도 있습니다. 위의 한 줄 `install.sh`가 메인 경로이고, 이건 대안입니다.
+설치 후 `/statusline-setup`을 실행하면 적용됩니다. `/statusline-setup xl`, `/statusline-setup l-plain`, `/statusline-setup m-simple`처럼 프리셋을 넘길 수도 있습니다. 위의 한 줄 `install.sh`가 메인 경로이고, 이건 대안입니다.
 
 ---
 

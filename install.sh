@@ -6,16 +6,19 @@
 #   ./install.sh                 # install (asks which preset)
 #   ./install.sh l               # install by abbreviation
 #   ./install.sh large-plain     # install by full name, without emoji
+#   ./install.sh m-simple        # text-only style
 #
-# Presets (smallest -> largest):
-#   xsmall (xs)   2 lines, minimal
+# Sizes (smallest -> largest):
+#   xsmall (xs)   2 lines, minimal                  (xs-simple: 1 line)
 #   small  (s)    2 lines, labels + bars
 #   medium (m)    4 lines, wide context bar
 #   large  (l)    5 lines, cost / time / resets   (recommended)
 #   xlarge (xl)   5 lines, 40-block bars, full detail
-#   <size>-plain  any of the above without emoji (e.g. l-plain)
-#   simple        2 lines, text only, no emoji
-#   oneline       1 line, numbers only, no emoji
+# Styles (suffix):
+#   (none)        emoji icons + gradient bars
+#   -plain        same layout, no emoji (e.g. l-plain)
+#   -simple       text only, no bars, no emoji (e.g. l-simple)
+#   aliases: simple = small-simple, oneline = xsmall-simple
 #
 # What it does:
 #   1. ensures `jq` is installed (auto-installs via the system package manager)
@@ -39,9 +42,10 @@
 #    Recommending `large` (below) is only a hint shown inside the menu; it must
 #    NEVER become a silent default or let you skip the question. Always ask.
 #
-# 2. If the user already named a preset (xs/s/m/l/xl or full name, optionally
-#    with -plain, or simple / oneline), use it and skip the questions. A bare
-#    size means the emoji version unless the user asked for no emoji.
+# 2. If the user already named a preset — a size (xs/s/m/l/xl or full name),
+#    optionally with -plain or -simple, or the aliases simple (= small-simple)
+#    / oneline (= xsmall-simple) — use it and skip the questions. A bare size
+#    means the emoji style unless the user asked for no emoji or text only.
 #
 # 3. Otherwise ASK with the AskUserQuestion tool. Match the user's language.
 #    Step 1 — ONE AskUserQuestion call with TWO questions:
@@ -53,22 +57,21 @@
 #      1. large  (l)  (추천 / Recommended) — most info, good for most users / 추천 기본값
 #      2. xlarge (xl) — largest, full detail            / 가장 크게, 전체 상세
 #      3. medium (m)  — balanced layout                 / 균형 잡힌 레이아웃
-#      4. small / xsmall / simple / oneline — compact or text-only, pick this
-#         to choose among them                          / 작은 크기·텍스트형 (고르면 한 번 더 선택)
-#    Question B (emoji) — text:
-#      EN: Show emoji icons? (simple and oneline are always emoji-free)
-#      KO: 이모지 아이콘을 표시할까요? (simple·oneline은 항상 이모지 없음)
-#    Two options, in this order:
-#      1. With emoji (Recommended) / 이모지 있음 (추천) — 🤖 🧠 🚀 icons
-#      2. No emoji / 이모지 없음 — text labels; steadiest in tmux, SSH, Windows consoles
+#      4. small / xsmall — the two smallest, pick this to choose between them
+#                                                       / 작은 두 가지 (고르면 한 번 더 선택)
+#    Question B (style) — text:
+#      EN: Which style would you like?
+#      KO: 어떤 스타일로 할까요?
+#    Three options, in this order:
+#      1. With emoji (Recommended) / 이모지 있음 (추천) — icons + gradient bars
+#      2. No emoji / 이모지 없음 — same layout and bars, text labels instead of icons
+#      3. Simple text / 심플 텍스트형 — text only, no bars or emoji
 #    Step 2 — ONLY if the user picked option 4 in Question A, ask again:
-#      EN: Which compact preset?   KO: 어떤 걸로 설치할까요?
-#      1. small  (s)  — 2 lines, labels + bars          / 2줄, 라벨과 막대
-#      2. xsmall (xs) — 2 lines, smallest bars          / 2줄, 가장 작게
-#      3. simple      — 2 lines, text only, no emoji    / 2줄 텍스트형, 이모지 없음
-#      4. oneline     — 1 line, numbers only, no emoji  / 1줄 숫자형, 이모지 없음
-#    Resolve the preset: the size, plus -plain when Question B was "No emoji"
-#    (e.g. large-plain). simple and oneline never take -plain.
+#      EN: Which of the two smaller sizes?   KO: 작은 쪽 중 무엇으로 설치할까요?
+#      1. small  (s)  — space-saving, key info           / 공간 절약, 주요 정보
+#      2. xsmall (xs) — smallest, essentials only        / 가장 작게, 핵심만
+#    Resolve the preset: the size, plus -plain for "No emoji" or -simple for
+#    "Simple text" (e.g. large-plain, xsmall-simple).
 #    If the user gives nothing / "recommended" / "default", use large.
 #
 # 4. Then install with the resolved preset:
@@ -107,19 +110,22 @@ err()  { printf '\033[31m%s\033[0m\n' "$*" >&2; }
 ok()   { printf '\033[32m%s\033[0m\n' "$*"; }
 info() { printf '\033[36m%s\033[0m\n' "$*"; }
 
-# map abbreviation OR full name (optionally with -plain) -> canonical preset
+# map abbreviation OR full name (optionally with -plain / -simple) -> canonical preset
 normalize_mode() {
-  local s plain=""
+  local s style=""
   s="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
-  case "$s" in *-plain) plain="-plain"; s="${s%-plain}" ;; esac
   case "$s" in
-    xs|xsmall)  echo "xsmall$plain" ;;
-    s|small)    echo "small$plain"  ;;
-    m|medium)   echo "medium$plain" ;;
-    l|large)    echo "large$plain"  ;;
-    xl|xlarge)  echo "xlarge$plain" ;;
-    simple)     echo "simple"  ;;   # always emoji-free; a stray -plain is fine
-    oneline|one-line|1line) echo "oneline" ;;
+    *-plain)  style="-plain";  s="${s%-plain}" ;;
+    *-simple) style="-simple"; s="${s%-simple}" ;;
+  esac
+  case "$s" in
+    xs|xsmall)  echo "xsmall$style" ;;
+    s|small)    echo "small$style"  ;;
+    m|medium)   echo "medium$style" ;;
+    l|large)    echo "large$style"  ;;
+    xl|xlarge)  echo "xlarge$style" ;;
+    simple)     echo "small-simple"  ;;   # alias
+    oneline|one-line|1line) echo "xsmall-simple" ;;   # alias
     *) return 1 ;;
   esac
 }
@@ -164,11 +170,11 @@ is_korean_locale() {
   esac
 }
 
-# Ask the user which preset to install (default large). Reads from stdin.
+# Ask the user which size and style to install (default large, emoji). Reads stdin.
 prompt_size() {
   echo
   if is_korean_locale; then
-    echo "statusline을 어떤 프리셋으로 설치할까요? (예시는 github에서 확인)"
+    echo "statusline을 어떤 크기로 설치할까요? (예시는 github에서 확인)"
     echo "  예시: https://github.com/awesomezun/claude-statusline"
     echo
     echo "  1. xsmall (xs)   가장 작게 — 2줄, 핵심만"
@@ -176,12 +182,10 @@ prompt_size() {
     echo "  3. medium (m)    중간 — 4줄, 넓은 컨텍스트 막대"
     echo "  4. large  (l)    크게 — 5줄, 비용·시간·리셋 (추천 기본값)"
     echo "  5. xlarge (xl)   가장 크게 — 5줄, 전체 상세"
-    echo "  6. simple        2줄 텍스트형 (이모지 없음)"
-    echo "  7. oneline       1줄 숫자형 (이모지 없음)"
     echo
     printf '선택 [기본값: 4]: '
   else
-    echo "Which preset would you like to install? (see examples on GitHub)"
+    echo "Which size would you like to install? (see examples on GitHub)"
     echo "  Examples: https://github.com/awesomezun/claude-statusline"
     echo
     echo "  1. xsmall (xs)   smallest — 2 lines, essentials"
@@ -189,8 +193,6 @@ prompt_size() {
     echo "  3. medium (m)    medium — 4 lines, wide context bar"
     echo "  4. large  (l)    large — 5 lines, cost / time / resets (recommended)"
     echo "  5. xlarge (xl)   largest — 5 lines, full detail"
-    echo "  6. simple        2 lines, text only (no emoji)"
-    echo "  7. oneline       1 line, numbers only (no emoji)"
     echo
     printf 'Choice [default: 4]: '
   fi
@@ -202,8 +204,6 @@ prompt_size() {
     3)     MODE="medium" ;;
     4|"")  MODE="large"  ;;
     5)     MODE="xlarge" ;;
-    6)     MODE="simple"  ;;
-    7)     MODE="oneline" ;;
     *)
       # Allow typing a preset name/alias directly instead of a number.
       if ! MODE="$(normalize_mode "$answer")"; then
@@ -217,23 +217,34 @@ prompt_size() {
       ;;
   esac
 
-  # Classic sizes come with or without emoji.
-  case "$MODE" in
-    simple|oneline|*-plain) ;;
-    *)
-      if is_korean_locale; then printf '이모지 아이콘을 표시할까요? [Y/n]: '
-      else printf 'Show emoji icons? [Y/n]: '; fi
-      local yn=""
-      read -r yn || yn=""
-      case "$yn" in n|N|no|No|NO|아니오|아니요) MODE="$MODE-plain" ;; esac
-      ;;
+  # A typed name may already carry its style (l-plain, m-simple, simple, …).
+  case "$MODE" in *-plain|*-simple) return ;; esac
+  echo
+  if is_korean_locale; then
+    echo "어떤 스타일로 할까요?"
+    echo "  1. 이모지 있음 — 아이콘과 그래디언트 막대 (기본값)"
+    echo "  2. 이모지 없음 — 같은 배치, 아이콘 대신 글자"
+    echo "  3. 심플 텍스트형 — 막대·이모지 없이 글자만"
+    printf '선택 [기본값: 1]: '
+  else
+    echo "Which style?"
+    echo "  1. With emoji — icons and gradient bars (default)"
+    echo "  2. No emoji — same layout, text labels instead of icons"
+    echo "  3. Simple text — text only, no bars or emoji"
+    printf 'Choice [default: 1]: '
+  fi
+  local style=""
+  read -r style || style=""
+  case "$style" in
+    2) MODE="$MODE-plain" ;;
+    3) MODE="$MODE-simple" ;;
   esac
 }
 
 if [ "$#" -ge 1 ]; then
   if ! MODE="$(normalize_mode "$1")"; then
     err "Unknown preset: '$1'"
-    err "Valid: xsmall|xs  small|s  medium|m  large|l  xlarge|xl  (each optionally -plain)  simple  oneline"
+    err "Valid: xsmall|xs  small|s  medium|m  large|l  xlarge|xl  — each optionally -plain or -simple (aliases: simple, oneline)"
     exit 1
   fi
 elif [ -t 0 ]; then
