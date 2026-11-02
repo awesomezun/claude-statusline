@@ -1,7 +1,7 @@
 {
   "name": "awesome-statusline-mod",
   "version": "0.1.0",
-  "description": "Awesome Statusline as a mod: the same 15 presets drawn in a band above the prompt, so it also shows in the Claude desktop app. Beta, macOS / Linux.",
+  "description": "Awesome Statusline as a mod: the same 15 presets drawn in a band above the prompt, so it also shows in the Claude desktop app, plus a cockpit pane (/cockpit). Beta, macOS / Linux.",
   "author": {
     "name": "AwesomeJun",
     "email": "sjkang89@gmail.com",
@@ -18,9 +18,21 @@
       "description": "Size (xsmall small medium large xlarge), optionally with -plain (no emoji) or -simple (text only)",
       "default": "large",
       "options": [
-        "xsmall", "small", "medium", "large", "xlarge",
-        "xsmall-plain", "small-plain", "medium-plain", "large-plain", "xlarge-plain",
-        "xsmall-simple", "small-simple", "medium-simple", "large-simple", "xlarge-simple"
+        "xsmall",
+        "small",
+        "medium",
+        "large",
+        "xlarge",
+        "xsmall-plain",
+        "small-plain",
+        "medium-plain",
+        "large-plain",
+        "xlarge-plain",
+        "xsmall-simple",
+        "small-simple",
+        "medium-simple",
+        "large-simple",
+        "xlarge-simple"
       ]
     },
     "terminal": {
@@ -28,7 +40,21 @@
       "title": "In the terminal",
       "description": "auto: hidden while a statusLine is set, since the terminal already shows one; show; hide. The desktop app always shows the band.",
       "default": "auto",
-      "options": ["auto", "show", "hide"]
+      "options": [
+        "auto",
+        "show",
+        "hide"
+      ]
+    },
+    "cockpit": {
+      "type": "string",
+      "title": "Cockpit pane",
+      "description": "command: open it with /cockpit; auto: also open it when a session starts. The band hides while the cockpit is open.",
+      "default": "command",
+      "options": [
+        "command",
+        "auto"
+      ]
     }
   }
 }

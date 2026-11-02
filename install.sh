@@ -127,7 +127,7 @@ REPO_RAW="${AWESOME_STATUSLINE_RAW:-https://raw.githubusercontent.com/awesomezun
 MOD_NAME="awesome-statusline-mod"
 MOD_DIR="$CLAUDE_DIR/$MOD_NAME"
 # The mod's files, relative to mods/awesome-statusline-mod/ in the repo.
-MOD_FILES=".claude-plugin/plugin.json .claude-plugin/marketplace.json hooks/hooks.json hooks/register.tsx hooks/ansi.ts types/index.d.ts"
+MOD_FILES=".claude-plugin/plugin.json .claude-plugin/marketplace.json hooks/hooks.json hooks/register.tsx hooks/ansi.ts hooks/cockpit.tsx hooks/gauges.ts types/index.d.ts"
 
 # --- output helpers ---------------------------------------------------------
 err()  { printf '\033[31m%s\033[0m\n' "$*" >&2; }

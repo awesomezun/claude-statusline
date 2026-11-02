@@ -7,12 +7,14 @@
 //
 // In the terminal the band stays hidden while a statusLine is set (option
 // `terminal`: auto), so a person with the classic statusline never sees it twice.
+// On every surface it steps aside while the cockpit pane is drawn.
 
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Live, Snapshot } from '../types'
+import type { Live, Snapshot, StatusJson } from '../types'
 import { parseAnsi } from './ansi'
+import { isCockpitShown, publishStatus, registerCockpit, startCockpit, syncCockpit } from './cockpit'
 
 const snapshot = atom({ plugin: 'awesome-statusline-mod', key: 'snapshot' } as const, { output: null, error: null } as Snapshot)
 const live = atom({ plugin: 'awesome-statusline-mod', key: 'live' } as const, { model: null, effort: null } as Live)
@@ -42,6 +44,20 @@ export const prettyModel = (id: string): string => {
   return m[3] === undefined ? `${family} ${m[2]}` : `${family} ${m[2]}.${m[3]}`
 }
 
+type RateLimits = Record<string, { used_percentage: number; resets_at?: number }>
+
+// A window seen earlier in the session that is no longer reported once its reset
+// time has passed (Pro / Max's 5-hour one, until the next reply opens a new one)
+// is a fresh window at 0%, not a missing one: dropping it would switch Pro / Max
+// to the Ultra layout until then. `seen` maps each kind to its last reset (epoch s).
+export const keepExpiredWindows = (rateLimits: RateLimits, seen: Map<string, number>, nowSec: number): RateLimits => {
+  const out: RateLimits = { ...rateLimits }
+  for (const [kind, resetsAt] of seen) {
+    if (!(kind in out) && resetsAt <= nowSec) out[kind] = { used_percentage: 0 }
+  }
+  return out
+}
+
 const firstExisting = async ($: EngineInterface, paths: string[]) => {
   for (const path of paths) {
     if (await $.fs.exists(path)) return path
@@ -50,7 +66,11 @@ const firstExisting = async ($: EngineInterface, paths: string[]) => {
 }
 
 // The JSON Claude Code would pipe to a statusLine command, from the session's own figures.
-const statusInput = async ($: EngineInterface, settings: Record<string, unknown>) => {
+const statusInput = async (
+  $: EngineInterface,
+  settings: Record<string, unknown>,
+  seen: Map<string, number>,
+): Promise<StatusJson> => {
   const [usage, cwd, root, sessionModel, sessionId, version, now, l, seenAt, envEffort, maxThinking] = await Promise.all([
     $.session.usage(),
     $.session.cwd(),
@@ -74,14 +94,16 @@ const statusInput = async ($: EngineInterface, settings: Record<string, unknown>
     l.effort ?? envEffort ?? (typeof settings.effortLevel === 'string' ? settings.effortLevel : null)
   const outputStyle = typeof settings.outputStyle === 'string' ? settings.outputStyle : 'default'
 
-  const rateLimits: Record<string, { used_percentage: number; resets_at?: number }> = {}
+  const reported: RateLimits = {}
   for (const window of usage.rateLimits) {
     const resetsAt = window.resetsAt === undefined ? NaN : Math.floor(Date.parse(window.resetsAt) / 1000)
-    rateLimits[window.kind] = {
+    if (Number.isFinite(resetsAt)) seen.set(window.kind, resetsAt)
+    reported[window.kind] = {
       used_percentage: window.percentUsed,
       ...(Number.isFinite(resetsAt) ? { resets_at: resetsAt } : {}),
     }
   }
+  const rateLimits = keepExpiredWindows(reported, seen, Math.floor(now / 1000))
 
   // A resumed session's startedAt is its first launch (weeks back, maybe); the
   // statusLine counts this run. /clear moves startedAt up, so take the later one.
@@ -110,7 +132,7 @@ const statusInput = async ($: EngineInterface, settings: Record<string, unknown>
   }
 }
 
-const renderOnce = async ($: EngineInterface, preset: string) => {
+const renderOnce = async ($: EngineInterface, preset: string, seen: Map<string, number>) => {
   const settings = ((await $.settings.read()) ?? {}) as Record<string, unknown>
   const statusLine = settings.statusLine as { command?: unknown } | undefined
   const isSet = typeof statusLine?.command === 'string' && statusLine.command.trim() !== ''
@@ -123,11 +145,14 @@ const renderOnce = async ($: EngineInterface, preset: string) => {
     `${configDir}/awesome-statusline.sh`,
   ])
 
+  // The cockpit reads the same figures, and keeps a point of them for its chart.
+  const input = await statusInput($, settings, seen)
+  await publishStatus($, input, await $.clock.now())
+
   let next: Snapshot
   if (script === null) {
     next = { output: null, error: 'Awesome Statusline: renderer not found. Re-run the installer and choose Mods.' }
   } else {
-    const input = await statusInput($, settings)
     const path = (await $.env.get('PATH')) ?? ''
     const bash = (await $.fs.exists('/bin/bash')) ? '/bin/bash' : 'bash'
     try {
@@ -158,14 +183,19 @@ const renderOnce = async ($: EngineInterface, preset: string) => {
 export const register: Register = (on, options) => {
   const preset = typeof options.preset === 'string' && PRESETS.has(options.preset) ? options.preset : 'large'
   const terminal = options.terminal === 'show' || options.terminal === 'hide' ? options.terminal : 'auto'
+  const cockpit = options.cockpit === 'auto' ? 'auto' : 'command'
+  registerCockpit(on)
 
   // Module state: a reload starts it over, and session.start runs again then.
   let isDirty = true
   let isRunning = false
   let lastRun = 0
+  // Each usage window's last reset time this session (kind -> epoch s).
+  const seenWindows = new Map<string, number>()
 
   on('session.start', async ($, e, next) => {
     const result = await next(e)
+    await startCockpit($, cockpit)
     // Kept in $.state, so a hot reload doesn't restart the clock.
     if ((await read($, since)) === null) {
       const now = await $.clock.now()
@@ -173,6 +203,7 @@ export const register: Register = (on, options) => {
     }
 
     $.clock.every(TICK_MS, async () => {
+      await syncCockpit($)
       if (isRunning) return
       const now = await $.clock.now()
       if (!isDirty && now - lastRun < REFRESH_MS) return
@@ -180,7 +211,7 @@ export const register: Register = (on, options) => {
       isRunning = true
       isDirty = false
       try {
-        await renderOnce($, preset)
+        await renderOnce($, preset, seenWindows)
       } finally {
         lastRun = now
         isRunning = false
@@ -214,6 +245,7 @@ export const register: Register = (on, options) => {
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (e.props.hasSurvey) return next(e)
+    if (await isCockpitShown($)) return next(e)
 
     const isTerminal = e.surface === 'terminal'
     if (isTerminal && (terminal === 'hide' || (terminal === 'auto' && (await read($, hasStatusLine))))) {
