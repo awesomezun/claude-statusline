@@ -7,7 +7,7 @@
 **[Claude Code](https://claude.com/claude-code) 아래쪽에 모델 · 추론 강도 · 컨텍스트 · 사용량 한도 · 비용을 한눈에 보여 주는 상태줄입니다.**<br/>
 macOS · Linux · Windows에서 한 줄로 설치합니다.
 
-[🇺🇸 English](README.md) · [한눈에 보기](#overview) · [설치](#install) · [크기](#sizes) · [스타일](#styles) · [요금제](#plans) · [표시 항목](#fields) · [FAQ](#faq)
+[🇺🇸 English](README.md) · [한눈에 보기](#overview) · [설치](#install) · [크기](#sizes) · [스타일](#styles) · [요금제](#plans) · [Mods](#mods) · [표시 항목](#fields) · [FAQ](#faq)
 
 <img src="https://img.shields.io/github/stars/awesomezun/claude-statusline?style=flat-square&color=cba6f7" alt="Stars"/>
 <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-89b4fa?style=flat-square" alt="Platforms"/>
@@ -19,7 +19,7 @@ macOS · Linux · Windows에서 한 줄로 설치합니다.
 
 <img src="assets/presets/hero.png" alt="추천 프리셋 large — Opus 5.5 ⚡xhigh, 컨텍스트 32%, 5시간 한도 34%, 주간 한도 65%" width="820"/>
 
-<sub>▶ <a href="https://awesomezun.github.io/claude-statusline/">라이브 데모</a> · 🆕 <b>v3.5.1</b> Ultra 요금제 지원 · 5가지 크기 × 3가지 스타일 → <a href="#changelog">변경 기록</a></sub>
+<sub>▶ <a href="https://awesomezun.github.io/claude-statusline/">라이브 데모</a> · 🆕 <b>v3.5.1</b> Ultra 요금제 지원 · 5가지 크기 × 3가지 스타일 · 🧩 <a href="#mods">Mods(베타)</a>: 데스크톱 앱에서도 표시 → <a href="#changelog">변경 기록</a></sub>
 
 </div>
 
@@ -29,13 +29,14 @@ macOS · Linux · Windows에서 한 줄로 설치합니다.
 
 ## 🧭 한눈에 보기
 
-**설치할 때 고르는 것은 크기와 스타일, 두 가지뿐입니다. 요금제는 고르지 않습니다. 상태줄이 알아서 맞춥니다.**
+**설치할 때 고르는 것은 크기와 스타일, 두 가지뿐입니다. 요금제는 고르지 않습니다. 상태줄이 알아서 맞춥니다.** 원하면 표시 위치도 고를 수 있습니다.
 
 | | 정하는 것 | 선택지 | 누가 정하나요 |
 |---|---|---|---|
 | **1. [크기](#sizes)** | 얼마나 많이 보여 줄지 | `xsmall` · `small` · `medium` · `large` · `xlarge` (5가지) | 설치할 때 직접 고릅니다 |
 | **2. [스타일](#styles)** | 어떤 모양으로 보여 줄지 | 이모지 · 이모지 없음 · 심플 텍스트 (3가지) | 설치할 때 직접 고릅니다 |
 | **3. [요금제](#plans)** | 어떤 사용량 한도를 보여 줄지 | Pro · Max → 5시간 + 주간<br/>Ultra → 주간 + 하루 예산 | **자동** (고르지 않습니다) |
+| **+ [표시 위치](#mods)** *(선택)* | 어디에 보여 줄지 | 상태줄(터미널) · Mods 베타(프롬프트 위 띠, Claude 데스크톱 앱에서도 보임) | 설치할 때 고릅니다. 고르지 않으면 상태줄 |
 
 크기와 스타일을 합친 이름을 **프리셋**이라고 부릅니다. 5 × 3 = **15개** 중 하나를 고르면 됩니다.
 
@@ -66,7 +67,7 @@ Claude Code에 이렇게 입력하세요.
 https://github.com/awesomezun/claude-statusline 설치해 줘
 ```
 
-크기와 스타일을 물어본 뒤 설치합니다. 프리셋을 함께 말하면(`… large-plain으로 설치해 줘`) 묻지 않고 바로 설치합니다.
+크기와 스타일, 표시 위치를 물어본 뒤 설치합니다. 프리셋을 함께 말하면(`… large-plain으로 설치해 줘`) 묻지 않고 바로 설치합니다.
 
 ### 방법 2. 터미널에서 한 줄로
 
@@ -80,7 +81,7 @@ curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/i
 irm https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.ps1 | iex
 ```
 
-설치 스크립트가 크기(1–5번)와 스타일(1–3번)을 차례로 묻습니다. 프리셋을 미리 정했다면 뒤에 붙이세요.
+설치 스크립트가 크기(1–5번), 스타일(1–3번), 표시 위치(1번 상태줄, 2번 [Mods](#mods), macOS / Linux)를 차례로 묻습니다. 프리셋을 미리 정했다면 뒤에 붙이세요.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.sh | bash -s -- large-plain
@@ -269,6 +270,39 @@ week      48%   resets Tue 22:47 · 2d10h · 22%/day
 
 ---
 
+<a id="mods"></a>
+
+## 🧩 Mods(베타): Claude 데스크톱 앱에서도
+
+상태줄은 `statusLine` 명령으로 동작하는데, Claude 데스크톱 앱의 Code 탭은 이 명령을 실행하지 않습니다. **Mods**는 같은 내용을 Claude Code mod(early access)로 프롬프트 위 띠에 그립니다. 이 띠는 데스크톱 앱에서도 보입니다.
+
+<div align="center">
+<img src="assets/presets/desktop.png" alt="Claude 데스크톱 앱에서 mod가 프롬프트 위에 그린 large 프리셋" width="820"/>
+</div>
+
+| | 상태줄(기본) | Mods(베타) |
+|---|---|---|
+| 표시 위치 | 터미널 프롬프트 아래 | 프롬프트 위 띠: 터미널과 Claude 데스크톱 앱 |
+| 프리셋 | 15개 모두 | 15개 모두(같은 렌더러를 실행합니다) |
+| 지원 OS | macOS · Linux · Windows | macOS · Linux |
+| 필요한 것 | Claude Code | mods를 지원하는 Claude Code(early access, 2.1.316과 데스크톱 앱에 들어 있는 2.1.309에서 확인)와 `claude` 명령 |
+
+**설치**: 설치 스크립트가 표시 위치를 물을 때 "Mods"를 고르거나, AI 에이전트에게 `https://github.com/awesomezun/claude-statusline mod로 설치해 줘`라고 하거나, 뒤에 `--mods`를 붙이세요.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.sh | bash -s -- large --mods
+```
+
+그다음 터미널이나 데스크톱 앱의 Code 탭에서 새 세션을 시작하세요.
+
+- 설치 스크립트는 mod를 `~/.claude/awesome-statusline-mod/`에 복사하고 `claude plugin install`로 `awesome-statusline-mod@awesome-statusline-local`을 설치합니다. 프리셋은 mod의 `preset` 옵션에 들어갑니다.
+- 터미널에 같은 내용이 두 번 나오지 않도록 Awesome Statusline의 `statusLine` 항목은 지웁니다. 다른 statusLine은 그대로 둡니다. 다른 statusLine이 있으면 터미널은 그것을 쓰고, 띠는 데스크톱 앱에만 나옵니다. `/plugin configure awesome-statusline-mod@awesome-statusline-local`의 `terminal` 옵션(`auto` · `show` · `hide`)으로 바꿀 수 있습니다.
+- 세션에서 첫 메시지를 보내기 전까지는 effort를 설정값에서 읽고, 사용량 줄은 `loading..`으로 보일 수 있습니다. 첫 답이 오면 세션의 실제 값을 보여 줍니다.
+- VS Code 확장에는 프롬프트 위 띠가 없어서 mod가 보이지 않습니다.
+- **상태줄로 돌아가기**: `--mods` 없이 다시 설치하세요. **mod 제거**: `claude plugin uninstall awesome-statusline-mod@awesome-statusline-local`을 실행한 뒤 `~/.claude/awesome-statusline-mod/` 폴더를 지우세요.
+
+---
+
 <a id="fields"></a>
 
 ## 🔍 표시 항목
@@ -300,7 +334,7 @@ week      48%   resets Tue 22:47 · 2d10h · 22%/day
 curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.sh | bash -s -- medium-simple
 ```
 
-**제거**: `~/.claude/settings.json`에서 `statusLine` 항목을 지우고 `~/.claude/awesome-statusline.sh`(Windows는 `awesome-statusline.ps1`)를 삭제하세요. 설치할 때마다 `settings.json.backup-<시각>` 백업이 만들어지므로 이전 설정으로 되돌릴 수도 있습니다.
+**제거**: `~/.claude/settings.json`에서 `statusLine` 항목을 지우고 `~/.claude/awesome-statusline.sh`(Windows는 `awesome-statusline.ps1`)를 삭제하세요. 설치할 때마다 `settings.json.backup-<시각>` 백업이 만들어지므로 이전 설정으로 되돌릴 수도 있습니다. mod로 설치했다면 [Mods(베타)](#mods)를 보세요.
 
 ---
 
@@ -332,6 +366,8 @@ Windows에서는 설치 스크립트가 네이티브 `awesome-statusline.ps1`을
 
 **이모지를 끌 수 있나요?** 네. 크기 뒤에 `-plain`을 붙이면 같은 배치에서 이모지만 빠지고(`large-plain`), `-simple`을 붙이면 막대도 없는 텍스트형이 됩니다(`large-simple`).
 
+**Claude 데스크톱 앱에서도 보이나요?** [Mods(베타)](#mods)로 설치하면 보입니다. 데스크톱 앱의 Code 탭은 `statusLine` 명령을 실행하지 않지만, mod가 그리는 프롬프트 위 띠는 보여 줍니다.
+
 **Claude Code가 느려지나요?** 아니요. 갱신할 때마다 약 0.1초 걸리는 작은 로컬 스크립트입니다.
 
 **왜 Nerd Font 아이콘 대신 이모지인가요?** 폰트를 따로 설치하지 않아도 어느 터미널에서나 바로 제대로 보이게 하려고요. 내 폰트에서 어떻게 보이는지는 [12개 폰트 쇼케이스](demo.md)에서 확인하세요.
@@ -354,6 +390,7 @@ Claude Code의 변화에 맞춰 계속 업데이트합니다. 릴리스별 자�
 
 | 날짜 | 업데이트 |
 |------|----------|
+| **2026‑11‑01** | **Mods(베타)** · `--mods`로 Claude Code mod로 설치: 같은 15개 프리셋을 프롬프트 위 띠에 그려서 Claude 데스크톱 앱에서도 보임(macOS / Linux) · 설치할 때 표시 위치도 물어봄 |
 | **2026‑11‑01** | **v3.5.1** · 다섯 크기 모두에 3가지 스타일(심플 텍스트 `m-simple`, `l-simple`, `xl-simple` 추가) · 설치할 때 크기와 스타일을 차례로 물어봄 · **tmux 안에서도 깨끗한 그라데이션**(Claude Code가 256색으로 낮추면 256색용 그라데이션으로 그리고, tmux가 24비트 색을 지원하면 설치 스크립트가 `CLAUDE_CODE_TMUX_TRUECOLOR`를 켬) · 최소 대비를 쓰는 밝은 테마(VS Code, Orca)에서 막대 첫 칸이 어두워지던 문제 수정 · README를 "고르는 것 2가지(크기·스타일) + 자동 1가지(요금제)" 구조로 새로 정리 |
 | **2026‑10‑31** | **Ultra 요금제 지원 + 디자인 개편** · Ultra는 5시간 한도가 없어서 주간 막대와 하루 예산을 보여 줌(예전에는 `0% (loading..)`에서 멈춤) · 모든 크기 디자인 정돈(열 정렬, 퍼센트 칸 폭 고정, 리셋을 *2h10m 후 · 01:50*처럼 표시, 빈 정보 숨김) · 이모지 없음(`-plain`) 추가 · 텍스트형 `simple`, `oneline` 추가 · 모든 프리셋을 렌더러 하나로 통합해 갱신 속도 약 4배 향상 |
 | **2026‑10‑17** | **한국어 등 비영어 Windows 환경** · 세션 이름에 한글 같은 비ASCII 문자가 있으면 `Unknown` / 0%로 표시되던 문제 수정 · 컨텍스트 창 크기가 잘못 보고될 때의 보정 추가 |

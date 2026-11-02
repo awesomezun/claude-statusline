@@ -35,11 +35,15 @@
 #
 # 2. If the user already named a preset — a size (xs/s/m/l/xl or full name),
 #    optionally with -plain or -simple, or the aliases simple (= small-simple)
-#    / oneline (= xsmall-simple) — use it and skip the questions. A bare size
-#    means the emoji style unless the user asked for no emoji or text only.
+#    / oneline (= xsmall-simple) — use it and skip Questions A and B. A bare
+#    size means the emoji style unless the user asked for no emoji or text
+#    only. If they also said where it should show (statusline; or mods / the
+#    desktop app), skip Question C too; on Windows always skip it (Statusline).
+#    Otherwise ask Question C alone.
 #
 # 3. Otherwise ASK with the AskUserQuestion tool. Match the user's language.
-#    Step 1 — ONE AskUserQuestion call with TWO questions:
+#    Step 1 — ONE AskUserQuestion call with THREE questions (on Windows TWO:
+#    leave out Question C — Mods is macOS / Linux only for now):
 #    Question A (size) — text (use exactly this, on one line):
 #      EN: Which size would you like to install? (examples on GitHub: https://github.com/awesomezun/claude-statusline)
 #      KO: 어떤 크기로 설치할까요? (예시는 GitHub에서 확인: https://github.com/awesomezun/claude-statusline)
@@ -57,22 +61,31 @@
 #      1. With emoji (Recommended) / 이모지 있음 (추천) — icons + gradient bars
 #      2. No emoji / 이모지 없음 — same layout and bars, text labels instead of icons
 #      3. Simple text / 심플 텍스트형 — text only, no bars or emoji
+#    Question C (display) — text:
+#      EN: Where should it show?
+#      KO: 어디에 표시할까요?
+#    Two options, in this order:
+#      1. Statusline (Recommended) / 상태줄 (추천) — the status line under the prompt, in the terminal
+#                                                       / 터미널 프롬프트 아래 상태줄
+#      2. Mods (beta) / Mods (베타) — the same preset in a band above the prompt, also shown in the
+#         Claude desktop app                            / 프롬프트 위 띠로 표시, Claude 데스크톱 앱에서도 보임
 #    Step 2 — ONLY if the user picked option 4 in Question A, ask again:
 #      EN: Which of the two smaller sizes?   KO: 작은 쪽 중 무엇으로 설치할까요?
 #      1. small  (s)  — space-saving, key info           / 공간 절약, 주요 정보
 #      2. xsmall (xs) — smallest, essentials only        / 가장 작게, 핵심만
 #    Resolve the preset: the size, plus -plain for "No emoji" or -simple for
-#    "Simple text" (e.g. large-plain, xsmall-simple).
-#    If the user gives nothing / "recommended" / "default", use large.
+#    "Simple text" (e.g. large-plain, xsmall-simple), and the display:
+#    --mods for "Mods", nothing for "Statusline".
+#    If the user gives nothing / "recommended" / "default", use large (Statusline).
 #
 # 4. Then install with the resolved preset:
-#      macOS / Linux:      bash install.sh <preset>
+#      macOS / Linux:      bash install.sh <preset>   (or: bash install.sh <preset> --mods)
 #      Windows PowerShell: ./install.ps1 <preset>
 #
 # 5. If "auto" mode blocks the install (it downloads code that runs on every
 #    launch — declining to auto-approve that is correct), do NOT just stop:
 #    still resolve the preset, then have the user run it themselves so it proceeds:
-#      macOS / Linux:  ! bash install.sh <preset>
+#      macOS / Linux:  ! bash install.sh <preset>   (add --mods for Mods)
 #      Windows:        ! irm https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.ps1 | iex
 #    or have them leave auto mode (shift+tab) for the one install step.
 #

@@ -1,3 +1,6 @@
 firebase-debug.log
 .DS_Store
 __pycache__/
+
+# Types the engine writes beside a mod while developing it
+mods/*/.claude-plugin/types/

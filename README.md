@@ -14,7 +14,7 @@
 **A statusline for [Claude Code](https://claude.com/claude-code) that shows model · reasoning effort · context · usage limits · cost at a glance.**<br/>
 One line to install on macOS, Linux and Windows.
 
-[🇰🇷 한국어](README.ko.md) · [At a glance](#overview) · [Install](#install) · [Size](#sizes) · [Style](#styles) · [Plan](#plans) · [What it shows](#fields) · [FAQ](#faq)
+[🇰🇷 한국어](README.ko.md) · [At a glance](#overview) · [Install](#install) · [Size](#sizes) · [Style](#styles) · [Plan](#plans) · [Mods](#mods) · [What it shows](#fields) · [FAQ](#faq)
 
 <img src="https://img.shields.io/github/stars/awesomezun/claude-statusline?style=flat-square&color=cba6f7" alt="Stars"/>
 <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-89b4fa?style=flat-square" alt="Platforms"/>
@@ -26,7 +26,7 @@ One line to install on macOS, Linux and Windows.
 
 <img src="assets/presets/hero.png" alt="The recommended preset, large — Opus 5.5 ⚡xhigh, context 32%, 5-hour limit 34%, weekly limit 65%" width="820"/>
 
-<sub>▶ <a href="https://awesomezun.github.io/claude-statusline/">Live demo</a> · 🆕 <b>v3.5.1</b> Ultra plan support · 5 sizes × 3 styles → <a href="#changelog">Changelog</a></sub>
+<sub>▶ <a href="https://awesomezun.github.io/claude-statusline/">Live demo</a> · 🆕 <b>v3.5.1</b> Ultra plan support · 5 sizes × 3 styles · 🧩 <a href="#mods">Mods (beta)</a>: also in the desktop app → <a href="#changelog">Changelog</a></sub>
 
 </div>
 
@@ -36,13 +36,14 @@ One line to install on macOS, Linux and Windows.
 
 ## 🧭 At a glance
 
-**You choose two things when you install: a size and a style. You don't choose a plan — the statusline adapts to it on its own.**
+**You choose two things when you install: a size and a style. You don't choose a plan — the statusline adapts to it on its own.** Optionally, you can also choose where it shows.
 
 | | What it decides | Options | Who decides |
 |---|---|---|---|
 | **1. [Size](#sizes)** | how much you see | `xsmall` · `small` · `medium` · `large` · `xlarge` (5) | you, at install |
 | **2. [Style](#styles)** | how it looks | emoji · no emoji · simple text (3) | you, at install |
 | **3. [Plan](#plans)** | which usage limits show | Pro · Max → 5-hour + weekly<br/>Ultra → weekly + per-day budget | **automatic** — nothing to choose |
+| **+ [Where](#mods)** *(optional)* | where it shows | Statusline (terminal) · Mods, beta (a band above the prompt, also in the Claude desktop app) | you, at install — Statusline unless you pick Mods |
 
 A size plus a style is a **preset**. There are 5 × 3 = **15**; you pick one.
 
@@ -73,7 +74,7 @@ Tell Claude Code:
 Install https://github.com/awesomezun/claude-statusline
 ```
 
-It asks for a size and a style, then installs. Name a preset up front (`… with large-plain`) and it installs straight away.
+It asks for a size, a style and where to show it, then installs. Name a preset up front (`… with large-plain`) and it installs straight away.
 
 ### Option 2. One line in the terminal
 
@@ -87,7 +88,7 @@ curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/i
 irm https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.ps1 | iex
 ```
 
-The installer asks for a size (1–5), then a style (1–3). Already know your preset? Append it:
+The installer asks for a size (1–5), a style (1–3), then where to show it (1 Statusline, 2 [Mods](#mods); macOS / Linux). Already know your preset? Append it:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.sh | bash -s -- large-plain
@@ -276,6 +277,39 @@ week      48%   resets Tue 22:47 · 2d10h · 22%/day
 
 ---
 
+<a id="mods"></a>
+
+## 🧩 Mods (beta): also in the Claude desktop app
+
+The statusline is a `statusLine` command, and the Claude desktop app's Code tab doesn't run one. **Mods** draws the same lines in the band above the prompt instead, through a Claude Code mod (early access), and that band shows in the desktop app too.
+
+<div align="center">
+<img src="assets/presets/desktop.png" alt="The large preset drawn by the mod above the prompt in the Claude desktop app" width="820"/>
+</div>
+
+| | Statusline (default) | Mods (beta) |
+|---|---|---|
+| Where | under the prompt, in the terminal | in a band above the prompt: the terminal and the Claude desktop app |
+| Presets | all 15 | all 15 (the mod runs the same renderer) |
+| Runs on | macOS · Linux · Windows | macOS · Linux |
+| Needs | Claude Code | a Claude Code with mods (early access; tested on 2.1.316 and on 2.1.309, the one the desktop app ships) and its `claude` CLI |
+
+**Install**: pick "Mods" when the installer asks where it should show, tell your AI agent (`Install https://github.com/awesomezun/claude-statusline as a mod`), or add `--mods`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.sh | bash -s -- large --mods
+```
+
+Then start a new session, in the terminal or in the desktop app's Code tab.
+
+- The installer copies the mod to `~/.claude/awesome-statusline-mod/` and installs it with `claude plugin install` as `awesome-statusline-mod@awesome-statusline-local`. The preset is the mod's `preset` option.
+- It removes an Awesome Statusline `statusLine`, so the terminal doesn't show the lines twice. Any other statusLine is left alone; while one is set, the terminal keeps it and the band shows only in the desktop app. Change this with the `terminal` option (`auto` · `show` · `hide`) in `/plugin configure awesome-statusline-mod@awesome-statusline-local`.
+- Until your first message in a session, effort comes from your settings and the usage rows may read `loading..`; from the first reply on they show the session's real values.
+- The VS Code extension has no band above the prompt, so the mod doesn't show there.
+- **Back to the statusline**: reinstall without `--mods`. **Remove the mod**: `claude plugin uninstall awesome-statusline-mod@awesome-statusline-local`, then delete `~/.claude/awesome-statusline-mod/`.
+
+---
+
 <a id="fields"></a>
 
 ## 🔍 What it shows
@@ -307,7 +341,7 @@ The no-emoji and simple-text styles use text labels such as `Context`, `Usage 5H
 curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.sh | bash -s -- medium-simple
 ```
 
-**Uninstall**: remove the `statusLine` entry from `~/.claude/settings.json` and delete `~/.claude/awesome-statusline.sh` (`awesome-statusline.ps1` on Windows). Every install also leaves a `settings.json.backup-<timestamp>` you can restore.
+**Uninstall**: remove the `statusLine` entry from `~/.claude/settings.json` and delete `~/.claude/awesome-statusline.sh` (`awesome-statusline.ps1` on Windows). Every install also leaves a `settings.json.backup-<timestamp>` you can restore. Installed as a mod? See [Mods (beta)](#mods).
 
 ---
 
@@ -339,6 +373,8 @@ On Windows the installer writes a native `awesome-statusline.ps1` and points Cla
 
 **Can I turn the emoji off?** Yes. Add `-plain` to any size for the same layout without emoji (`large-plain`), or `-simple` for text with no bars (`large-simple`).
 
+**Does it work in the Claude desktop app?** With [Mods (beta)](#mods), yes. The desktop app's Code tab doesn't run `statusLine` commands, but it draws the mod's band above the prompt.
+
 **Does it slow Claude Code down?** No. It's a small local script that takes about 0.1 s per refresh.
 
 **Why emoji instead of Nerd Font icons?** So it looks right out of the box in any terminal, with no font setup. See how it looks in your font in the [12-font showcase](demo.md).
@@ -361,6 +397,7 @@ Built to keep pace with Claude Code. Full notes for each release are on [Release
 
 | Date | Update |
 |------|--------|
+| **2026‑11‑01** | **Mods (beta)** · install as a Claude Code mod with `--mods`: the same 15 presets in the band above the prompt, so it also shows in the Claude desktop app (macOS / Linux) · the installer asks where it should show |
 | **2026‑11‑01** | **v3.5.1** · three styles for every size (simple text `m-simple`, `l-simple`, `xl-simple` added) · installs ask size, then style · **clean gradients inside tmux** (when Claude Code drops to 256 colours the bars use 256-colour gradients, and the installer turns on `CLAUDE_CODE_TMUX_TRUECOLOR` when tmux supports 24-bit colour) · fixed the first bar cell darkening on light themes with minimum contrast (VS Code, Orca) · README reorganized around "two choices (size, style) + one automatic (plan)" |
 | **2026‑10‑31** | **Ultra plan support + redesign** · Ultra has no 5-hour limit, so it gets a weekly bar with a per-day budget (the bars used to freeze at `0% (loading..)`) · every size redesigned (aligned columns, fixed-width %, resets shown as *in 2h10m · 01:50*, empty fields hidden) · no-emoji style (`-plain`) · text presets `simple` and `oneline` · one renderer for every preset, ~4× faster per refresh |
 | **2026‑10‑17** | **Windows on non-English locales** · no more `Unknown` / 0% when Claude Code sends non-ASCII text (e.g. a Korean session name) · context gauge guards against stale window-size reports |

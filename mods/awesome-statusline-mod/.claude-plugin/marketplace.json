@@ -1,0 +1,14 @@
+{
+  "name": "awesome-statusline-local",
+  "owner": { "name": "AwesomeJun", "email": "sjkang89@gmail.com" },
+  "metadata": { "description": "Local copy of the Awesome Statusline mod, made by install.sh --mods." },
+  "plugins": [
+    {
+      "name": "awesome-statusline-mod",
+      "source": "./",
+      "description": "Awesome Statusline drawn in a band above the prompt (terminal and the Claude desktop app).",
+      "version": "0.1.0",
+      "category": "mod"
+    }
+  ]
+}
