@@ -252,7 +252,12 @@ With the mod installed, **`/cockpit`** opens a pane beside the chat drawn like [
 With the 1top app running on the same computer, the cockpit reads 1top's local read-only API and shows every AI it tracks: Claude Code, Codex and the rest. Without it, it shows this computer's resources and the Claude Code sessions running the mod. While the cockpit is open, the band above the prompt steps aside. To open it at the start of every session, set the mod's `cockpit` option to `auto`. The desktop app draws it as graphics, the terminal as text.
 
 <div align="center">
-<img src="assets/presets/cockpit.png" alt="The cockpit with made-up sessions: the dark cluster with two dials, status strip, odometer and fuel gauges, beside the light dashboard with a radial token chart, model mix and account cards" width="760"/>
+<table>
+<tr><th>Cluster · dark</th><th>Dashboard · dark</th></tr>
+<tr><td><img src="assets/presets/cockpit-cluster-dark.png" alt="The cluster, dark: two dials, the status strip, the odometer and fuel gauges, with the sessions below" width="380"/></td><td><img src="assets/presets/cockpit-dashboard-dark.png" alt="The dashboard, dark: a radial token chart, the model mix and account cards, with the account limits below" width="380"/></td></tr>
+<tr><th>Cluster · light</th><th>Dashboard · light</th></tr>
+<tr><td><img src="assets/presets/cockpit-cluster-light.png" alt="The cluster, light: two dials, the status strip, the odometer and fuel gauges, with the token flow below" width="380"/></td><td><img src="assets/presets/cockpit-dashboard-light.png" alt="The dashboard, light: a radial token chart, the model mix and account cards, with the heatmap below" width="380"/></td></tr>
+</table>
 </div>
 
 ---

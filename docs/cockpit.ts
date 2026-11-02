@@ -1,7 +1,8 @@
 // Draws the cockpit for the README from a made-up session set (no one's real
-// projects, titles or accounts), with the mod's own drawing code: the dark
-// instrument cluster beside the light dashboard. Writes docs/cockpit.html;
-// docs/shoot.py captures it to assets/presets/cockpit.png.
+// projects, titles or accounts), with the mod's own drawing code, in English:
+// the cluster and the dashboard, each in the dark and the light theme, with a
+// different section below each. Writes docs/cockpit.html; docs/shoot.py
+// captures each pane to assets/presets/cockpit-<view>-<theme>.png.
 //
 //   npx -y esbuild@0.24.0 docs/cockpit.ts --bundle --platform=node --format=esm --outfile=/tmp/cockpit.mjs && node /tmp/cockpit.mjs
 
@@ -9,12 +10,12 @@ import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { clusterSvg, dashboardSvg, sectionSvg, THEMES } from '../mods/awesome-statusline-mod/hooks/cluster'
-import { fromOneTop, TEXT, trimOneTop } from '../mods/awesome-statusline-mod/hooks/dash'
+import { fromOneTop, PERIODS, SECTIONS, TEXT, trimOneTop } from '../mods/awesome-statusline-mod/hooks/dash'
 
 // Run from the repository root (the bundle may live anywhere).
 const ROOT = process.cwd()
 const nowS = Math.floor(Date.now() / 1000)
-const t = TEXT.ko
+const t = TEXT.en
 
 // A day of one-minute token bins: a working afternoon, busier toward now.
 const events: { t: number; kind: string; fresh: number; cached: number; written: number; output: number }[] = []
@@ -74,33 +75,43 @@ const d = fromOneTop(st, '1h', nowS, t)
 const minutes = st.events.map(([at, , n]) => [at, n] as [number, number])
 const extra = { session: null, activity: { running: [], counts: {}, calls: 0 }, minutes, nowMs: nowS * 1000 }
 
-const tabs = (theme: 'dark' | 'light', items: string[], on: number) => {
+type Theme = 'dark' | 'light'
+type View = 'cluster' | 'dashboard'
+
+const tabs = (theme: Theme, items: string[], on: number) => {
   const th = THEMES[theme]
   return `<div class="tabs">${items
     .map((label, i) => `<span class="tab" style="background:${i === on ? th.ink : theme === 'dark' ? '#2a2f34' : '#e4e8eb'};color:${i === on ? th.bg : th.ink}">${label}</span>`)
     .join('')}</div>`
 }
-const pane = (theme: 'dark' | 'light', top: string, section: 'sessions' | 'heat', sectionIndex: number, view: string) => {
+
+const trip = { since: nowS - 86_400 * 2, total: 434_000_000, lastT: nowS }
+const top = (view: View, theme: Theme) =>
+  view === 'cluster' ? clusterSvg(d, t, theme, '1h', trip, nowS).source : dashboardSvg(d, t, theme, '1h').source
+
+const pane = (view: View, theme: Theme, section: (typeof SECTIONS)[number]) => {
   const th = THEMES[theme]
-  const below = sectionSvg(section, d, t, theme, '1h', extra).source
-  return `<div class="pane" style="background:${th.bg};color:${th.ink}">
-  <div class="head"><b>${t.title}</b><span style="color:${th.accent}">● ${t.live1top}</span><span class="sp"></span>${tabs(theme, [view, theme === 'dark' ? '☀' : '☾', 'EN'], -1)}</div>
-  ${tabs(theme, ['10분', '30분', '1시간', '5시간', '12시간', '24시간'], 2)}
-  ${top}
-  ${tabs(theme, ['세션', '토큰 흐름', '한도', '사용량 맵', '히트맵', '리소스', '이 세션'], sectionIndex)}
-  ${below}
+  const other: View = view === 'cluster' ? 'dashboard' : 'cluster'
+  return `<div class="pane" id="cockpit-${view}-${theme}" style="background:${th.bg};color:${th.ink}">
+  <div class="head"><b>${t.title}</b><span style="color:${th.accent}">● ${t.live1top}</span><span class="sp"></span>${tabs(theme, [t.views[other], theme === 'dark' ? '☀' : '☾', '한'], -1)}</div>
+  ${tabs(theme, PERIODS.map(p => t.periods[p]), PERIODS.indexOf('1h'))}
+  ${top(view, theme)}
+  ${tabs(theme, SECTIONS.map(x => t.sections[x]), SECTIONS.indexOf(section))}
+  ${sectionSvg(section, d, t, theme, '1h', extra).source}
 </div>`
 }
 
 const html = `<!doctype html><html><head><meta charset="utf-8"><style>
-body{margin:0;background:#2b2f33;font-family:-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo',sans-serif}
-#cockpit{display:flex;gap:20px;padding:20px;width:max-content}
+body{margin:0;background:#2b2f33;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif}
+#cockpit{display:grid;grid-template-columns:repeat(2,max-content);gap:20px;padding:20px;align-items:start}
 .pane{width:400px;padding:14px 12px;border-radius:14px;display:flex;flex-direction:column;gap:10px}
 .head{display:flex;align-items:center;gap:8px;font-size:15px}.head span{font-size:11.5px}.head .sp{flex:1}
 .tabs{display:flex;flex-wrap:wrap;gap:6px}.tab{font-size:12px;padding:5px 10px;border-radius:7px}
 </style></head><body><div id="cockpit">
-${pane('dark', clusterSvg(d, t, 'dark', '1h', { since: nowS - 86_400 * 2, total: 434_000_000, lastT: nowS }, nowS).source, 'sessions', 0, '대시보드')}
-${pane('light', dashboardSvg(d, t, 'light', '1h').source, 'heat', 4, '계기판')}
+${pane('cluster', 'dark', 'sessions')}
+${pane('dashboard', 'dark', 'limits')}
+${pane('cluster', 'light', 'flow')}
+${pane('dashboard', 'light', 'heat')}
 </div></body></html>`
 
 writeFileSync(join(ROOT, 'docs', 'cockpit.html'), html)

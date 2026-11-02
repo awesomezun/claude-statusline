@@ -245,7 +245,12 @@ mod를 설치하면 **`/cockpit`** 으로 채팅 옆에 [1top](https://1top.si) 
 같은 컴퓨터에서 1top 앱이 실행 중이면 1top의 로컬 읽기 전용 API에서 읽어, 1top이 추적하는 모든 AI(Claude Code, Codex 등)를 보여 줍니다. 1top이 없으면 이 컴퓨터의 리소스와, mod가 설치된 Claude Code 세션들을 보여 줍니다. 콕핏이 열려 있는 동안 프롬프트 위 띠는 숨겨집니다. 세션을 시작할 때마다 자동으로 열려면 mod의 `cockpit` 옵션을 `auto`로 바꾸세요. 데스크톱 앱에서는 그래픽으로, 터미널에서는 글자로 그립니다.
 
 <div align="center">
-<img src="assets/presets/cockpit.png" alt="가상의 세션으로 그린 콕핏: 속도계 2개·상태 표시줄·주행거리계·연료 게이지가 있는 다크 계기판과, 원형 토큰 차트·모델별 비율·계정 카드가 있는 라이트 대시보드" width="760"/>
+<table>
+<tr><th>계기판 · 다크</th><th>대시보드 · 다크</th></tr>
+<tr><td><img src="assets/presets/cockpit-cluster-dark.png" alt="다크 계기판: 속도계 2개, 상태 표시줄, 주행거리계, 연료 게이지와 아래 세션 목록" width="380"/></td><td><img src="assets/presets/cockpit-dashboard-dark.png" alt="다크 대시보드: 원형 토큰 차트, 모델별 비율, 계정 카드와 아래 계정 한도" width="380"/></td></tr>
+<tr><th>계기판 · 라이트</th><th>대시보드 · 라이트</th></tr>
+<tr><td><img src="assets/presets/cockpit-cluster-light.png" alt="라이트 계기판: 속도계 2개, 상태 표시줄, 주행거리계, 연료 게이지와 아래 토큰 흐름" width="380"/></td><td><img src="assets/presets/cockpit-dashboard-light.png" alt="라이트 대시보드: 원형 토큰 차트, 모델별 비율, 계정 카드와 아래 히트맵" width="380"/></td></tr>
+</table>
 </div>
 
 ---

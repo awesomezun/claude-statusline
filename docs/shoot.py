@@ -7,7 +7,8 @@ header) for the cockpit, then:
     python3 docs/shoot.py
 
 Writes assets/presets/<id>.png for #hero, the 15 preset cards and #plans of
-docs/index.html, assets/presets/cockpit.png from docs/cockpit.html, and
+docs/index.html, assets/presets/cockpit-<view>-<theme>.png (four panes) from
+docs/cockpit.html, and
 assets/fonts-demo.png from docs/fonts.html, at 2x.
 Needs Python Playwright with Chromium (pip install playwright && playwright install chromium).
 """
@@ -20,6 +21,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 SIZES = ["xsmall", "small", "medium", "large", "xlarge"]
 PRESETS = [size + suffix for size in SIZES for suffix in ("", "-plain", "-simple")]
 IDS = ["hero", *PRESETS, "plans"]
+COCKPIT = [f"cockpit-{view}-{theme}" for theme in ("dark", "light") for view in ("cluster", "dashboard")]
 
 
 async def open_page(browser, html: str, width: int):
@@ -47,10 +49,11 @@ async def main():
         await page.close()
 
         page = await open_page(browser, "cockpit.html", 900)
-        element = await page.query_selector("#cockpit")
-        assert element is not None
-        await element.screenshot(path=str(ROOT / "assets" / "presets" / "cockpit.png"))
-        print("saved assets/presets/cockpit.png")
+        for element_id in COCKPIT:
+            element = await page.query_selector(f'[id="{element_id}"]')
+            assert element is not None, element_id
+            await element.screenshot(path=str(ROOT / "assets" / "presets" / f"{element_id}.png"))
+            print("saved", f"assets/presets/{element_id}.png")
         await page.close()
 
         page = await open_page(browser, "fonts.html", 1140)

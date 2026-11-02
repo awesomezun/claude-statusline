@@ -292,8 +292,8 @@ export const clusterSvg = (d: Dash, t: Texts, theme: Theme, period: Period, trip
   const tickLabels = (m: number, fmt: (v: number) => string) => [0, 0.25, 0.5, 0.75, 1].map(k => fmt(m * k))
   const tokenLabel = (v: number) => (v === 0 ? '0' : compactNumber(v).replace('.0', ''))
   const pctLabel = (v: number) => (v === 0 ? '0' : String(Math.round(v * 100) / 100))
-  out.push(dial(th, 'a', 100, 104, 90, d.tokensPerHour, max, tickLabels(max, tokenLabel), readout(d.tokensPerHour), t.tokensPerHour))
-  out.push(dial(th, 'b', 300, 104, 90, d.pctPerHour ?? 0, pMax, tickLabels(pMax, pctLabel), [d.pctPerHour === null ? '--' : (d.pctPerHour).toFixed(2), ''], t.pctPerHour))
+  out.push(dial(th, `${theme}-a`, 100, 104, 90, d.tokensPerHour, max, tickLabels(max, tokenLabel), readout(d.tokensPerHour), t.tokensPerHour))
+  out.push(dial(th, `${theme}-b`, 300, 104, 90, d.pctPerHour ?? 0, pMax, tickLabels(pMax, pctLabel), [d.pctPerHour === null ? '--' : (d.pctPerHour).toFixed(2), ''], t.pctPerHour))
   let y = 214
   out.push(statusStrip(th, d, t, y))
   y += 78
@@ -307,14 +307,17 @@ export const clusterSvg = (d: Dash, t: Texts, theme: Theme, period: Period, trip
         `<tspan font-size="13.5" font-weight="800" fill="${th.ink}">${esc(compactNumber(trip.total).replace('.0', ''))}</tspan>` +
         `<tspan font-size="11" fill="${th.muted}"> ${esc(t.tokens)}</tspan></text>`,
     )
-    out.push(txt(282, y + 30, `${since.getMonth() + 1}. ${since.getDate()}. ${pad2(since.getHours())}:${pad2(since.getMinutes())}${t.since === '부터' ? '부터' : ''}`, { size: 11, fill: th.muted }))
+    const at = `${pad2(since.getHours())}:${pad2(since.getMinutes())}`
+    const day = t.since === '부터' ? `${since.getMonth() + 1}. ${since.getDate()}. ${at}부터` : `${t.since} ${since.getMonth() + 1}/${since.getDate()} ${at}`
+    out.push(txt(282, y + 30, day, { size: 11, fill: th.muted }))
   }
   y += 56
   out.push(txt(W / 2, y + 4, t.left, { size: 11.5, weight: 600, anchor: 'middle', fill: th.muted }))
   const tk = tanks(th, d.accounts, y + 14)
   out.push(tk.svg)
   y += 14 + tk.h + 8
-  const defs = ['a', 'b']
+  // Named by theme too: a page that shows both themes keeps each its own faces.
+  const defs = [`${theme}-a`, `${theme}-b`]
     .map(id => `<radialGradient id="face-${id}" cx="50%" cy="42%" r="62%"><stop offset="0" stop-color="${th.faceHi}"/><stop offset="1" stop-color="${th.faceLo}"/></radialGradient>`)
     .join('')
   const alt = [
