@@ -6,12 +6,12 @@ representative mock session (see docs/_demo.py), captures the truecolor ANSI
 it prints, and converts that to HTML — so gradients and exact colors match the
 terminal pixel-for-pixel instead of being hand-approximated.
 
-Each section with an id is captured to assets/presets/<id>.png:
-  #hero    large, the recommended preset
-  #sizes   step 1 - the five sizes (emoji style, Pro / Max)
-  #styles  step 2 - the three styles of one size (Pro / Max)
-  #plans   automatic - the same preset on Pro / Max and on Ultra
-  #plain, #simple, #ultra   all five sizes in -plain, in -simple, and on Ultra
+Each element with an id is captured to assets/presets/<id>.png
+(by docs/shoot.py):
+  #hero        large, the recommended preset
+  #<preset>    one card per preset, 15 in all: each of the five sizes in
+               emoji, -plain and -simple (Pro / Max), e.g. #large-plain
+  #plans       automatic - the same preset on Pro / Max and on Ultra
 """
 import sys
 sys.dont_write_bytecode = True  # keep docs/ free of __pycache__ from the import below
@@ -145,21 +145,42 @@ def cards(items) -> str:
 
 
 HERO = cards([("large", "l", "recommended", rows("large"))])
-SIZE_CARDS = cards([(n, a, lines + (" · recommended" if n == "large" else ""), rows(n))
-                    for n, a, lines in SIZES])
-STYLE_CARDS = cards([
-    ("large", "emoji · default", "icons + gradient bars", rows("large")),
-    ("l-plain", "no emoji", "same layout, text labels", rows("large-plain")),
-    ("l-simple", "simple text", "no bars, no emoji", rows("large-simple")),
-])
+STYLES = [  # (suffix, label)
+    ("", "emoji"),
+    ("-plain", "no emoji"),
+    ("-simple", "simple text"),
+]
+SIZE_NOTE = {
+    "xsmall": "model · effort · folder · branch, three small bars",
+    "small": "+ full path, git changes, output style, time to reset",
+    "medium": "+ wide context bar with token count, commits ahead",
+    "large": "+ session time, one line per limit with its reset time",
+    "xlarge": "+ 40-block bars everywhere, full reset dates",
+}
+
+
+def line_count(preset: str) -> str:
+    n = len(render(preset).rstrip("\n").split("\n"))
+    return f"{n} line" + ("" if n == 1 else "s")
+
+
+def preset_card(name: str, abbr: str, suffix: str, label: str) -> str:
+    preset = name + suffix
+    badge = f"{label} · {line_count(preset)}" + (" · recommended" if preset == "large" else "")
+    return f'<div class="pc" id="{preset}">{card(preset, abbr + suffix, badge, rows(preset))}</div>'
+
+
+SIZE_SECTIONS = "\n".join(f'''
+  <div class="size-sec" id="size-{name}">
+    <div class="section-title">{name} <span class="abbr">({abbr})</span></div>
+    <p class="note">{SIZE_NOTE[name]}</p>
+    <div class="grid">{"".join(preset_card(name, abbr, suffix, label) for suffix, label in STYLES)}
+    </div>
+  </div>''' for name, abbr, _ in SIZES)
 PLAN_CARDS = cards([
     ("large", "on Pro / Max", "5-hour + weekly limits", rows("large", "pro")),
     ("large", "on Ultra", "weekly limit only", rows("large", "ultra")),
 ])
-PLAIN_CARDS = cards([(f"{a}-plain", "no emoji", lines, rows(f"{n}-plain")) for n, a, lines in SIZES])
-SIMPLE_CARDS = cards([(f"{a}-simple", "simple text", "1 line" if n == "xsmall" else lines, rows(f"{n}-simple"))
-                      for n, a, lines in SIZES])
-ULTRA_CARDS = cards([(n, "on Ultra", "weekly only", rows(n, "ultra")) for n, a, lines in SIZES])
 
 HTML = f'''<!DOCTYPE html>
 <html lang="en">
@@ -176,7 +197,7 @@ HTML = f'''<!DOCTYPE html>
 <div class="wrap">
   <div class="hero">
     <h1><span class="spark">⚡</span> Awesome Statusline</h1>
-    <p class="tag">A beautiful statusline for Claude Code — <b>context</b>, <b>usage limits</b>, <b>cost</b> &amp; reasoning <b style="color:var(--peach)">⚡effort</b>, all at a glance. One line to install on macOS, Linux &amp; Windows.</p>
+    <p class="tag">A beautiful statusline for Claude Code — <b>context</b>, <b>usage limits</b> &amp; reasoning <b style="color:var(--peach)">⚡effort</b>, all at a glance. One line to install on macOS, Linux &amp; Windows.</p>
     <div class="badges">
       <span class="badge hot">⚡ effort · 💡 thinking</span>
       <span class="badge cool">macOS · Linux · Windows</span>
@@ -199,44 +220,15 @@ HTML = f'''<!DOCTYPE html>
   </div>
   <p class="note">Size + style = a preset: 5 &times; 3 = 15, e.g. <code>large</code>, <code>l-plain</code>, <code>m-simple</code>.</p>
 
-  <div id="sizes">
-    <div class="section-title">Step 1 · Size — five options</div>
-    <div class="grid">{SIZE_CARDS}
-    </div>
-    <p class="note">Shown in the default emoji style, on Pro / Max.</p>
-  </div>
-
-  <div id="styles">
-    <div class="section-title">Step 2 · Style — three options</div>
-    <div class="grid">{STYLE_CARDS}
-    </div>
-    <p class="note">Every size comes in all three styles. In <code>-simple</code>, limit values are colored by pace.</p>
-  </div>
+  <div class="section-title">15 presets · 5 sizes × 3 styles</div>
+  <p class="note">Every size in the three styles, on Pro / Max.</p>
+{SIZE_SECTIONS}
 
   <div id="plans">
     <div class="section-title">Automatic · Plan — nothing to choose</div>
     <div class="grid">{PLAN_CARDS}
     </div>
     <p class="note">Every preset follows the limits Claude Code reports: Ultra has no 5-hour limit, so it gets one weekly line with a per-day budget.</p>
-  </div>
-
-  <div id="plain">
-    <div class="section-title">All five sizes · -plain</div>
-    <div class="grid">{PLAIN_CARDS}
-    </div>
-  </div>
-
-  <div id="simple">
-    <div class="section-title">All five sizes · -simple</div>
-    <div class="grid">{SIMPLE_CARDS}
-    </div>
-    <p class="note">Limit values are colored by pace: green = under, yellow = on pace, red = ahead of time.</p>
-  </div>
-
-  <div id="ultra">
-    <div class="section-title">All five sizes · on Ultra</div>
-    <div class="grid">{ULTRA_CARDS}
-    </div>
   </div>
 
   <div class="section-title">Why this one</div>
@@ -321,9 +313,13 @@ irm https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.
   .install .c{color:var(--over)}
   footer{text-align:center;color:var(--over);font-size:13px;margin-top:60px}
   footer b{color:var(--mauve)}
-  #hero,#sizes,#styles,#plans,#plain,#simple,#ultra{padding:28px 0 18px}
-  #sizes .section-title,#styles .section-title,#plans .section-title,#plain .section-title,
-  #simple .section-title,#ultra .section-title{margin-top:0}
+  #hero,#plans,.size-sec{padding:28px 0 18px}
+  #plans .section-title,.size-sec .section-title{margin-top:0}
+  .size-sec .section-title{font-family:"JetBrains Mono",monospace;margin-bottom:4px}
+  .size-sec .section-title .abbr{color:var(--over)}
+  .size-sec .note{margin:0 0 14px}
+  .size-sec .grid{gap:0}
+  .pc{padding:10px 0 28px}
   .axes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
   @media(max-width:680px){.axes{grid-template-columns:1fr}}
   .axis{background:var(--mantle);border:1px solid var(--s0);border-radius:14px;padding:16px 18px}

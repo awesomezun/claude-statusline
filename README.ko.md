@@ -4,10 +4,10 @@
 
 # ⚡ Awesome Statusline
 
-**[Claude Code](https://claude.com/claude-code) 아래쪽에 모델 · 추론 강도 · 컨텍스트 · 사용량 한도 · 비용을 한눈에 보여 주는 상태줄입니다.**<br/>
+**[Claude Code](https://claude.com/claude-code) 아래쪽에 모델 · 추론 강도 · 컨텍스트 · 사용량 한도를 한눈에 보여 주는 상태줄입니다.**<br/>
 macOS · Linux · Windows에서 한 줄로 설치합니다.
 
-[🇺🇸 English](README.md) · [한눈에 보기](#overview) · [설치](#install) · [크기](#sizes) · [스타일](#styles) · [요금제](#plans) · [Mods](#mods) · [표시 항목](#fields) · [FAQ](#faq)
+[🇺🇸 English](README.md) · [한눈에 보기](#overview) · [설치](#install) · [프리셋](#presets) · [요금제](#plans) · [Mods](#mods) · [표시 항목](#fields) · [FAQ](#faq)
 
 <img src="https://img.shields.io/github/stars/awesomezun/claude-statusline?style=flat-square&color=cba6f7" alt="Stars"/>
 <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-89b4fa?style=flat-square" alt="Platforms"/>
@@ -19,7 +19,7 @@ macOS · Linux · Windows에서 한 줄로 설치합니다.
 
 <img src="assets/presets/hero.png" alt="추천 프리셋 large — Opus 5.5 ⚡xhigh, 컨텍스트 32%, 5시간 한도 34%, 주간 한도 65%" width="820"/>
 
-<sub>▶ <a href="https://awesomezun.github.io/claude-statusline/">라이브 데모</a> · 🆕 <b>v3.5.1</b> Ultra 요금제 지원 · 5가지 크기 × 3가지 스타일 · 🧩 <a href="#mods">Mods(베타)</a>: 데스크톱 앱에서도 표시 → <a href="#changelog">변경 기록</a></sub>
+<sub>▶ <a href="https://awesomezun.github.io/claude-statusline/">라이브 데모</a> · 프리셋 15개: 크기 5 × 스타일 3 · Pro · Max · Ultra 자동 · 🧩 <a href="#mods">Mods(베타)</a>: 데스크톱 앱에서도 표시 → <a href="#changelog">변경 기록</a></sub>
 
 </div>
 
@@ -29,29 +29,26 @@ macOS · Linux · Windows에서 한 줄로 설치합니다.
 
 ## 🧭 한눈에 보기
 
-**설치할 때 고르는 것은 크기와 스타일, 두 가지뿐입니다. 요금제는 고르지 않습니다. 상태줄이 알아서 맞춥니다.** 원하면 표시 위치도 고를 수 있습니다.
-
-| | 정하는 것 | 선택지 | 누가 정하나요 |
-|---|---|---|---|
-| **1. [크기](#sizes)** | 얼마나 많이 보여 줄지 | `xsmall` · `small` · `medium` · `large` · `xlarge` (5가지) | 설치할 때 직접 고릅니다 |
-| **2. [스타일](#styles)** | 어떤 모양으로 보여 줄지 | 이모지 · 이모지 없음 · 심플 텍스트 (3가지) | 설치할 때 직접 고릅니다 |
-| **3. [요금제](#plans)** | 어떤 사용량 한도를 보여 줄지 | Pro · Max → 5시간 + 주간<br/>Ultra → 주간 + 하루 예산 | **자동** (고르지 않습니다) |
-| **+ [표시 위치](#mods)** *(선택)* | 어디에 보여 줄지 | 상태줄(터미널) · Mods 베타(프롬프트 위 띠, Claude 데스크톱 앱에서도 보임) | 설치할 때 고릅니다. 고르지 않으면 상태줄 |
-
-크기와 스타일을 합친 이름을 **프리셋**이라고 부릅니다. 5 × 3 = **15개** 중 하나를 고르면 됩니다.
+**프리셋은 15개입니다. 크기 5가지 × 스타일 3가지.** 설치할 때 크기(얼마나 많이 보여 줄지)와 스타일(어떤 모양으로 보여 줄지)을 하나씩 고릅니다. 요금제는 고르지 않습니다. Ultra도 자동으로 맞춥니다.
 
 | 크기 ↓ · 스타일 → | 이모지 (기본) | 이모지 없음 | 심플 텍스트 |
 |---|---|---|---|
-| **xsmall** · 2줄 | `xsmall` | `xsmall-plain` | `xsmall-simple` (1줄) |
-| **small** · 2줄 | `small` | `small-plain` | `small-simple` |
-| **medium** · 4줄 | `medium` | `medium-plain` | `medium-simple` |
-| **large** · 5줄 ⭐ 추천 | **`large`** | `large-plain` | `large-simple` |
-| **xlarge** · 5줄 | `xlarge` | `xlarge-plain` | `xlarge-simple` |
+| **[xsmall](#xsmall)** · 2줄 | `xsmall` | `xsmall-plain` | `xsmall-simple` (1줄) |
+| **[small](#small)** · 2줄 | `small` | `small-plain` | `small-simple` |
+| **[medium](#medium)** · 4줄 | `medium` | `medium-plain` | `medium-simple` |
+| **[large](#large)** · 5줄 ⭐ 추천 | **`large`** | `large-plain` | `large-simple` |
+| **[xlarge](#xlarge)** · 5줄 | `xlarge` | `xlarge-plain` | `xlarge-simple` |
 
-- 크기만 쓰면 이모지 스타일입니다. `large`는 이모지가 있는 large입니다.
-- 크기는 줄여 써도 됩니다(`xs` · `s` · `m` · `l` · `xl`). `l-plain` = `large-plain`, `m-simple` = `medium-simple`입니다.
-- 예전 이름 `simple`은 `small-simple`, `oneline`은 `xsmall-simple`과 같습니다.
+- **이모지**가 기본입니다. 아이콘과 그라데이션 막대로 보여 주며, 크기만 쓰면 이 스타일입니다(`large`).
+- **이모지 없음**(`-plain`)은 배치와 막대는 그대로 두고 이모지만 뺍니다. tmux · SSH · Windows 콘솔처럼 이모지 폭이 어긋나기 쉬운 곳에서 가장 안정적입니다.
+- **심플 텍스트**(`-simple`)는 글자와 숫자만 씁니다. 그래서 크기마다 항목이 조금 다릅니다. 색은 한도 기간 중 지나간 시간과 사용량을 비교한 결과입니다. 초록은 여유, 노랑은 시간과 비슷한 속도, 빨강은 시간보다 빨리 쓰는 중(또는 90% 이상)입니다.
+- 크기는 줄여 써도 됩니다(`xs` · `s` · `m` · `l` · `xl`). `l-plain` = `large-plain`입니다. 예전 이름 `simple`은 `small-simple`, `oneline`은 `xsmall-simple`과 같습니다.
 - 처음이라면 **`large`** 를 추천합니다. 나중에 언제든 바꿀 수 있습니다.
+
+Claude 데스크톱 앱에서도 보고 싶다면 [Mods(베타)](#mods)로 설치하세요.
+
+> [!NOTE]
+> **Ultra 요금제는 자동으로 적용됩니다.** Ultra에는 5시간 한도가 없어서, Ultra에서는 모든 프리셋이 5H·7D 줄 대신 주간 한도 한 줄과 하루 예산을 보여 줍니다. 따로 고를 것이 없고, 요금제를 바꿔도 다시 설치할 필요가 없습니다. → [요금제](#plans)
 
 ---
 
@@ -118,67 +115,77 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 
 ---
 
-<a id="sizes"></a>
+<a id="presets"></a>
 
-## 📐 1. 크기: 5가지 중 하나
+## 🎨 프리셋 15개
 
-얼마나 많은 정보를 몇 줄에 보여 줄지 정합니다. 위로 갈수록 작고, 아래로 갈수록 자세합니다.
+크기마다 세 가지 스타일을 차례로 보여 드립니다. 이모지, 이모지 없음(`-plain`), 심플 텍스트(`-simple`) 순서입니다. Pro / Max 기준이며, Ultra에서 어떻게 바뀌는지는 [요금제](#plans)를 보세요.
 
-| 크기 | 줄 | 보여 주는 것 |
-|---|:-:|---|
-| `xsmall` (`xs`) | 2 | 모델 · effort · 폴더 · 브랜치, 작은 막대 3개 |
-| `small` (`s`) | 2 | + 전체 경로, git 변경 수, 출력 스타일, 리셋까지 남은 시간 |
-| `medium` (`m`) | 4 | + 긴 컨텍스트 막대와 토큰 수, 앞선 커밋 수 |
-| **`large` (`l`)** | 5 | + 비용, 세션 시간, 한도마다 한 줄씩 리셋 시각 (**추천**) |
-| `xlarge` (`xl`) | 5 | + 모든 막대 40칸, 리셋 날짜까지 |
+<a id="xsmall"></a>
+
+### xsmall (`xs`) · 2줄
+
+모델 · effort · 폴더 · 브랜치와 작은 막대 3개를 보여 줍니다. 심플 텍스트는 한 줄에 들어갑니다.
 
 <div align="center">
-<img src="assets/presets/sizes.png" alt="5가지 크기 — xsmall부터 xlarge까지 (이모지 스타일, Pro / Max)" width="820"/>
+<img src="assets/presets/xsmall.png" alt="xsmall: 이모지 스타일" width="820"/>
+<img src="assets/presets/xsmall-plain.png" alt="xsmall-plain: 이모지 없음" width="820"/>
+<img src="assets/presets/xsmall-simple.png" alt="xsmall-simple: 심플 텍스트" width="820"/>
 </div>
 
----
+<a id="small"></a>
 
-<a id="styles"></a>
+### small (`s`) · 2줄
 
-## 🎨 2. 스타일: 3가지 중 하나
-
-크기 이름 뒤에 붙여서 모양을 고릅니다. 다섯 크기 모두 세 가지 스타일이 있습니다.
-
-| 스타일 | 붙이는 것 | 예 | 모양 |
-|---|---|---|---|
-| **이모지** (기본) | 없음 | `large` | 아이콘 + 그라데이션 막대 |
-| **이모지 없음** | `-plain` | `large-plain` | 같은 배치와 막대, 아이콘만 빠짐 |
-| **심플 텍스트** | `-simple` | `large-simple` | 글자와 숫자만 (막대·이모지 없음) |
+전체 경로, git 변경 수, 출력 스타일, 리셋까지 남은 시간이 더해집니다.
 
 <div align="center">
-<img src="assets/presets/styles.png" alt="large의 3가지 스타일 — 이모지, -plain, -simple" width="820"/>
+<img src="assets/presets/small.png" alt="small: 이모지 스타일" width="820"/>
+<img src="assets/presets/small-plain.png" alt="small-plain: 이모지 없음" width="820"/>
+<img src="assets/presets/small-simple.png" alt="small-simple: 심플 텍스트" width="820"/>
 </div>
 
-- `-plain`은 이모지만 빠지고 내용은 똑같습니다. tmux · SSH · Windows 콘솔처럼 이모지 폭이 어긋나기 쉬운 곳에서 가장 안정적입니다.
-- `-simple`은 글자에 맞게 다시 배치해서 크기마다 항목이 조금 다릅니다. 예를 들어 `xsmall-simple`은 한 줄에 맞추느라 폴더 이름을 뺍니다.
-- **심플 텍스트의 색**은 한도 기간 중 지나간 시간과 사용량을 비교한 결과입니다. 초록은 여유, 노랑은 시간과 비슷한 속도, 빨강은 시간보다 빨리 쓰는 중(또는 90% 이상)입니다. 예를 들어 5시간 중 56%가 지났는데 34%를 썼다면 초록입니다.
+<a id="medium"></a>
 
-<details>
-<summary>🖼️ 다섯 크기 모두 보기: 이모지 없음 (<code>-plain</code>)</summary>
-<br/>
+### medium (`m`) · 4줄
+
+긴 컨텍스트 막대와 토큰 수, 앞선 커밋 수가 더해집니다.
+
 <div align="center">
-<img src="assets/presets/plain.png" alt="5가지 크기의 -plain 스타일" width="820"/>
+<img src="assets/presets/medium.png" alt="medium: 이모지 스타일" width="820"/>
+<img src="assets/presets/medium-plain.png" alt="medium-plain: 이모지 없음" width="820"/>
+<img src="assets/presets/medium-simple.png" alt="medium-simple: 심플 텍스트" width="820"/>
 </div>
-</details>
 
-<details>
-<summary>🖼️ 다섯 크기 모두 보기: 심플 텍스트 (<code>-simple</code>)</summary>
-<br/>
+<a id="large"></a>
+
+### large (`l`) · 5줄 ⭐ 추천
+
+세션 시간과, 한도마다 한 줄씩 리셋 시각이 더해집니다.
+
 <div align="center">
-<img src="assets/presets/simple.png" alt="5가지 크기의 -simple 스타일" width="820"/>
+<img src="assets/presets/large.png" alt="large: 이모지 스타일" width="820"/>
+<img src="assets/presets/large-plain.png" alt="large-plain: 이모지 없음" width="820"/>
+<img src="assets/presets/large-simple.png" alt="large-simple: 심플 텍스트" width="820"/>
 </div>
-</details>
+
+<a id="xlarge"></a>
+
+### xlarge (`xl`) · 5줄
+
+모든 막대가 40칸이 되고, 리셋 날짜까지 보여 줍니다.
+
+<div align="center">
+<img src="assets/presets/xlarge.png" alt="xlarge: 이모지 스타일" width="820"/>
+<img src="assets/presets/xlarge-plain.png" alt="xlarge-plain: 이모지 없음" width="820"/>
+<img src="assets/presets/xlarge-simple.png" alt="xlarge-simple: 심플 텍스트" width="820"/>
+</div>
 
 ---
 
 <a id="plans"></a>
 
-## 📊 3. 요금제: 자동
+## 📊 요금제: 자동, Ultra 포함
 
 **고르지 않습니다.** 요금제마다 Claude Code가 상태줄에 넘겨주는 사용량 한도가 다르고, 상태줄은 넘어온 한도만 그립니다. 15개 프리셋 모두 이렇게 동작하며, 요금제를 바꿔도 다시 설치할 필요가 없습니다.
 
@@ -192,81 +199,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 <div align="center">
 <img src="assets/presets/plans.png" alt="같은 large 프리셋이 Pro / Max에서는 5H + 7D, Ultra에서는 Weekly 한 줄과 하루 예산으로 바뀝니다" width="820"/>
 </div>
-
-<details>
-<summary>🖼️ 다섯 크기 모두 보기: Ultra</summary>
-<br/>
-<div align="center">
-<img src="assets/presets/ultra.png" alt="Ultra 요금제에서 5가지 크기" width="820"/>
-</div>
-</details>
-
-<details>
-<summary>📋 텍스트로 보기 (복사·붙여넣기용)</summary>
-<br/>
-
-터미널에서는 색이 함께 표시됩니다.
-
-```text
-xsmall ─ 2줄
-🤖 Opus ⚡xhigh 💡  📂 awesome-statusline 🌿main*
-🧠 ██░░░░ 32%  5h ██░░░░ 34%  7d ████░░ 65%
-
-small ─ 2줄
-🤖 Opus 5.5 ⚡xhigh 💡 │ 📂 ~/cc/awesome-statusline 🌿(main) +2 !3 ?1 │ 🎨 explanatory
-🧠 Context ███░░░░░░░  32% │ 5H ███░░░░░░░  34% 2h10m │ 7D ███████░░░  65% Wed
-
-medium ─ 4줄
-🤖 Opus 5.5 ⚡xhigh 💡 │ 📝 +2 !3 ?1 │ 🎨 explanatory
-📂 ~/cc/awesome-statusline 🌿(main ↑1)
-🧠 Context  █████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░  32%  320k/1M
-🚀 Usage    5H █████░░░░░░░░░  34% 2h10m │ 7D █████████░░░░░  65% Wed
-
-large ─ 5줄 (추천)
-🤖 Opus 5.5 ⚡xhigh 💡 │ 📝 +2 !3 ?1 │ 🎨 explanatory
-📂 ~/cc/awesome-statusline 🌿(main ↑1) │ 💰 $25.29 │ ⏰ 5h16m
-🧠 Context   ██████░░░░░░░░░░░░░░  32%  320k/1M
-🚀 Usage 5H  ███████░░░░░░░░░░░░░  34%  resets in 2h10m · 14:57
-⭐ Usage 7D  █████████████░░░░░░░  65%  resets Wed 02:47 · 2d14h
-
-xlarge ─ 5줄
-🤖 Opus 5.5 ⚡xhigh 💡 │ 🎨 explanatory │ 📝 dirty +2 !3 ?1
-📂 ~/cc/awesome-statusline 🌿(main ↑1) │ 💰 $25.29 │ ⏰ 5h16m
-🧠 Context   █████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░  32%  used (320k / 1000k)
-🚀 5H Limit  ██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░  34%  resets in 2h10m (2:57pm)
-🌟 7D Limit  ██████████████████████████░░░░░░░░░░░░░░  65%  resets Wed Nov 4, 2am (in 2d14h)
-
-large-plain ─ 이모지 없음
-Opus 5.5 · xhigh · thinking │ +2 !3 ?1 │ explanatory
-~/cc/awesome-statusline (main ↑1) │ $25.29 │ 5h16m
-Context   ██████░░░░░░░░░░░░░░  32%  320k/1M
-Usage 5H  ███████░░░░░░░░░░░░░  34%  resets in 2h10m · 14:57
-Usage 7D  █████████████░░░░░░░  65%  resets Wed 02:47 · 2d14h
-
-large-simple ─ 심플 텍스트
-Opus 5.5 · xhigh · thinking   git +2 !3 ?1   style explanatory
-~/cc/awesome-statusline (main ↑1)   cost $25.29   time 5h16m
-context   32%   320k / 1M
-5h        34%   resets in 2h10m · 14:57
-7d        65%   resets Wed 02:47 · 2d14h
-
-xsmall-simple ─ 심플 텍스트, 1줄
-Opus · xhigh · think │ ctx 32% │ 5h 34% │ 7d 65% │ main*
-
-large ─ Ultra (주간 한도만)
-🤖 Opus 5.5 ⚡xhigh 💡 │ 📝 +2 !3 ?1 │ 🎨 explanatory
-📂 ~/cc/awesome-statusline 🌿(main ↑1) │ 💰 $25.29 │ ⏰ 5h16m
-🧠 Context   ██████░░░░░░░░░░░░░░  32%  320k/1M
-⭐ Weekly    ██████████░░░░░░░░░░  48%  resets Tue 22:47 · 2d10h · ≈22%/day
-
-large-simple ─ Ultra (주간 한도만)
-Opus 5.5 · xhigh · thinking   git +2 !3 ?1   style explanatory
-~/cc/awesome-statusline (main ↑1)   cost $25.29   time 5h16m
-context   32%   320k / 1M
-week      48%   resets Tue 22:47 · 2d10h · 22%/day
-```
-
-</details>
 
 ---
 
@@ -301,6 +233,21 @@ curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/i
 - VS Code 확장에는 프롬프트 위 띠가 없어서 mod가 보이지 않습니다.
 - **상태줄로 돌아가기**: `--mods` 없이 다시 설치하세요. **mod 제거**: `claude plugin uninstall awesome-statusline-mod@awesome-statusline-local`을 실행한 뒤 `~/.claude/awesome-statusline-mod/` 폴더를 지우세요.
 
+### 콕핏 패널(시제품)
+
+mod를 설치하면 **`/cockpit`** 으로 채팅 옆에 [1top](https://1top.si) 메뉴바와 같은 모양의 패널이 열립니다. 다크와 라이트 두 테마가 있습니다.
+
+- **계기판**: 속도계 2개(시간당 토큰, 시간당 주간 한도 사용량), 상태 표시줄(작업 중·응답 대기·완료됨·재로그인·한도 부족), 트립 카운터가 달린 주행거리계, 계정마다 남은 한도를 보여 주는 연료 게이지
+- **대시보드**: 1시간을 한 바퀴로 그린 원형 토큰 차트, 모델별 비율, 시간당 사용량과 하루 추세가 있는 계정 카드
+- **아래 섹션**: 세션(주간 한도 사용량 순), 토큰 흐름, 한도, 사용량 맵, 히트맵, 리소스, 이 세션(컨텍스트, 지금 속도로 간다면 한도가 어디까지 차는지, 실행 중인 도구). *지금 compact* 버튼도 있습니다.
+- **사용 기간**은 10분부터 24시간까지 고릅니다. 보기·테마·기간·언어는 맨 위 버튼으로 바꾸고, 다음에 열어도 그대로 유지됩니다.
+
+같은 컴퓨터에서 1top 앱이 실행 중이면 1top의 로컬 읽기 전용 API에서 읽어, 1top이 추적하는 모든 AI(Claude Code, Codex 등)를 보여 줍니다. 1top이 없으면 이 컴퓨터의 리소스와, mod가 설치된 Claude Code 세션들을 보여 줍니다. 콕핏이 열려 있는 동안 프롬프트 위 띠는 숨겨집니다. 세션을 시작할 때마다 자동으로 열려면 mod의 `cockpit` 옵션을 `auto`로 바꾸세요. 데스크톱 앱에서는 그래픽으로, 터미널에서는 글자로 그립니다.
+
+<div align="center">
+<img src="assets/presets/cockpit.png" alt="가상의 세션으로 그린 콕핏: 속도계 2개·상태 표시줄·주행거리계·연료 게이지가 있는 다크 계기판과, 원형 토큰 차트·모델별 비율·계정 카드가 있는 라이트 대시보드" width="760"/>
+</div>
+
 ---
 
 <a id="fields"></a>
@@ -316,11 +263,11 @@ curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/i
 | 📂 🌿 **폴더 · Git** | 폴더, 브랜치, 앞선 ↑ / 뒤처진 ↓ 커밋 수, 스테이징 `+` · 수정 `!` · 추적 안 함 `?` 파일 수 |
 | 🐍 **Env** | 켜져 있는 conda / virtualenv (있을 때만) |
 | 🧠 **컨텍스트** | 컨텍스트 창 사용량 막대와 토큰 수 |
-| 💰 **비용** · ⏰ **시간** | 세션 비용(USD)과 경과 시간 |
+| ⏰ **시간** | 세션 경과 시간 |
 | 🚀 **5H** · ⭐ **7D** | 5시간 · 주간 한도 사용률과 리셋 시각 (Pro · Max) |
 | ⭐ **Weekly** | 주간 한도 사용률, 리셋 시각, 하루 예산 (Ultra) |
 
-이모지 없음 · 심플 텍스트 스타일에서는 아이콘 대신 `Context`, `Usage 5H`, `cost` 같은 글자 라벨로 표시합니다. 색은 [Catppuccin](https://catppuccin.com/) 팔레트를 따르고, 모든 글리프가 표준 이모지와 유니코드 블록이라 Nerd Font가 필요 없습니다.
+이모지 없음 · 심플 텍스트 스타일에서는 아이콘 대신 `Context`, `Usage 5H`, `time` 같은 글자 라벨로 표시합니다. 색은 [Catppuccin](https://catppuccin.com/) 팔레트를 따르고, 모든 글리프가 표준 이모지와 유니코드 블록이라 Nerd Font가 필요 없습니다.
 
 ---
 
@@ -390,7 +337,7 @@ Claude Code의 변화에 맞춰 계속 업데이트합니다. 릴리스별 자�
 
 | 날짜 | 업데이트 |
 |------|----------|
-| **2026‑11‑01** | **Mods(베타)** · `--mods`로 Claude Code mod로 설치: 같은 15개 프리셋을 프롬프트 위 띠에 그려서 Claude 데스크톱 앱에서도 보임(macOS / Linux) · 설치할 때 표시 위치도 물어봄 |
+| **2026‑11‑01** | **Mods(베타)** · `--mods`로 Claude Code mod로 설치: 같은 15개 프리셋을 프롬프트 위 띠에 그려서 Claude 데스크톱 앱에서도 보임(macOS / Linux) · 설치할 때 표시 위치도 물어봄 · `/cockpit` 패널(시제품): 계정·토큰 흐름·사용량 맵·실행 중인 세션을 보여 주는 1top식 계기판과 대시보드(다크·라이트) |
 | **2026‑11‑01** | **v3.5.1** · 다섯 크기 모두에 3가지 스타일(심플 텍스트 `m-simple`, `l-simple`, `xl-simple` 추가) · 설치할 때 크기와 스타일을 차례로 물어봄 · **tmux 안에서도 깨끗한 그라데이션**(Claude Code가 256색으로 낮추면 256색용 그라데이션으로 그리고, tmux가 24비트 색을 지원하면 설치 스크립트가 `CLAUDE_CODE_TMUX_TRUECOLOR`를 켬) · 최소 대비를 쓰는 밝은 테마(VS Code, Orca)에서 막대 첫 칸이 어두워지던 문제 수정 · README를 "고르는 것 2가지(크기·스타일) + 자동 1가지(요금제)" 구조로 새로 정리 |
 | **2026‑10‑31** | **Ultra 요금제 지원 + 디자인 개편** · Ultra는 5시간 한도가 없어서 주간 막대와 하루 예산을 보여 줌(예전에는 `0% (loading..)`에서 멈춤) · 모든 크기 디자인 정돈(열 정렬, 퍼센트 칸 폭 고정, 리셋을 *2h10m 후 · 01:50*처럼 표시, 빈 정보 숨김) · 이모지 없음(`-plain`) 추가 · 텍스트형 `simple`, `oneline` 추가 · 모든 프리셋을 렌더러 하나로 통합해 갱신 속도 약 4배 향상 |
 | **2026‑10‑17** | **한국어 등 비영어 Windows 환경** · 세션 이름에 한글 같은 비ASCII 문자가 있으면 `Unknown` / 0%로 표시되던 문제 수정 · 컨텍스트 창 크기가 잘못 보고될 때의 보정 추가 |

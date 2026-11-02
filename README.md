@@ -11,10 +11,10 @@
 
 # ⚡ Awesome Statusline
 
-**A statusline for [Claude Code](https://claude.com/claude-code) that shows model · reasoning effort · context · usage limits · cost at a glance.**<br/>
+**A statusline for [Claude Code](https://claude.com/claude-code) that shows model · reasoning effort · context · usage limits at a glance.**<br/>
 One line to install on macOS, Linux and Windows.
 
-[🇰🇷 한국어](README.ko.md) · [At a glance](#overview) · [Install](#install) · [Size](#sizes) · [Style](#styles) · [Plan](#plans) · [Mods](#mods) · [What it shows](#fields) · [FAQ](#faq)
+[🇰🇷 한국어](README.ko.md) · [At a glance](#overview) · [Install](#install) · [Presets](#presets) · [Plan](#plans) · [Mods](#mods) · [What it shows](#fields) · [FAQ](#faq)
 
 <img src="https://img.shields.io/github/stars/awesomezun/claude-statusline?style=flat-square&color=cba6f7" alt="Stars"/>
 <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-89b4fa?style=flat-square" alt="Platforms"/>
@@ -26,7 +26,7 @@ One line to install on macOS, Linux and Windows.
 
 <img src="assets/presets/hero.png" alt="The recommended preset, large — Opus 5.5 ⚡xhigh, context 32%, 5-hour limit 34%, weekly limit 65%" width="820"/>
 
-<sub>▶ <a href="https://awesomezun.github.io/claude-statusline/">Live demo</a> · 🆕 <b>v3.5.1</b> Ultra plan support · 5 sizes × 3 styles · 🧩 <a href="#mods">Mods (beta)</a>: also in the desktop app → <a href="#changelog">Changelog</a></sub>
+<sub>▶ <a href="https://awesomezun.github.io/claude-statusline/">Live demo</a> · 15 presets: 5 sizes × 3 styles · Pro · Max · Ultra, automatic · 🧩 <a href="#mods">Mods (beta)</a>: also in the desktop app → <a href="#changelog">Changelog</a></sub>
 
 </div>
 
@@ -36,29 +36,26 @@ One line to install on macOS, Linux and Windows.
 
 ## 🧭 At a glance
 
-**You choose two things when you install: a size and a style. You don't choose a plan — the statusline adapts to it on its own.** Optionally, you can also choose where it shows.
-
-| | What it decides | Options | Who decides |
-|---|---|---|---|
-| **1. [Size](#sizes)** | how much you see | `xsmall` · `small` · `medium` · `large` · `xlarge` (5) | you, at install |
-| **2. [Style](#styles)** | how it looks | emoji · no emoji · simple text (3) | you, at install |
-| **3. [Plan](#plans)** | which usage limits show | Pro · Max → 5-hour + weekly<br/>Ultra → weekly + per-day budget | **automatic** — nothing to choose |
-| **+ [Where](#mods)** *(optional)* | where it shows | Statusline (terminal) · Mods, beta (a band above the prompt, also in the Claude desktop app) | you, at install — Statusline unless you pick Mods |
-
-A size plus a style is a **preset**. There are 5 × 3 = **15**; you pick one.
+**15 presets: 5 sizes × 3 styles.** When you install, you pick a size (how much you see) and a style (how it looks). Your plan isn't a choice: Ultra included, it's applied automatically.
 
 | Size ↓ · Style → | Emoji (default) | No emoji | Simple text |
 |---|---|---|---|
-| **xsmall** · 2 lines | `xsmall` | `xsmall-plain` | `xsmall-simple` (1 line) |
-| **small** · 2 lines | `small` | `small-plain` | `small-simple` |
-| **medium** · 4 lines | `medium` | `medium-plain` | `medium-simple` |
-| **large** · 5 lines ⭐ recommended | **`large`** | `large-plain` | `large-simple` |
-| **xlarge** · 5 lines | `xlarge` | `xlarge-plain` | `xlarge-simple` |
+| **[xsmall](#xsmall)** · 2 lines | `xsmall` | `xsmall-plain` | `xsmall-simple` (1 line) |
+| **[small](#small)** · 2 lines | `small` | `small-plain` | `small-simple` |
+| **[medium](#medium)** · 4 lines | `medium` | `medium-plain` | `medium-simple` |
+| **[large](#large)** · 5 lines ⭐ recommended | **`large`** | `large-plain` | `large-simple` |
+| **[xlarge](#xlarge)** · 5 lines | `xlarge` | `xlarge-plain` | `xlarge-simple` |
 
-- A size on its own means the emoji style: `large` is large with emoji.
-- Sizes can be abbreviated (`xs` · `s` · `m` · `l` · `xl`): `l-plain` = `large-plain`, `m-simple` = `medium-simple`.
-- The older names `simple` and `oneline` still work; they are `small-simple` and `xsmall-simple`.
+- **Emoji** is the default: icons and gradient bars. A size on its own means this style (`large`).
+- **No emoji** (`-plain`) keeps the layout and the bars and drops only the emoji. It's the steadiest choice where emoji widths drift: tmux, SSH, Windows consoles.
+- **Simple text** (`-simple`) is text and numbers only, so the fields differ a little by size. Its colors compare usage with how much of the limit window has passed: green = under pace, yellow = on pace, red = ahead of time (or ≥ 90%).
+- Sizes can be abbreviated (`xs` · `s` · `m` · `l` · `xl`): `l-plain` = `large-plain`. The older names `simple` and `oneline` are `small-simple` and `xsmall-simple`.
 - New here? Start with **`large`**. You can switch any time.
+
+Want it in the Claude desktop app too? Install it as a [mod (beta)](#mods).
+
+> [!NOTE]
+> **Ultra is applied automatically.** Ultra has no 5-hour limit, so on Ultra every preset shows one weekly line with a per-day budget in place of the 5H and 7D lines. There's nothing to pick, and changing plans never needs a reinstall. → [Plan](#plans)
 
 ---
 
@@ -125,67 +122,77 @@ Then run `/statusline-setup`, or pass a preset directly: `/statusline-setup larg
 
 ---
 
-<a id="sizes"></a>
+<a id="presets"></a>
 
-## 📐 1. Size: pick one of five
+## 🎨 The 15 presets
 
-How much you see, and in how many lines. Smallest at the top, most detailed at the bottom.
+Each size in its three styles: emoji, no emoji (`-plain`) and simple text (`-simple`). Shown on Pro / Max; for Ultra, see [Plan](#plans).
 
-| Size | Lines | Shows |
-|---|:-:|---|
-| `xsmall` (`xs`) | 2 | model · effort · folder · branch, three small bars |
-| `small` (`s`) | 2 | + full path, git changes, output style, time to reset |
-| `medium` (`m`) | 4 | + wide context bar with token count, commits ahead |
-| **`large` (`l`)** | 5 | + cost, session time, one line per limit with reset time (**recommended**) |
-| `xlarge` (`xl`) | 5 | + 40-block bars everywhere, full reset dates |
+<a id="xsmall"></a>
+
+### xsmall (`xs`) · 2 lines
+
+Model · effort · folder · branch, and three small bars. The simple-text style fits on one line.
 
 <div align="center">
-<img src="assets/presets/sizes.png" alt="The five sizes, xsmall to xlarge (emoji style, Pro / Max)" width="820"/>
+<img src="assets/presets/xsmall.png" alt="xsmall: emoji style" width="820"/>
+<img src="assets/presets/xsmall-plain.png" alt="xsmall-plain: no emoji" width="820"/>
+<img src="assets/presets/xsmall-simple.png" alt="xsmall-simple: simple text" width="820"/>
 </div>
 
----
+<a id="small"></a>
 
-<a id="styles"></a>
+### small (`s`) · 2 lines
 
-## 🎨 2. Style: pick one of three
-
-Added after the size name. Every size comes in all three styles.
-
-| Style | Suffix | Example | Looks like |
-|---|---|---|---|
-| **Emoji** (default) | none | `large` | icons + gradient bars |
-| **No emoji** | `-plain` | `large-plain` | same layout and bars, no icons |
-| **Simple text** | `-simple` | `large-simple` | text and numbers only (no bars, no emoji) |
+Adds the full path, git changes, output style and time to reset.
 
 <div align="center">
-<img src="assets/presets/styles.png" alt="large in the three styles: emoji, -plain, -simple" width="820"/>
+<img src="assets/presets/small.png" alt="small: emoji style" width="820"/>
+<img src="assets/presets/small-plain.png" alt="small-plain: no emoji" width="820"/>
+<img src="assets/presets/small-simple.png" alt="small-simple: simple text" width="820"/>
 </div>
 
-- `-plain` drops only the emoji; everything else is identical. It's the steadiest choice where emoji widths drift: tmux, SSH, Windows consoles.
-- `-simple` is laid out for text, so the fields differ a little by size — `xsmall-simple`, for example, leaves out the folder to fit on one line.
-- **Simple-text colors** compare usage with how much of the limit window has passed: green = under pace, yellow = on pace, red = ahead of time (or ≥ 90%). Used 34% with 56% of the 5-hour window gone? Green.
+<a id="medium"></a>
 
-<details>
-<summary>🖼️ All five sizes: no emoji (<code>-plain</code>)</summary>
-<br/>
+### medium (`m`) · 4 lines
+
+Adds a wide context bar with the token count, and commits ahead.
+
 <div align="center">
-<img src="assets/presets/plain.png" alt="The five sizes in the -plain style" width="820"/>
+<img src="assets/presets/medium.png" alt="medium: emoji style" width="820"/>
+<img src="assets/presets/medium-plain.png" alt="medium-plain: no emoji" width="820"/>
+<img src="assets/presets/medium-simple.png" alt="medium-simple: simple text" width="820"/>
 </div>
-</details>
 
-<details>
-<summary>🖼️ All five sizes: simple text (<code>-simple</code>)</summary>
-<br/>
+<a id="large"></a>
+
+### large (`l`) · 5 lines ⭐ recommended
+
+Adds the session time, and one line per limit with its reset time.
+
 <div align="center">
-<img src="assets/presets/simple.png" alt="The five sizes in the -simple style" width="820"/>
+<img src="assets/presets/large.png" alt="large: emoji style" width="820"/>
+<img src="assets/presets/large-plain.png" alt="large-plain: no emoji" width="820"/>
+<img src="assets/presets/large-simple.png" alt="large-simple: simple text" width="820"/>
 </div>
-</details>
+
+<a id="xlarge"></a>
+
+### xlarge (`xl`) · 5 lines
+
+Adds 40-block bars everywhere and full reset dates.
+
+<div align="center">
+<img src="assets/presets/xlarge.png" alt="xlarge: emoji style" width="820"/>
+<img src="assets/presets/xlarge-plain.png" alt="xlarge-plain: no emoji" width="820"/>
+<img src="assets/presets/xlarge-simple.png" alt="xlarge-simple: simple text" width="820"/>
+</div>
 
 ---
 
 <a id="plans"></a>
 
-## 📊 3. Plan: automatic
+## 📊 Plan: automatic, Ultra included
 
 **Nothing to choose.** Each plan has different usage limits, Claude Code passes the statusline only the ones your plan has, and the statusline draws exactly those. All 15 presets work this way, and switching plans never needs a reinstall.
 
@@ -199,81 +206,6 @@ The **per-day budget** (`≈22%/day`) is the weekly allowance you have left divi
 <div align="center">
 <img src="assets/presets/plans.png" alt="The same large preset: 5H + 7D on Pro / Max, one Weekly line with a per-day budget on Ultra" width="820"/>
 </div>
-
-<details>
-<summary>🖼️ All five sizes: on Ultra</summary>
-<br/>
-<div align="center">
-<img src="assets/presets/ultra.png" alt="The five sizes on the Ultra plan" width="820"/>
-</div>
-</details>
-
-<details>
-<summary>📋 Plain-text preview (copy-paste friendly)</summary>
-<br/>
-
-Colors render live in your terminal.
-
-```text
-xsmall ─ 2 lines
-🤖 Opus ⚡xhigh 💡  📂 awesome-statusline 🌿main*
-🧠 ██░░░░ 32%  5h ██░░░░ 34%  7d ████░░ 65%
-
-small ─ 2 lines
-🤖 Opus 5.5 ⚡xhigh 💡 │ 📂 ~/cc/awesome-statusline 🌿(main) +2 !3 ?1 │ 🎨 explanatory
-🧠 Context ███░░░░░░░  32% │ 5H ███░░░░░░░  34% 2h10m │ 7D ███████░░░  65% Wed
-
-medium ─ 4 lines
-🤖 Opus 5.5 ⚡xhigh 💡 │ 📝 +2 !3 ?1 │ 🎨 explanatory
-📂 ~/cc/awesome-statusline 🌿(main ↑1)
-🧠 Context  █████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░  32%  320k/1M
-🚀 Usage    5H █████░░░░░░░░░  34% 2h10m │ 7D █████████░░░░░  65% Wed
-
-large ─ 5 lines (recommended)
-🤖 Opus 5.5 ⚡xhigh 💡 │ 📝 +2 !3 ?1 │ 🎨 explanatory
-📂 ~/cc/awesome-statusline 🌿(main ↑1) │ 💰 $25.29 │ ⏰ 5h16m
-🧠 Context   ██████░░░░░░░░░░░░░░  32%  320k/1M
-🚀 Usage 5H  ███████░░░░░░░░░░░░░  34%  resets in 2h10m · 14:57
-⭐ Usage 7D  █████████████░░░░░░░  65%  resets Wed 02:47 · 2d14h
-
-xlarge ─ 5 lines
-🤖 Opus 5.5 ⚡xhigh 💡 │ 🎨 explanatory │ 📝 dirty +2 !3 ?1
-📂 ~/cc/awesome-statusline 🌿(main ↑1) │ 💰 $25.29 │ ⏰ 5h16m
-🧠 Context   █████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░  32%  used (320k / 1000k)
-🚀 5H Limit  ██████████████░░░░░░░░░░░░░░░░░░░░░░░░░░  34%  resets in 2h10m (2:57pm)
-🌟 7D Limit  ██████████████████████████░░░░░░░░░░░░░░  65%  resets Wed Nov 4, 2am (in 2d14h)
-
-large-plain ─ no emoji
-Opus 5.5 · xhigh · thinking │ +2 !3 ?1 │ explanatory
-~/cc/awesome-statusline (main ↑1) │ $25.29 │ 5h16m
-Context   ██████░░░░░░░░░░░░░░  32%  320k/1M
-Usage 5H  ███████░░░░░░░░░░░░░  34%  resets in 2h10m · 14:57
-Usage 7D  █████████████░░░░░░░  65%  resets Wed 02:47 · 2d14h
-
-large-simple ─ simple text
-Opus 5.5 · xhigh · thinking   git +2 !3 ?1   style explanatory
-~/cc/awesome-statusline (main ↑1)   cost $25.29   time 5h16m
-context   32%   320k / 1M
-5h        34%   resets in 2h10m · 14:57
-7d        65%   resets Wed 02:47 · 2d14h
-
-xsmall-simple ─ simple text, 1 line
-Opus · xhigh · think │ ctx 32% │ 5h 34% │ 7d 65% │ main*
-
-large ─ on Ultra (weekly only)
-🤖 Opus 5.5 ⚡xhigh 💡 │ 📝 +2 !3 ?1 │ 🎨 explanatory
-📂 ~/cc/awesome-statusline 🌿(main ↑1) │ 💰 $25.29 │ ⏰ 5h16m
-🧠 Context   ██████░░░░░░░░░░░░░░  32%  320k/1M
-⭐ Weekly    ██████████░░░░░░░░░░  48%  resets Tue 22:47 · 2d10h · ≈22%/day
-
-large-simple ─ on Ultra (weekly only)
-Opus 5.5 · xhigh · thinking   git +2 !3 ?1   style explanatory
-~/cc/awesome-statusline (main ↑1)   cost $25.29   time 5h16m
-context   32%   320k / 1M
-week      48%   resets Tue 22:47 · 2d10h · 22%/day
-```
-
-</details>
 
 ---
 
@@ -308,6 +240,21 @@ Then start a new session, in the terminal or in the desktop app's Code tab.
 - The VS Code extension has no band above the prompt, so the mod doesn't show there.
 - **Back to the statusline**: reinstall without `--mods`. **Remove the mod**: `claude plugin uninstall awesome-statusline-mod@awesome-statusline-local`, then delete `~/.claude/awesome-statusline-mod/`.
 
+### Cockpit pane (prototype)
+
+With the mod installed, **`/cockpit`** opens a pane beside the chat drawn like [1top](https://1top.si)'s menu bar, in a dark and a light theme:
+
+- **Cluster**: two dials (tokens per hour, and weekly limit used per hour), a status strip (working, waiting, done, sign-in, low limit), an odometer with a trip counter, and what is left of each limit as fuel gauges.
+- **Dashboard**: a radial token chart around the hour, the model mix, and account cards with use per hour and a day's trend.
+- **Below either**: sessions (ranked by weekly limit used), token flow, limits, usage map, heatmap, resources, and this session (context, where each limit ends up at the pace so far, the tools running now). There's also a *Compact now* button.
+- **Period** from 10 minutes to 24 hours. The view, theme, period and language are buttons at the top and stay as you left them.
+
+With the 1top app running on the same computer, the cockpit reads 1top's local read-only API and shows every AI it tracks: Claude Code, Codex and the rest. Without it, it shows this computer's resources and the Claude Code sessions running the mod. While the cockpit is open, the band above the prompt steps aside. To open it at the start of every session, set the mod's `cockpit` option to `auto`. The desktop app draws it as graphics, the terminal as text.
+
+<div align="center">
+<img src="assets/presets/cockpit.png" alt="The cockpit with made-up sessions: the dark cluster with two dials, status strip, odometer and fuel gauges, beside the light dashboard with a radial token chart, model mix and account cards" width="760"/>
+</div>
+
 ---
 
 <a id="fields"></a>
@@ -323,11 +270,11 @@ Then start a new session, in the terminal or in the desktop app's Code tab.
 | 📂 🌿 **Folder · Git** | Folder, branch, commits ahead ↑ / behind ↓, staged `+` · modified `!` · untracked `?` files |
 | 🐍 **Env** | Active conda / virtualenv (only when one is active) |
 | 🧠 **Context** | Context-window usage bar and token count |
-| 💰 **Cost** · ⏰ **Time** | Session cost (USD) and duration |
+| ⏰ **Time** | Session duration |
 | 🚀 **5H** · ⭐ **7D** | 5-hour and weekly limit usage with reset times (Pro · Max) |
 | ⭐ **Weekly** | Weekly limit usage, reset time and per-day budget (Ultra) |
 
-The no-emoji and simple-text styles use text labels such as `Context`, `Usage 5H` and `cost` in place of the icons. Colors follow the [Catppuccin](https://catppuccin.com/) palette, and every glyph is a standard emoji or Unicode block — no Nerd Font needed.
+The no-emoji and simple-text styles use text labels such as `Context`, `Usage 5H` and `time` in place of the icons. Colors follow the [Catppuccin](https://catppuccin.com/) palette, and every glyph is a standard emoji or Unicode block — no Nerd Font needed.
 
 ---
 
@@ -397,7 +344,7 @@ Built to keep pace with Claude Code. Full notes for each release are on [Release
 
 | Date | Update |
 |------|--------|
-| **2026‑11‑01** | **Mods (beta)** · install as a Claude Code mod with `--mods`: the same 15 presets in the band above the prompt, so it also shows in the Claude desktop app (macOS / Linux) · the installer asks where it should show |
+| **2026‑11‑01** | **Mods (beta)** · install as a Claude Code mod with `--mods`: the same 15 presets in the band above the prompt, so it also shows in the Claude desktop app (macOS / Linux) · the installer asks where it should show · `/cockpit` pane (prototype): 1top-style cluster and dashboard, dark and light, with accounts, token flow, usage map and running sessions |
 | **2026‑11‑01** | **v3.5.1** · three styles for every size (simple text `m-simple`, `l-simple`, `xl-simple` added) · installs ask size, then style · **clean gradients inside tmux** (when Claude Code drops to 256 colours the bars use 256-colour gradients, and the installer turns on `CLAUDE_CODE_TMUX_TRUECOLOR` when tmux supports 24-bit colour) · fixed the first bar cell darkening on light themes with minimum contrast (VS Code, Orca) · README reorganized around "two choices (size, style) + one automatic (plan)" |
 | **2026‑10‑31** | **Ultra plan support + redesign** · Ultra has no 5-hour limit, so it gets a weekly bar with a per-day budget (the bars used to freeze at `0% (loading..)`) · every size redesigned (aligned columns, fixed-width %, resets shown as *in 2h10m · 01:50*, empty fields hidden) · no-emoji style (`-plain`) · text presets `simple` and `oneline` · one renderer for every preset, ~4× faster per refresh |
 | **2026‑10‑17** | **Windows on non-English locales** · no more `Unknown` / 0% when Claude Code sends non-ASCII text (e.g. a Korean session name) · context gauge guards against stale window-size reports |

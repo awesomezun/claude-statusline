@@ -106,7 +106,6 @@ if ($null -eq $CtxSize) { $CtxSize = 200000 }
 $CtxUsage = Get-JsonValue $Data @('context_window', 'current_usage') $null
 $CtxUsedPct = As-Pct (Get-JsonValue $Data @('context_window', 'used_percentage') $null)
 $CtxLeftPct = As-Pct (Get-JsonValue $Data @('context_window', 'remaining_percentage') $null)
-$Cost = As-Number (Get-JsonValue $Data @('cost', 'total_cost_usd') 0); if ($null -eq $Cost) { $Cost = 0 }
 $DurMs = As-Number (Get-JsonValue $Data @('cost', 'total_duration_ms') 0); if ($null -eq $DurMs) { $DurMs = 0 }
 
 $RateLimits = Get-JsonValue $Data @('rate_limits') $null
@@ -160,10 +159,10 @@ $Dot = "$cOv0 · $Rst"
 # Emoji are only ever the first glyph of a segment, so a terminal that draws
 # them 1 cell wide shifts every line the same way and columns stay aligned.
 if ($Plain) {
-  $iModel = ''; $iDir = ''; $iBranch = ''; $iGit = ''; $iClean = ''; $iStyle = ''; $iEnv = ''; $iCost = ''; $iTime = ''
+  $iModel = ''; $iDir = ''; $iBranch = ''; $iGit = ''; $iClean = ''; $iStyle = ''; $iEnv = ''; $iTime = ''
   $iCtx = ''; $i5h = ''; $i7d = ''; $i7dxl = ''
 } else {
-  $iModel = '🤖 '; $iDir = '📂 '; $iBranch = '🌿'; $iGit = '📝 '; $iClean = '✅ '; $iStyle = '🎨 '; $iEnv = '🐍 '; $iCost = '💰 '; $iTime = '⏰ '
+  $iModel = '🤖 '; $iDir = '📂 '; $iBranch = '🌿'; $iGit = '📝 '; $iClean = '✅ '; $iStyle = '🎨 '; $iEnv = '🐍 '; $iTime = '⏰ '
   $iCtx = '🧠 '; $i5h = '🚀 '; $i7d = '⭐ '; $i7dxl = '🌟 '
 }
 
@@ -265,7 +264,6 @@ if ($CtxPct -gt 100) { $CtxPct = 100 }
 $TokK = "$(IDiv $CtxTok 1000)k"
 $SizeK = if ($CtxSize -ge 1000000 -and ($CtxSize % 1000000) -eq 0) { "$(IDiv $CtxSize 1000000)M" } else { "$(IDiv $CtxSize 1000)k" }
 
-$CostFmt = '$' + $Cost.ToString('0.00', $Inv)
 $DurS = [long][Math]::Floor($DurMs / 1000)
 if ($DurS -ge 3600) { $Dur = "$(IDiv $DurS 3600)h$(IDiv ($DurS % 3600) 60)m" }
 elseif ($DurS -ge 60) { $Dur = "$(IDiv $DurS 60)m" }
@@ -368,10 +366,10 @@ function LedgerHead([string]$GitWord) {
   if ($Style -and $Style -ne 'default') { $h += "   ${cOv1}style $Rst$cPeach$Style$Rst" }
   return $h
 }
-function LedgerWhere([bool]$CostTime) {
+function LedgerWhere([bool]$WithTime) {
   $w = "$cSub0$DirShow$Rst"
   if ($GitOk -and $Branch) { $w += " $cGreen($Branch$AB)$Rst" }
-  if ($CostTime) { $w += "   ${cOv1}cost $Rst$Bld$cYellow$CostFmt$Rst   ${cOv1}time $Rst$Bld$cSub1$Dur$Rst" }
+  if ($WithTime) { $w += "   ${cOv1}time $Rst$Bld$cSub1$Dur$Rst" }
   return $w
 }
 function VPad([string]$Color, [int]$p) { return "$Bld$Color$('{0,3}%' -f $p)$Rst" }
@@ -446,7 +444,7 @@ switch ($Layout) {
   }
   'xlarge' {
     $Lines.Add((JoinSep @((Ident 'full' 'thinking'), $SS, (GitSeg 'dirty'), $ES)))
-    $Lines.Add((JoinSep @("$iDir$cSub0$DirShow$Rst$(BranchSeg $true)", "$iCost$cYellow$CostFmt$Rst", "$iTime$cSub0$Dur$Rst")))
+    $Lines.Add((JoinSep @("$iDir$cSub0$DirShow$Rst$(BranchSeg $true)", "$iTime$cSub0$Dur$Rst")))
     $Lines.Add("$iCtx$(Lbl $cMaroon 'Context' 10)$(Bar 'ctx' $CtxPct 40) $(PctV 'ctx' $CtxPct)$cOv2  used ($TokK / $(IDiv $CtxSize 1000)k)$Rst")
     if (-not $HasRL) {
       $Lines.Add("$i5h$(Lbl $cLav '5H Limit' 10)$(Bar '5h' 0 40)$Dash  $Loading")
@@ -490,7 +488,7 @@ switch ($Layout) {
         $L2 += $Rst
       }
     }
-    $L2 += "   ${cOv1}cost $Rst$Bld$cYellow$CostFmt$Rst   ${cOv1}time $Rst$Bld$cSub1$Dur$Rst"
+    $L2 += "   ${cOv1}time $Rst$Bld$cSub1$Dur$Rst"
     $Lines.Add($L1); $Lines.Add($L2)
   }
   'xsmall-simple' {
@@ -583,7 +581,7 @@ switch ($Layout) {
   default {
     # large
     $Lines.Add((JoinSep @((Ident 'full' 'thinking'), (GitSeg ''), $ES, $SS)))
-    $Lines.Add((JoinSep @("$iDir$cSub0$DirShow$Rst$(BranchSeg $true)", "$iCost$cYellow$CostFmt$Rst", "$iTime$cSub0$Dur$Rst")))
+    $Lines.Add((JoinSep @("$iDir$cSub0$DirShow$Rst$(BranchSeg $true)", "$iTime$cSub0$Dur$Rst")))
     $Lines.Add("$iCtx$(Lbl $cPink 'Context' 10)$(Bar 'ctx' $CtxPct 20) $(PctV 'ctx' $CtxPct)$cOv2  $TokK/$SizeK$Rst")
     if (-not $HasRL) {
       $Lines.Add("$i5h$(Lbl $cLav 'Usage 5H' 10)$(Bar '5h' 0 20)$Dash  $Loading")

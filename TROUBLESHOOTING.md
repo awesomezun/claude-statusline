@@ -230,7 +230,7 @@ To force a mode regardless of detection, set `AWESOME_STATUSLINE_COLOR=256` or
 
 ### Symptoms
 The vertical dividers between statusline segments (Model / Git / Env / Style,
-Dir / Cost / Duration) render with a gap in the middle instead of a continuous
+Dir / Duration) render with a gap in the middle instead of a continuous
 line.
 
 ### Cause

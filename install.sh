@@ -14,7 +14,7 @@
 #   xsmall (xs)   2 lines, minimal                  (xs-simple: 1 line)
 #   small  (s)    2 lines, labels + bars
 #   medium (m)    4 lines, wide context bar
-#   large  (l)    5 lines, cost / time / resets   (recommended)
+#   large  (l)    5 lines, session time / resets  (recommended)
 #   xlarge (xl)   5 lines, 40-block bars, full detail
 # Styles (suffix):
 #   (none)        emoji icons + gradient bars
@@ -127,7 +127,7 @@ REPO_RAW="${AWESOME_STATUSLINE_RAW:-https://raw.githubusercontent.com/awesomezun
 MOD_NAME="awesome-statusline-mod"
 MOD_DIR="$CLAUDE_DIR/$MOD_NAME"
 # The mod's files, relative to mods/awesome-statusline-mod/ in the repo.
-MOD_FILES=".claude-plugin/plugin.json .claude-plugin/marketplace.json hooks/hooks.json hooks/register.tsx hooks/ansi.ts hooks/cockpit.tsx hooks/gauges.ts types/index.d.ts"
+MOD_FILES=".claude-plugin/plugin.json .claude-plugin/marketplace.json hooks/hooks.json hooks/register.tsx hooks/ansi.ts hooks/cockpit.tsx hooks/gauges.ts hooks/dash.ts hooks/cluster.ts hooks/sources.ts types/index.d.ts"
 
 # --- output helpers ---------------------------------------------------------
 err()  { printf '\033[31m%s\033[0m\n' "$*" >&2; }
@@ -204,7 +204,7 @@ prompt_size() {
     echo "  1. xsmall (xs)   가장 작게 — 2줄, 핵심만"
     echo "  2. small  (s)    작게 — 2줄, 라벨과 막대"
     echo "  3. medium (m)    중간 — 4줄, 넓은 컨텍스트 막대"
-    echo "  4. large  (l)    크게 — 5줄, 비용·시간·리셋 (추천 기본값)"
+    echo "  4. large  (l)    크게 — 5줄, 세션 시간·리셋 (추천 기본값)"
     echo "  5. xlarge (xl)   가장 크게 — 5줄, 전체 상세"
     echo
     printf '선택 [기본값: 4]: '
@@ -215,7 +215,7 @@ prompt_size() {
     echo "  1. xsmall (xs)   smallest — 2 lines, essentials"
     echo "  2. small  (s)    small — 2 lines, labels + bars"
     echo "  3. medium (m)    medium — 4 lines, wide context bar"
-    echo "  4. large  (l)    large — 5 lines, cost / time / resets (recommended)"
+    echo "  4. large  (l)    large — 5 lines, session time / resets (recommended)"
     echo "  5. xlarge (xl)   largest — 5 lines, full detail"
     echo
     printf 'Choice [default: 4]: '

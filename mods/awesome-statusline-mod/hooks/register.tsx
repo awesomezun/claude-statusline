@@ -14,7 +14,7 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import type { Live, Snapshot, StatusJson } from '../types'
 import { parseAnsi } from './ansi'
-import { isCockpitShown, publishStatus, registerCockpit, startCockpit, syncCockpit } from './cockpit'
+import { countTokens, isCockpitShown, markWorking, publishStatus, refreshCockpit, registerCockpit, startCockpit, syncCockpit } from './cockpit'
 
 const snapshot = atom({ plugin: 'awesome-statusline-mod', key: 'snapshot' } as const, { output: null, error: null } as Snapshot)
 const live = atom({ plugin: 'awesome-statusline-mod', key: 'live' } as const, { model: null, effort: null } as Live)
@@ -204,6 +204,7 @@ export const register: Register = (on, options) => {
 
     $.clock.every(TICK_MS, async () => {
       await syncCockpit($)
+      refreshCockpit($).catch(() => undefined)
       if (isRunning) return
       const now = await $.clock.now()
       if (!isDirty && now - lastRun < REFRESH_MS) return
@@ -227,19 +228,24 @@ export const register: Register = (on, options) => {
     return next(e)
   })
 
-  // The main loop's model and effort, as each request goes out.
+  // The main loop's model and effort, as each request goes out; every request's
+  // tokens, subagents' too, for the cockpit.
   on('turn.step', async function* ($, e, next) {
     if (e.agentId === undefined) {
       const effort = e.effort === undefined ? null : String(e.effort)
       const l = await read($, live)
       if (l.model !== e.model || l.effort !== effort) await update($, live, () => ({ model: e.model, effort }))
+      await markWorking($, true)
       isDirty = true
     }
-    return yield* next(e)
+    const result = yield* next(e)
+    await countTokens($, result.usage)
+    return result
   })
 
-  on('turn.complete', ($, e, next) => {
+  on('turn.complete', async ($, e, next) => {
     isDirty = true
+    if (e.agentId === undefined) await markWorking($, false)
     return next(e)
   })
 

@@ -4,7 +4,9 @@ import type { Engine } from 'claude-code/testing'
 
 import type { StatusJson } from '../types'
 import { parseAnsi } from './ansi'
-import { buildView, countdown, forecastOf, hudSvg, paceOf, shortTool, sparkline } from './gauges'
+import { cpuFromPs, diskFromDf, fromLocal, fromOneTop, memFromPressure, netBytes, TEXT, treemap, trimOneTop } from './dash'
+import { clusterSvg, dashboardSvg, sectionSvg } from './cluster'
+import { buildView, countdown, forecastOf, paceOf, shortTool, sparkline } from './gauges'
 import { keepExpiredWindows, prettyModel } from './register'
 
 const E = '\x1b'
@@ -151,9 +153,75 @@ test('cockpit view: three dials on Pro / Max, two and a per-day budget on Ultra'
   const fresh = buildView({ ...STATUS, context_window: { context_window_size: 1_000_000 } }, NOW_S * 1000)
   expect([fresh.gauges[0]?.pct, fresh.gauges[0]?.sub]).toEqual([0, '0k / 1M'])
 
-  const svg = hudSvg(pro, [], { running: [], counts: {}, calls: 0 }, NOW_S * 1000)
-  expect(svg.source.startsWith('<svg')).toBe(true)
-  expect(svg.alt).toContain('CONTEXT 32%')
+})
+
+// What 1top's GET /api/state carries, cut down: two accounts, two sessions, events.
+const ONETOP_RAW = {
+  action_token: 'secret-write-token',
+  account_quotas: [
+    { kind: 'Claude', plan: 'max', account_label: 'me@example.com', stale: false, windows: [{ label: '5H', pct: 48 }, { label: '주간', pct: 24 }] },
+    { kind: 'Codex', plan: 'pro', stale: false, windows: [{ label: '주간', pct: 74 }] },
+    { kind: 'Antigravity', plan: '', stale: false, windows: [{ label: '주간', pct: 0 }] },
+  ],
+  root_sessions: [
+    { id: 'a', kind: 'Claude', project: 'claude-statusline', title: 'private', status: 'working', model: 'claude-opus-5-5', effort: 'xhigh', children_count: 2, location: { app: 'Terminal' }, usage: { windows: { '1h': [1, 900, 50, 49] }, weekly_estimate: { '1h': { used_pp: 7.4 } } } },
+    { id: 'b', kind: 'Codex', project: 'artex', status: 'idle', model: 'gpt-6-astra', effort: 'high', location: { app: 'ChatGPT' }, usage: { windows: { '1h': [0, 300, 0, 0] } } },
+  ],
+  events: [{ t: NOW_S - 600, kind: 'Claude', fresh: 1, cached: 900, written: 50, output: 49 }, { t: NOW_S - 60, kind: 'Codex', fresh: 0, cached: 300, written: 0, output: 0 }],
+  system: { host: { cpu: 33.7, memory: { percent: 59.8 }, network: { rx: 23_600, tx: 1_000 }, disk: { free: 44.6e9 } } },
+}
+
+test('the dashboard from 1top: accounts, flow, map and sessions, the write token dropped', async () => {
+  const st = trimOneTop(ONETOP_RAW)
+  expect(JSON.stringify(st)).not.toContain('secret-write-token')
+  expect(JSON.stringify(st)).not.toContain('me@example.com')
+  const d = fromOneTop(st, '1h', NOW_S, TEXT.ko)
+  expect(d.accounts.map(m => [m.title, m.index, m.pct, m.sub])).toEqual([
+    ['Claude Code', 1, 24, 'Max · 주간 · 5H 48%'],
+    ['Codex', 1, 74, 'Pro · 주간'],
+  ])
+  expect(d.flowTotal).toBe(1300)
+  expect(d.kinds).toEqual(['Claude', 'Codex'])
+  expect(d.tiles.map(x => x.label)).toEqual(['claude-statusline', 'artex'])
+  expect(d.sessions[0]).toMatchObject({ project: 'claude-statusline', children: 2, app: 'Terminal', model: 'Opus 5.5', share: 7.4, sharePerHour: 7.4, account: 1 })
+  expect(d.resources?.cpu).toBe(33.7)
+  expect(d.tokensPerHour).toBe(1300)
+  expect(d.counts).toMatchObject({ working: 1 })
+  expect(d.models.map(m => m.name)).toEqual(['Opus 5.5', 'gpt-6-astra'])
+
+  for (const theme of ['dark', 'light'] as const) {
+    const cluster = clusterSvg(d, TEXT.ko, theme, '1h', { since: NOW_S - 3600, total: 434e6, lastT: NOW_S }, NOW_S)
+    expect(cluster.source.startsWith('<svg')).toBe(true)
+    expect(cluster.alt).toContain('1,300')
+    expect(dashboardSvg(d, TEXT.ko, theme, '1h').alt).toContain('Opus 5.5')
+    for (const section of ['sessions', 'flow', 'limits', 'map', 'heat', 'resources', 'session'] as const) {
+      const s = sectionSvg(section, d, TEXT.ko, theme, '1h', { session: buildView(STATUS, NOW_S * 1000, 'ko'), activity: { running: [], counts: {}, calls: 0 }, minutes: [[NOW_S - 600, 1000]], nowMs: NOW_S * 1000 })
+      expect(s.source.startsWith('<svg')).toBe(true)
+    }
+  }
+})
+
+test('the dashboard without 1top: this session and the records of the others', async () => {
+  const fleet = [
+    { v: 1, id: 's1', project: 'claude-statusline', app: 'Orca', model: 'Opus 5.5', effort: 'xhigh', status: 'working', children: 1, updatedS: NOW_S - 10, bins: [[NOW_S - 120, 5_000], [NOW_S - 60, 3_000]] },
+    { v: 1, id: 's2', project: 'old', app: 'Terminal', model: 'Opus 5.5', effort: null, status: 'idle', children: 0, updatedS: NOW_S - 7_200, bins: [[NOW_S - 7_300, 9_000]] },
+  ] as const
+  const d = fromLocal(STATUS, fleet.map(r => ({ ...r, bins: r.bins.map(b => [...b] as [number, number]) })), null, '1h', NOW_S, TEXT.en)
+  expect(d.source).toBe('local')
+  expect(d.accounts.map(m => [m.window, m.sub])).toEqual([['Weekly', 'Weekly · 5H 34%']])
+  expect(d.flowTotal).toBe(8_000)
+  expect(d.sessions.map(s => s.project)).toEqual(['claude-statusline'])
+})
+
+test('resources from macOS commands, and the treemap fills its box', async () => {
+  expect(cpuFromPs(' 50.0\n 30.0\n 10.0\n', 4)).toBe(22.5)
+  expect(cpuFromPs('', 4)).toBe(null)
+  expect(memFromPressure('System-wide memory free percentage: 48%')).toBe(52)
+  expect(diskFromDf('Filesystem 1024-blocks Used Available Capacity\n/dev/disk3s1s1 100 10 366265204 4% /')).toBe(366_265_204 * 1024)
+  const net = 'Name Mtu Network Address Ipkts Ierrs Ibytes Opkts Oerrs Obytes Coll\nlo0 16384 <Link#1> 1 0 999 1 0 999 0\nen0 1500 <Link#11> aa:bb 1 0 100 1 0 40 0'
+  expect(netBytes(net)).toEqual({ rx: 100, tx: 40 })
+  const tiles = treemap([{ label: 'a', tokens: 3, kind: 'Claude' }, { label: 'b', tokens: 1, kind: 'Codex' }], { x: 0, y: 0, w: 100, h: 50 })
+  expect(tiles.map(r => Math.round(r.w))).toEqual([75, 25])
 })
 
 const PANE_MOUNT = {
@@ -165,7 +233,9 @@ const PANE_MOUNT = {
 
 const seedCockpit = (on: On) => {
   on('clock.now', () => ({ value: NOW_S * 1000 + 12_000 }))
-  on('state.get', (_, e) => {
+  on('settings.read', () => ({ value: { language: 'Korean' } }))
+  on('env.get', () => ({ value: undefined }))
+  on('state.get', (_, e, next) => {
     const key = (e as { key?: string }).key
     if (key === 'status') return { value: { value: STATUS, version: 1 } }
     if (key === 'history') {
@@ -175,7 +245,7 @@ const seedCockpit = (on: On) => {
     if (key === 'activity') {
       return { value: { value: { running: [{ id: 't1', tool: 'Bash', since: NOW_S * 1000, isAgent: false }], counts: { Read: 9, Bash: 4 }, calls: 13 }, version: 1 } }
     }
-    return { value: { value: undefined, version: 0 } }
+    return next(e)
   })
 }
 
@@ -250,14 +320,37 @@ test('the cockpit pane draws on the terminal and in the desktop app', async ($, 
   seedCockpit(on)
 
   const terminal = await $.ui.mount({ ...PANE_MOUNT, surface: 'terminal' })
-  expect(await terminal.find({ type: 'Text', text: /COCKPIT/ })).toBeDefined()
-  expect(await terminal.find({ type: 'Text', text: /5-HOUR/ })).toBeDefined()
-  expect(await terminal.find({ type: 'Button', text: /Compact now/ })).toBeDefined()
+  expect(await terminal.find({ type: 'Text', text: /콕핏/ })).toBeDefined()
+  expect(await terminal.find({ type: 'Text', text: /Claude/ })).toBeDefined()
+  expect(await terminal.find({ type: 'Button', text: /1시간/ })).toBeDefined()
+  expect(await terminal.find({ type: 'Button', text: /지금 compact/ })).toBeDefined()
   await terminal.unmount()
 
   const desktop = await $.ui.mount({ ...PANE_MOUNT, surface: 'desktop' })
+  expect(await desktop.find({ type: 'Svg' })).toBeDefined()
+  expect(await desktop.find({ type: 'Button', text: /24시간/ })).toBeDefined()
+  expect(await desktop.find({ type: 'Button', text: /지금 compact/ })).toBeDefined()
+  expect(await desktop.find({ type: 'Button', text: /대시보드/ })).toBeDefined()
+  expect(await desktop.find({ type: 'Button', text: /히트맵/ })).toBeDefined()
+  await desktop.unmount()
+})
+
+test('the period tabs and the view pager change what the cockpit draws', async ($, on) => {
+  seedCockpit(on)
+  const stored = new Map<string, unknown>()
+  on('store.set', (_, e) => {
+    const x = e as { key: string; value: unknown }
+    stored.set(x.key, x.value)
+    return { value: undefined }
+  })
+  const desktop = await $.ui.mount({ ...PANE_MOUNT, surface: 'desktop' })
+  await desktop.press({ key: 'period-24h' })
   const svg = await desktop.find({ type: 'Svg' })
-  expect(svg).toBeDefined()
-  expect(await desktop.find({ type: 'Button', text: /Compact now/ })).toBeDefined()
+  expect(String((svg?.props as { alt?: string } | undefined)?.alt)).toContain('최근 24시간')
+  await desktop.press({ key: 'view' })
+  expect(String(((await desktop.find({ type: 'Svg' }))?.props as { alt?: string } | undefined)?.alt)).toContain('대시보드')
+  await desktop.press({ key: 'section-heat' })
+  await desktop.press({ key: 'theme' })
+  expect([stored.get('cockpit.period'), stored.get('cockpit.view'), stored.get('cockpit.section'), stored.get('cockpit.theme')]).toEqual(['24h', 'dashboard', 'heat', 'light'])
   await desktop.unmount()
 })

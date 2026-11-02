@@ -86,7 +86,6 @@ def str: if . == null then "" else tostring end;
                       else 0 end) | floor | tostring),
     "CTX_USED=" + ($cw.used_percentage | pct | tostring),
     "CTX_LEFT=" + ($cw.remaining_percentage | pct | tostring),
-    "COST=" + ((.cost.total_cost_usd | n // 0) | tostring),
     "DUR_MS=" + ((.cost.total_duration_ms | n // 0) | floor | tostring),
     "HAS_RL=" + (if ($rl | type) == "object" and ($rl | length) > 0 then "1" else "" end),
     "FIVE_PCT=" + ($rl.five_hour.used_percentage | pct | tostring),
@@ -96,7 +95,7 @@ def str: if . == null then "" else tostring end;
   ] | .[]'
 eval "$(printf '%s' "$input" | jq -r "$JQ_PROG" 2>/dev/null)"
 
-: "${MODEL:=Unknown}" "${CUR_DIR:=.}" "${CTX_SIZE:=200000}" "${CTX_TOK:=0}" "${COST:=0}" "${DUR_MS:=0}"
+: "${MODEL:=Unknown}" "${CUR_DIR:=.}" "${CTX_SIZE:=200000}" "${CTX_TOK:=0}" "${DUR_MS:=0}"
 NOW=$(date +%s)
 
 # ---------------------------------------------------------------- palette (Catppuccin)
@@ -138,10 +137,10 @@ DOT="${c_ov0} · ${RST}"
 # Emoji are only ever the first glyph of a segment, so a terminal that draws
 # them 1 cell wide shifts every line the same way and columns stay aligned.
 if [[ -n "$PLAIN" ]]; then
-    i_model="" i_dir="" i_branch="" i_git="" i_clean="" i_style="" i_env="" i_cost="" i_time=""
+    i_model="" i_dir="" i_branch="" i_git="" i_clean="" i_style="" i_env="" i_time=""
     i_ctx="" i_5h="" i_7d="" i_7dxl=""
 else
-    i_model="🤖 " i_dir="📂 " i_branch="🌿" i_git="📝 " i_clean="✅ " i_style="🎨 " i_env="🐍 " i_cost="💰 " i_time="⏰ "
+    i_model="🤖 " i_dir="📂 " i_branch="🌿" i_git="📝 " i_clean="✅ " i_style="🎨 " i_env="🐍 " i_time="⏰ "
     i_ctx="🧠 " i_5h="🚀 " i_7d="⭐ " i_7dxl="🌟 "
 fi
 
@@ -288,7 +287,6 @@ fi
 TOK_K="$(( CTX_TOK / 1000 ))k"
 if (( CTX_SIZE >= 1000000 && CTX_SIZE % 1000000 == 0 )); then SIZE_K="$(( CTX_SIZE / 1000000 ))M"; else SIZE_K="$(( CTX_SIZE / 1000 ))k"; fi
 
-printf -v COST_FMT '$%.2f' "$COST" 2>/dev/null || COST_FMT='$0.00'
 DUR_S=$(( DUR_MS / 1000 ))
 if (( DUR_S >= 3600 )); then DUR="$(( DUR_S / 3600 ))h$(( DUR_S % 3600 / 60 ))m"
 elif (( DUR_S >= 60 )); then DUR="$(( DUR_S / 60 ))m"
@@ -412,11 +410,11 @@ ledger_head() {
     [[ -n "$ENV_NAME" ]] && LH+="   ${c_ov1}env ${RST}${c_green}${ENV_NAME}${RST}"
     [[ -n "$STYLE" && "$STYLE" != "default" ]] && LH+="   ${c_ov1}style ${RST}${c_peach}${STYLE}${RST}"
 }
-# ledger_where [with cost/time] → LW = "~/path (main ↑1)   cost $25.29   time 5h16m"
+# ledger_where [with time] → LW = "~/path (main ↑1)   time 5h16m"
 ledger_where() {
     LW="${c_sub0}${DIR_SHOW}${RST}"
     [[ -n "$GIT_OK" && -n "$BRANCH" ]] && LW+=" ${c_green}(${BRANCH}${AB})${RST}"
-    [[ -n "$1" ]] && LW+="   ${c_ov1}cost ${RST}${BLD}${c_yellow}${COST_FMT}${RST}   ${c_ov1}time ${RST}${BLD}${c_sub1}${DUR}${RST}"
+    [[ -n "$1" ]] && LW+="   ${c_ov1}time ${RST}${BLD}${c_sub1}${DUR}${RST}"
 }
 # vpad <colour> <pct> → VP = bold, right-aligned "  7%" / " 34%" / "100%"
 vpad() { local s; printf -v s '%3d%%' "$2"; VP="${BLD}$1${s}${RST}"; }
@@ -506,7 +504,7 @@ xlarge)
     ident full thinking
     git_seg dirty; env_seg; style_seg; branch_seg ab
     join_sep "$ID" "$SS" "$GS" "$ES"; emit "$J"
-    join_sep "${i_dir}${c_sub0}${DIR_SHOW}${RST}${BS}" "${i_cost}${c_yellow}${COST_FMT}${RST}" "${i_time}${c_sub0}${DUR}${RST}"; emit "$J"
+    join_sep "${i_dir}${c_sub0}${DIR_SHOW}${RST}${BS}" "${i_time}${c_sub0}${DUR}${RST}"; emit "$J"
     bar ctx "$CTX_PCT" 40; pctv ctx "$CTX_PCT"; pad Context 10
     emit "${i_ctx}${c_maroon}${PADDED_T}${RST}${PADDED_S}$BAR $PV${c_ov2}  used (${TOK_K} / $(( CTX_SIZE / 1000 ))k)${RST}"
     if [[ -z "$HAS_RL" ]]; then
@@ -556,7 +554,7 @@ small-simple)
         L2+="   ${c_ov1}week ${RST}${BLD}${PC}${SEVEN_PCT}%${RST}"
         [[ -n "$SEVEN_LEFT" ]] && { fmt_at "$SEVEN_RESET" "%a %H:%M"; L2+=" ${c_ov2}${D}${BUDGET:+ · $BUDGET}${RST}"; }
     fi
-    L2+="   ${c_ov1}cost ${RST}${BLD}${c_yellow}${COST_FMT}${RST}   ${c_ov1}time ${RST}${BLD}${c_sub1}${DUR}${RST}"
+    L2+="   ${c_ov1}time ${RST}${BLD}${c_sub1}${DUR}${RST}"
     emit "$L1"; emit "$L2"
     ;;
 
@@ -614,7 +612,7 @@ medium-simple)
 
 large-simple)
     ledger_head; emit "$LH"
-    ledger_where costtime; emit "$LW"
+    ledger_where time; emit "$LW"
     grad ctx "$CTX_PCT"; vpad "${E}[${G}m" "$CTX_PCT"; pad context 9
     emit "${c_ov1}${PADDED}${RST}${VP}${c_ov2}   ${TOK_K} / ${SIZE_K}${RST}"
     if [[ -z "$HAS_RL" ]]; then
@@ -644,7 +642,7 @@ large-simple)
 
 xlarge-simple)
     ledger_head dirty; emit "$LH"
-    ledger_where costtime; emit "$LW"
+    ledger_where time; emit "$LW"
     grad ctx "$CTX_PCT"; vpad "${E}[${G}m" "$CTX_PCT"; pad context 10
     FREE_K=$(( (CTX_SIZE - CTX_TOK) / 1000 )); (( FREE_K < 0 )) && FREE_K=0
     emit "${c_ov1}${PADDED}${RST}${VP}${c_ov2}   ${TOK_K} / $(( CTX_SIZE / 1000 ))k used · ${FREE_K}k free${RST}"
@@ -677,7 +675,7 @@ xlarge-simple)
     ident full thinking
     git_seg; env_seg; style_seg; branch_seg ab
     join_sep "$ID" "$GS" "$ES" "$SS"; emit "$J"
-    join_sep "${i_dir}${c_sub0}${DIR_SHOW}${RST}${BS}" "${i_cost}${c_yellow}${COST_FMT}${RST}" "${i_time}${c_sub0}${DUR}${RST}"; emit "$J"
+    join_sep "${i_dir}${c_sub0}${DIR_SHOW}${RST}${BS}" "${i_time}${c_sub0}${DUR}${RST}"; emit "$J"
     bar ctx "$CTX_PCT" 20; pctv ctx "$CTX_PCT"; pad Context 10
     emit "${i_ctx}${c_pink}${PADDED_T}${RST}${PADDED_S}$BAR $PV${c_ov2}  ${TOK_K}/${SIZE_K}${RST}"
     if [[ -z "$HAS_RL" ]]; then
