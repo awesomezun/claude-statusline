@@ -1,6 +1,6 @@
 {
   "name": "awesome-statusline-mod",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Awesome Statusline as a mod: the same 15 presets drawn in a band above the prompt, so it also shows in the Claude desktop app, plus a cockpit pane (/cockpit). Beta, macOS / Linux.",
   "author": {
     "name": "AwesomeJun",

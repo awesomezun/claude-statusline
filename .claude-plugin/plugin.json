@@ -1,6 +1,6 @@
 {
   "name": "awesome-statusline",
-  "version": "3.5.1",
+  "version": "3.6.0",
   "description": "A Claude Code statusline that shows reasoning effort (⚡) and thinking (💡). 5 sizes (xsmall-xlarge) x 3 styles (emoji, plain, text), Pro/Max/Ultra usage limits, Catppuccin theme, no Node/Nerd Font, native PowerShell on Windows.",
   "author": {
     "name": "AwesomeJun",
