@@ -7,7 +7,7 @@ import { parseAnsi } from './ansi'
 import { cpuFromPs, diskFromDf, fromLocal, fromOneTop, memFromPressure, netBytes, TEXT, treemap, trimOneTop } from './dash'
 import { clusterSvg, dashboardSvg, sectionSvg } from './cluster'
 import { buildView, countdown, forecastOf, paceOf, shortTool, sparkline } from './gauges'
-import { keepExpiredWindows, prettyModel } from './register'
+import { addCacheUsage, keepExpiredWindows, NO_CACHE, prettyModel, promptCacheOf } from './register'
 
 const E = '\x1b'
 // Two lines as the renderer writes them (large preset, shortened).
@@ -43,8 +43,36 @@ test('model ids read as the statusline names them', async () => {
   expect(prettyModel('claude-opus-5-5[1m]')).toBe('Opus 5.5')
   expect(prettyModel('claude-sonnet-5-5-20261001')).toBe('Sonnet 5.5')
   expect(prettyModel('claude-fable-5-1')).toBe('Fable 5.1')
+  expect(prettyModel('claude-fable-5-2')).toBe('Fable 5.2')
+  expect(prettyModel('us.anthropic.claude-fable-5-2')).toBe('Fable 5.2')
+  expect(prettyModel('claude-mythos-5-2')).toBe('Mythos 5.2')
+  expect(prettyModel('fable')).toBe('Fable')
   expect(prettyModel('opus')).toBe('Opus')
   expect(prettyModel('gpt-x')).toBe('gpt-x')
+})
+
+test('the prompt cache: hit ratio, warm until the TTL runs out, then cold', async () => {
+  const T = 1_000_000_000_000
+  // A first write at 1h TTL, then two reads.
+  let stats = addCacheUsage(NO_CACHE, { input_tokens: 2_000, cache_creation_input_tokens: 40_000, cache_read_input_tokens: 0, cache_creation: { ephemeral_1h_input_tokens: 40_000, ephemeral_5m_input_tokens: 0 } }, T, 5)
+  stats = addCacheUsage(stats, { input_tokens: 1_000, cache_creation_input_tokens: 3_000, cache_read_input_tokens: 40_000 }, T + 60_000, 5)
+  stats = addCacheUsage(stats, { input_tokens: 1_000, cache_creation_input_tokens: 2_000, cache_read_input_tokens: 43_000 }, T + 120_000, 5)
+
+  const warm = promptCacheOf(stats, T + 600_000)
+  expect(warm?.warm).toBe(true)
+  expect(warm?.ttl).toBe('1h')
+  expect(warm?.expires_at).toBe(Math.ceil((T + 120_000 + 3_600_000) / 1000))
+  expect(warm?.requests).toBe(3)
+  expect(Math.round((warm?.hit_ratio ?? 0) * 100)).toBe(63)
+  expect(warm?.recache_tokens_if_cold).toBe(46_000)
+
+  // Past the TTL: cold.
+  expect(promptCacheOf(stats, T + 120_000 + 3_600_001)?.warm).toBe(false)
+  // No request yet: nothing to report; a request without cache tokens: not observed.
+  expect(promptCacheOf(NO_CACHE, T)).toBe(undefined)
+  expect(promptCacheOf(addCacheUsage(NO_CACHE, { input_tokens: 900 }, T, 5), T)?.caching_observed).toBe(false)
+  // /clear moves the session's start up: the counts start over.
+  expect(addCacheUsage(stats, { input_tokens: 500, cache_read_input_tokens: 500 }, T, 9).requests).toBe(1)
 })
 
 test('a 5-hour window past its reset reads as a fresh 0%, so Pro / Max keep their layout', async () => {

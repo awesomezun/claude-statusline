@@ -193,7 +193,7 @@ const kindRank = (k: string) => (KIND_ORDER.includes(k) ? KIND_ORDER.indexOf(k) 
 /** "claude-opus-5-5[1m]" -> "Opus 5.5"; "gpt-6-astra" as given. */
 export const modelName = (id: string): string => {
   const bare = id.replace(/\[[^\]]*\]$/, '')
-  const m = bare.match(/(opus|sonnet|haiku|fable)(?:-(\d{1,2})(?:-(\d{1,2}))?)?(?![\d])/i)
+  const m = bare.match(/(opus|sonnet|haiku|fable|mythos)(?:-(\d{1,2})(?:-(\d{1,2}))?)?(?![\d])/i)
   if (m === null) return bare
   const family = (m[1] ?? '').charAt(0).toUpperCase() + (m[1] ?? '').slice(1).toLowerCase()
   if (m[2] === undefined) return family

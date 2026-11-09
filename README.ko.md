@@ -1,13 +1,9 @@
 <div align="center">
 
-<img src="assets/reel.gif" alt="Awesome Statusline — 30초 모션 릴" width="820"/>
-
 # ⚡ Awesome Statusline
 
-**[Claude Code](https://claude.com/claude-code) 아래쪽에 모델 · 추론 강도 · 컨텍스트 · 사용량 한도를 한눈에 보여 주는 상태줄입니다.**<br/>
+**[Claude Code](https://claude.com/claude-code)에서 모델 · 추론 강도 · 컨텍스트 · 프롬프트 캐시 · 사용량 한도를 한눈에 보여 주는 상태줄입니다. 이제 Claude 데스크톱 앱에서도 보입니다.**<br/>
 macOS · Linux · Windows에서 한 줄로 설치합니다.
-
-[🇺🇸 English](README.md) · [한눈에 보기](#overview) · [설치](#install) · [프리셋](#presets) · [요금제](#plans) · [Mods](#mods) · [표시 항목](#fields) · [FAQ](#faq)
 
 <img src="https://img.shields.io/github/stars/awesomezun/claude-statusline?style=flat-square&color=cba6f7" alt="Stars"/>
 <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-89b4fa?style=flat-square" alt="Platforms"/>
@@ -17,11 +13,85 @@ macOS · Linux · Windows에서 한 줄로 설치합니다.
 
 <br/><br/>
 
-<img src="assets/presets/hero.png" alt="추천 프리셋 large — Opus 5.5 ⚡xhigh, 컨텍스트 32%, 5시간 한도 34%, 주간 한도 65%" width="820"/>
+<img src="assets/reels/terminal.webp" alt="작업 중인 Claude Code 세션과 프롬프트 아래 large 프리셋: 컨텍스트가 40%까지, 5시간 한도가 34%까지 오르고 주간 한도는 65%" width="820"/>
 
-<sub>▶ <a href="https://awesomezun.github.io/claude-statusline/">라이브 데모</a> · 프리셋 15개: 크기 5 × 스타일 3 · Pro · Max · Ultra 자동 · 🧩 <a href="#mods">Mods(베타)</a>: 데스크톱 앱에서도 표시 → <a href="#changelog">변경 기록</a></sub>
+<br/><br/>
+
+<a href="#install"><img src="https://img.shields.io/badge/Install-one%20line-cba6f7?style=for-the-badge" alt="설치: 한 줄"/></a>&nbsp;<a href="#desktop"><img src="https://img.shields.io/badge/New-desktop%20%2B%20%2Fcockpit-fab387?style=for-the-badge" alt="새 기능: 데스크톱 앱과 /cockpit"/></a>&nbsp;<a href="#presets"><img src="https://img.shields.io/badge/Presets-15-89b4fa?style=for-the-badge" alt="프리셋 15개: 크기 5 × 스타일 3"/></a>&nbsp;<a href="https://awesomezun.github.io/claude-statusline/"><img src="https://img.shields.io/badge/Gallery-web-a6e3a1?style=for-the-badge" alt="웹 갤러리: 모든 프리셋"/></a>
+
+[🇺🇸 English](README.md) · [데스크톱과 콕핏](#desktop) · [v3.7](#v37) · [한눈에 보기](#overview) · [설치](#install) · [프리셋](#presets) · [요금제](#plans) · [Mods](#mods) · [표시 항목](#fields) · [FAQ](#faq)
 
 </div>
+
+---
+
+<a id="desktop"></a>
+
+## ✨ 새 기능: Claude 데스크톱 앱과 콕핏
+
+<div align="center">
+<img src="assets/reels/desktop.webp" alt="Claude 데스크톱 앱: 프롬프트 위 띠에 large 프리셋이 보이고, /cockpit을 입력하면 채팅 옆에 속도계·상태 표시줄·연료 게이지·세션이 있는 패널이 열린 뒤 대시보드로 바뀝니다" width="820"/>
+</div>
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+**🖥️ 데스크톱 앱**<br/>
+데스크톱 앱의 Code 탭은 `statusLine`을 실행하지 않습니다. mod로 설치하면 15개 프리셋 모두를 프롬프트 위 띠에 그려서 데스크톱 앱과 터미널에서 함께 보입니다.
+
+</td>
+<td width="33%" valign="top">
+
+**🛩️ `/cockpit`**<br/>
+채팅 옆에 [1top](https://1top.si) 메뉴바 모양의 패널을 엽니다. 속도계, 연료 게이지, 원형 토큰 차트와 모든 세션·한도를 보여 줍니다. 다크와 라이트를 고를 수 있습니다.
+
+</td>
+<td width="33%" valign="top">
+
+**⚡ 옵션 하나**<br/>
+설치 명령 뒤에 `--mods`를 붙이거나, 설치 스크립트가 물을 때 *Mods*를 고르세요. → [Mods](#mods) · [콕핏](#cockpit)
+
+</td>
+</tr>
+</table>
+
+<div align="center">
+<img src="assets/reels/cockpit.webp" alt="다크와 라이트 콕핏을 나란히: 바늘이 움직이는 계기판, 이어서 원형 토큰 차트·모델별 비율·계정 카드가 있는 대시보드" width="820"/>
+
+<sub>베타: mods를 지원하는 Claude Code(early access)가 필요하며 macOS와 Linux에서 동작합니다.</sub>
+</div>
+
+<a id="v37"></a>
+
+## 🆕 v3.7: Fable 5.2, 프롬프트 캐시, 무료 리셋권
+
+<div align="center">
+<img src="assets/presets/xlarge.png" alt="Fable 5.2의 xlarge: 캐시 적중 92%, 오후 6:46까지 유지, 도구 변경으로 미스 1회를 보여 주는 Cache 줄과 7D 줄 끝의 무료 리셋권 표시" width="820"/>
+</div>
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+**🧠 Fable 5.2**<br/>
+Claude Code의 새 기본 Fable 모델을 추론 강도, 1M 컨텍스트와 함께 보여 줍니다. Fable 5.1과 Mythos 모델도 같은 방식으로 표시하며, 띠와 콕핏에서도 마찬가지입니다.
+
+</td>
+<td width="33%" valign="top">
+
+**💾 프롬프트 캐시**<br/>
+입력 중 캐시에서 읽은 비율(`cache 92%`), 캐시가 언제까지 유지되는지, 식은 뒤에는 다음 턴에 다시 써야 하는 양을 보여 줍니다. 모든 프리셋에 나오며 xlarge는 한 줄을 따로 씁니다.
+
+</td>
+<td width="33%" valign="top">
+
+**🎫 무료 리셋권**<br/>
+claude.ai에서 받은 무료 한도 리셋권을 아직 쓰지 않았으면 한도 줄 끝에 🎫 표시가 붙습니다. 리셋권은 웹이나 데스크톱 앱의 설정 › 사용량에서 씁니다. → [FAQ](#faq)
+
+</td>
+</tr>
+</table>
 
 ---
 
@@ -31,13 +101,17 @@ macOS · Linux · Windows에서 한 줄로 설치합니다.
 
 **프리셋은 15개입니다. 크기 5가지 × 스타일 3가지.** 설치할 때 크기(얼마나 많이 보여 줄지)와 스타일(어떤 모양으로 보여 줄지)을 하나씩 고릅니다. 요금제는 고르지 않습니다. Ultra도 자동으로 맞춥니다.
 
+<div align="center">
+<img src="assets/reels/presets.webp" alt="프리셋이 차례로 바뀝니다: xsmall, small, medium, large, xlarge, 이어서 large-plain, large-simple, xsmall-simple" width="820"/>
+</div>
+
 | 크기 ↓ · 스타일 → | 이모지 (기본) | 이모지 없음 | 심플 텍스트 |
 |---|---|---|---|
 | **[xsmall](#xsmall)** · 2줄 | `xsmall` | `xsmall-plain` | `xsmall-simple` (1줄) |
 | **[small](#small)** · 2줄 | `small` | `small-plain` | `small-simple` |
 | **[medium](#medium)** · 4줄 | `medium` | `medium-plain` | `medium-simple` |
 | **[large](#large)** · 5줄 ⭐ 추천 | **`large`** | `large-plain` | `large-simple` |
-| **[xlarge](#xlarge)** · 5줄 | `xlarge` | `xlarge-plain` | `xlarge-simple` |
+| **[xlarge](#xlarge)** · 6줄 | `xlarge` | `xlarge-plain` | `xlarge-simple` |
 
 - **이모지**가 기본입니다. 아이콘과 그라데이션 막대로 보여 주며, 크기만 쓰면 이 스타일입니다(`large`).
 - **이모지 없음**(`-plain`)은 배치와 막대는 그대로 두고 이모지만 뺍니다. tmux · SSH · Windows 콘솔처럼 이모지 폭이 어긋나기 쉬운 곳에서 가장 안정적입니다.
@@ -171,9 +245,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
 
 <a id="xlarge"></a>
 
-### xlarge (`xl`) · 5줄
+### xlarge (`xl`) · 6줄
 
-모든 막대가 40칸이 되고, 리셋 날짜까지 보여 줍니다.
+프롬프트 캐시 줄(미스 포함)이 더해지고, 모든 막대가 40칸이 되며, 리셋 날짜까지 보여 줍니다.
 
 <div align="center">
 <img src="assets/presets/xlarge.png" alt="xlarge: 이모지 스타일" width="820"/>
@@ -233,6 +307,8 @@ curl -fsSL https://raw.githubusercontent.com/awesomezun/claude-statusline/main/i
 - VS Code 확장에는 프롬프트 위 띠가 없어서 mod가 보이지 않습니다.
 - **상태줄로 돌아가기**: `--mods` 없이 다시 설치하세요. **mod 제거**: `claude plugin uninstall awesome-statusline-mod@awesome-statusline-local`을 실행한 뒤 `~/.claude/awesome-statusline-mod/` 폴더를 지우세요.
 
+<a id="cockpit"></a>
+
 ### 콕핏 패널(시제품)
 
 mod를 설치하면 **`/cockpit`** 으로 채팅 옆에 [1top](https://1top.si) 메뉴바와 같은 모양의 패널이 열립니다. 다크와 라이트 두 테마가 있습니다.
@@ -261,16 +337,18 @@ mod를 설치하면 **`/cockpit`** 으로 채팅 옆에 [1top](https://1top.si) 
 
 | 항목 | 의미 |
 |------|------|
-| 🤖 **모델** | 현재 모델 (`Opus 5.5` 등) |
+| 🤖 **모델** | 현재 모델 (`Fable 5.2`, `Opus 5.5` 등) |
 | ⚡ **Effort** | 추론 강도: `low` · `medium` · `high` · `xhigh` · `max`. `/effort`로 바꾸면 바로 반영됩니다. effort를 지원하지 않는 모델에서는 숨깁니다 |
 | 💡 **Thinking** | 확장 사고가 켜져 있음 |
 | 🎨 **출력 스타일** | 현재 출력 스타일 (`default`이면 숨김) |
 | 📂 🌿 **폴더 · Git** | 폴더, 브랜치, 앞선 ↑ / 뒤처진 ↓ 커밋 수, 스테이징 `+` · 수정 `!` · 추적 안 함 `?` 파일 수 |
 | 🐍 **Env** | 켜져 있는 conda / virtualenv (있을 때만) |
 | 🧠 **컨텍스트** | 컨텍스트 창 사용량 막대와 토큰 수 |
+| 💾 **캐시** | 입력 중 프롬프트 캐시에서 읽은 비율(80% 이상 초록, 50% 이상 노랑), 캐시가 유지되는 시각, 식은 뒤 다음 턴에 다시 쓰는 양. 첫 응답 뒤부터 보입니다(Claude Code 2.1.251 이상) |
 | ⏰ **시간** | 세션 경과 시간 |
 | 🚀 **5H** · ⭐ **7D** | 5시간 · 주간 한도 사용률과 리셋 시각 (Pro · Max) |
 | ⭐ **Weekly** | 주간 한도 사용률, 리셋 시각, 하루 예산 (Ultra) |
+| 🎫 **무료 리셋권** | claude.ai에서 받은 무료 한도 리셋권을 아직 쓰지 않았음 ([FAQ](#faq) 참고) |
 
 이모지 없음 · 심플 텍스트 스타일에서는 아이콘 대신 `Context`, `Usage 5H`, `time` 같은 글자 라벨로 표시합니다. 색은 [Catppuccin](https://catppuccin.com/) 팔레트를 따르고, 모든 글리프가 표준 이모지와 유니코드 블록이라 Nerd Font가 필요 없습니다.
 
@@ -316,6 +394,10 @@ Windows에서는 설치 스크립트가 네이티브 `awesome-statusline.ps1`을
 
 **`⚡effort`가 안 보여요.** 현재 모델이 effort를 지원하지 않아서 일부러 숨긴 것입니다. `/effort`를 지원하는 모델(예: Opus 5.5)로 바꾸세요.
 
+**`cache 92%`는 무슨 뜻이고, `cold`는 왜 뜨나요?** Claude Code는 대화 앞부분을 캐시에 넣어 두고, 다음 턴에서 그 부분을 다시 처리하지 않고 읽어 옵니다. 캐시에서 읽은 입력은 더 싸고 한도도 덜 씁니다. `92%`는 이 세션 입력 중 캐시에서 읽은 비율입니다. 캐시는 매 턴 뒤 일정 시간(5분 또는 1시간) 유지되고, 그 시간이 지나면 `cold`가 됩니다. 그러면 다음 턴이 대화 전체를 다시 써야 하며, 그 양이 `re-caches` 뒤에 나옵니다. `miss`는 캐시에 이미 있던 내용을 다시 처리한 턴이고, xlarge는 그 원인(도구나 시스템 프롬프트가 바뀜, 유지 시간이 지나도록 쉼)을 함께 보여 줍니다.
+
+**무료 리셋권이 몇 개 남았는지도 보여 주나요?** 개수는 보여 주지 않고, 있는지 없는지만 보여 줍니다. claude.ai는 가끔 무료 한도 리셋권을 주며, 리셋권은 Claude Code가 아니라 웹이나 데스크톱 앱의 설정 › 사용량에서 씁니다. 상태줄 입력 JSON에는 리셋권 정보가 없습니다. Claude Code는 `~/.claude.json`에 이 계정이 쓰지 않은 리셋권을 갖고 있는지만 적어 두고, 🎫 표시는 그 값을 읽습니다. 개수는 로그인 정보로만 받을 수 있는데, 상태줄은 로그인 정보를 건드리지 않습니다. 어디로도 아무것도 보내지 않습니다.
+
 **이모지를 끌 수 있나요?** 네. 크기 뒤에 `-plain`을 붙이면 같은 배치에서 이모지만 빠지고(`large-plain`), `-simple`을 붙이면 막대도 없는 텍스트형이 됩니다(`large-simple`).
 
 **Claude 데스크톱 앱에서도 보이나요?** [Mods(베타)](#mods)로 설치하면 보입니다. 데스크톱 앱의 Code 탭은 `statusLine` 명령을 실행하지 않지만, mod가 그리는 프롬프트 위 띠는 보여 줍니다.
@@ -342,6 +424,7 @@ Claude Code의 변화에 맞춰 계속 업데이트합니다. 릴리스별 자�
 
 | 날짜 | 업데이트 |
 |------|----------|
+| **2026‑11‑09** | **v3.7.0** · **Fable 5.2** 지원(Mythos 모델도, 띠와 콕핏 포함) · 모든 프리셋에 **프롬프트 캐시**: 적중률, 유지 시각, 식었을 때 다시 쓰는 양, xlarge에는 미스와 그 원인까지 보여 주는 캐시 줄 · 쓰지 않은 **무료 리셋권**이 있으면 표시 · mod가 요청마다 캐시 수치를 직접 계산해 데스크톱 앱에서도 보임 · README 맨 위에 움직이는 쇼릴과 데스크톱·콕핏 절 |
 | **2026‑11‑02** | **v3.6.0** · **Mods(베타)** · `--mods`로 Claude Code mod로 설치: 같은 15개 프리셋을 프롬프트 위 띠에 그려서 Claude 데스크톱 앱에서도 보임(macOS / Linux) · 설치할 때 표시 위치도 물어봄 · `/cockpit` 패널(시제품): 계정·토큰 흐름·사용량 맵·실행 중인 세션을 보여 주는 1top식 계기판과 대시보드(다크·라이트) · README에서 15개 프리셋을 크기별로 보여 줌 |
 | **2026‑11‑01** | **v3.5.1** · 다섯 크기 모두에 3가지 스타일(심플 텍스트 `m-simple`, `l-simple`, `xl-simple` 추가) · 설치할 때 크기와 스타일을 차례로 물어봄 · **tmux 안에서도 깨끗한 그라데이션**(Claude Code가 256색으로 낮추면 256색용 그라데이션으로 그리고, tmux가 24비트 색을 지원하면 설치 스크립트가 `CLAUDE_CODE_TMUX_TRUECOLOR`를 켬) · 최소 대비를 쓰는 밝은 테마(VS Code, Orca)에서 막대 첫 칸이 어두워지던 문제 수정 · README를 "고르는 것 2가지(크기·스타일) + 자동 1가지(요금제)" 구조로 새로 정리 |
 | **2026‑10‑31** | **Ultra 요금제 지원 + 디자인 개편** · Ultra는 5시간 한도가 없어서 주간 막대와 하루 예산을 보여 줌(예전에는 `0% (loading..)`에서 멈춤) · 모든 크기 디자인 정돈(열 정렬, 퍼센트 칸 폭 고정, 리셋을 *2h10m 후 · 01:50*처럼 표시, 빈 정보 숨김) · 이모지 없음(`-plain`) 추가 · 텍스트형 `simple`, `oneline` 추가 · 모든 프리셋을 렌더러 하나로 통합해 갱신 속도 약 4배 향상 |
@@ -359,6 +442,17 @@ Claude Code의 변화에 맞춰 계속 업데이트합니다. 릴리스별 자�
 
 Claude Code 커뮤니티를 위해 🩵 으로 만들었습니다 · [Catppuccin](https://catppuccin.com/) 테마 · MIT License
 
+<sub>Awesome Statusline은 개인이 만든 커뮤니티 프로젝트이며 Anthropic과 관계가 없고 Anthropic의 보증을 받지 않았습니다. Claude와 Claude Code는 Anthropic, PBC의 상표입니다.</sub>
+
 ⭐ **터미널이 더 예뻐졌다면 별을 눌러 주세요.**
 
 </div>
+
+<br/>
+
+<p align="center">
+  <img src="assets/reel.gif" alt="Awesome Statusline — 30초 모션 릴" width="820">
+  <br>
+  <a href="https://gitreels.com"><img src="https://gitreels.com/badge.svg" alt="Made with GitReels" height="24"></a>
+  <a href="https://gitreels.com/awesomezun/claude-statusline"><img src="https://gitreels.com/api/badges/rotw/awesomezun/claude-statusline.svg" alt="GitReels 이번 주의 릴 2위" height="24"></a>
+</p>

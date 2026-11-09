@@ -18,6 +18,16 @@
 # Pro / Max show 5H + 7D. "loading.." appears only while rate_limits is missing
 # altogether (before the first API response of a session).
 #
+# Prompt cache: from the official prompt_cache object (Claude Code 2.1.251+),
+# the share of input read from the cache and how long the cached prefix stays
+# warm; once it has gone cold, what the next turn writes again. Every preset
+# shows it once the session reports cache use; xlarge gives it a line.
+#
+# Limit resets: claude.ai hands out free limit resets now and then (used from
+# Settings > Usage). The statusline JSON doesn't carry them; Claude Code notes
+# in its own ~/.claude.json whether this account holds an unused one, without
+# a count, and that is what the "free reset" mark shows. Nothing is sent anywhere.
+#
 # Works on bash 3.2 (macOS default) and newer. Needs jq.
 # ============================================================================
 
@@ -52,6 +62,11 @@ esac
 LAYOUT=$SIZE
 [[ -n "$SIMPLE" ]] && LAYOUT="$SIZE-simple"
 
+# Claude Code passes the terminal's width in COLUMNS (the mod passes the band's).
+# Below 100 columns the cache and free reset figures take their shorter forms.
+NARROW=""
+[[ "${COLUMNS:-}" =~ ^[0-9]+$ ]] && (( COLUMNS < 100 )) && NARROW=1
+
 input=$(cat)
 
 if ! command -v jq >/dev/null 2>&1; then
@@ -73,6 +88,7 @@ def epoch: if type == "number" then floor
 def str: if . == null then "" else tostring end;
 (.rate_limits | if type == "object" then . else {} end) as $rl
 | (.context_window | if type == "object" then . else {} end) as $cw
+| (.prompt_cache | if type == "object" then . else null end) as $pc
 | [
     "MODEL=" + ((.model.display_name // .model.id // "Unknown") | str | @sh),
     "CUR_DIR=" + ((.workspace.current_dir // .cwd // ".") | str | @sh),
@@ -91,7 +107,15 @@ def str: if . == null then "" else tostring end;
     "FIVE_PCT=" + ($rl.five_hour.used_percentage | pct | tostring),
     "FIVE_RESET=" + ($rl.five_hour.resets_at | epoch | tostring),
     "SEVEN_PCT=" + ($rl.seven_day.used_percentage | pct | tostring),
-    "SEVEN_RESET=" + ($rl.seven_day.resets_at | epoch | tostring)
+    "SEVEN_RESET=" + ($rl.seven_day.resets_at | epoch | tostring),
+    "PC_SEEN=" + (if $pc == null then "" else "1" end),
+    "PC_ON=" + (if $pc.caching_observed == true then "1" else "" end),
+    "PC_HIT=" + ($pc.hit_ratio | n | if . == null then "" else (. * 100 | pct) end | tostring),
+    "PC_WARM=" + (if $pc.warm == true then "1" else "" end),
+    "PC_EXP=" + ($pc.expires_at | epoch | tostring),
+    "PC_MISS=" + (($pc.misses | n // 0) | floor | tostring),
+    "PC_CAUSE=" + (($pc.last_miss_cause.causes | if type == "array" then .[0] else null end) // "" | str | @sh),
+    "PC_COLD=" + ($pc.recache_tokens_if_cold | n | if . == null then "" else floor end | tostring)
   ] | .[]'
 eval "$(printf '%s' "$input" | jq -r "$JQ_PROG" 2>/dev/null)"
 
@@ -104,7 +128,7 @@ c_ov2="${E}[38;2;147;153;178m";   c_ov1="${E}[38;2;127;132;156m";   c_ov0="${E}[
 c_surf2="${E}[38;2;88;91;112m"
 c_teal="${E}[38;2;148;226;213m";  c_pink="${E}[38;2;245;194;231m";  c_peach="${E}[38;2;250;179;135m"
 c_green="${E}[38;2;166;227;161m"; c_lav="${E}[38;2;180;190;254m";   c_yellow="${E}[38;2;249;226;175m"
-c_red="${E}[38;2;243;139;168m";   c_maroon="${E}[38;2;235;160;172m"
+c_red="${E}[38;2;243;139;168m";   c_maroon="${E}[38;2;235;160;172m"; c_sky="${E}[38;2;137;220;235m"
 c_lgreen="${E}[38;2;64;160;43m";  c_lyellow="${E}[38;2;223;142;29m"
 
 # ---------------------------------------------------------------- colour depth
@@ -124,11 +148,13 @@ esac
 RAMP_CTX=(225 218 218 211 211 204 204 203 203 203 197 197 197 197 161 161 161 161 161 161 161)
 RAMP_5H=(147 147 111 111 75 69 69 33 27 27 27 63 62 98 97 133 132 168 167 161 161)
 RAMP_7D=(223 223 222 222 216 215 215 209 209 208 202 202 202 202 202 196 196 160 160 161 161)
+RAMP_CACHE=(117 117 117 117 116 116 116 116 115 115 115 115 115 151 151 151 151 151 150 150 150)
 if [[ "$COLOR_MODE" == 256 ]]; then
     c_sub1="${E}[38;5;146m";  c_sub0="${E}[38;5;146m";  c_ov2="${E}[38;5;103m";  c_ov1="${E}[38;5;103m"
     c_ov0="${E}[38;5;60m";    c_surf2="${E}[38;5;60m";  c_teal="${E}[38;5;116m"; c_pink="${E}[38;5;225m"
     c_peach="${E}[38;5;216m"; c_green="${E}[38;5;150m"; c_lav="${E}[38;5;147m";  c_yellow="${E}[38;5;223m"
     c_red="${E}[38;5;211m";   c_maroon="${E}[38;5;217m"; c_lgreen="${E}[38;5;70m"; c_lyellow="${E}[38;5;172m"
+    c_sky="${E}[38;5;117m"
 fi
 
 SEP="${c_surf2} │ ${RST}"
@@ -136,12 +162,13 @@ DOT="${c_ov0} · ${RST}"
 
 # Emoji are only ever the first glyph of a segment, so a terminal that draws
 # them 1 cell wide shifts every line the same way and columns stay aligned.
+# The ticket of a free limit reset only ever ends a line, so it shifts nothing.
 if [[ -n "$PLAIN" ]]; then
     i_model="" i_dir="" i_branch="" i_git="" i_clean="" i_style="" i_env="" i_time=""
-    i_ctx="" i_5h="" i_7d="" i_7dxl=""
+    i_ctx="" i_5h="" i_7d="" i_7dxl="" i_cache="" i_ticket=""
 else
     i_model="🤖 " i_dir="📂 " i_branch="🌿" i_git="📝 " i_clean="✅ " i_style="🎨 " i_env="🐍 " i_time="⏰ "
-    i_ctx="🧠 " i_5h="🚀 " i_7d="⭐ " i_7dxl="🌟 "
+    i_ctx="🧠 " i_5h="🚀 " i_7d="⭐ " i_7dxl="🌟 " i_cache="💾 " i_ticket="🎫"
 fi
 
 # ---------------------------------------------------------------- helpers (no subshells)
@@ -153,13 +180,16 @@ grad() {
     if [[ "$COLOR_MODE" == 256 ]]; then
         t=$(( (p + 2) / 5 ))
         case "$1" in
-            ctx) G="38;5;${RAMP_CTX[$t]}" ;;
-            7d)  G="38;5;${RAMP_7D[$t]}" ;;
-            *)   G="38;5;${RAMP_5H[$t]}" ;;
+            ctx)   G="38;5;${RAMP_CTX[$t]}" ;;
+            7d)    G="38;5;${RAMP_7D[$t]}" ;;
+            cache) G="38;5;${RAMP_CACHE[$t]}" ;;
+            *)     G="38;5;${RAMP_5H[$t]}" ;;
         esac
         return
     fi
     case "$1" in
+        cache)   # sky to green: more read from the cache is better
+            r=$(( 137 + 29 * p / 100 )); g=$(( 220 + 7 * p / 100 )); b=$(( 235 - 74 * p / 100 )) ;;
         ctx)
             if (( p < 30 )); then
                 t=$(( p * 100 / 30 ));        r=$(( 245 - 15 * t / 100 )); g=$(( 194 - 125 * t / 100 )); b=$(( 231 - 148 * t / 100 ))
@@ -325,6 +355,28 @@ if [[ -n "$SEVEN_PCT" && -n "$SEVEN_LEFT" ]]; then
     fi
 fi
 
+# Prompt cache: warm until expires_at (Claude Code runs this again then), else cold.
+PC_STATE=""
+if [[ -n "$PC_ON" ]]; then
+    if [[ -n "$PC_WARM" ]] && { [[ -z "$PC_EXP" ]] || (( PC_EXP > NOW )); }; then PC_STATE=warm; else PC_STATE=cold; fi
+fi
+
+# A free limit reset this account holds, as Claude Code last noted it (subscribers only).
+HAS_RESET=""
+if [[ -n "$HAS_RL" ]]; then
+    CFG_JSON="${CLAUDE_CONFIG_DIR:+${CLAUDE_CONFIG_DIR%/}/.claude.json}"
+    [[ -n "$CFG_JSON" && -f "$CFG_JSON" ]] || CFG_JSON="${HOME:-}/.claude.json"
+    if [[ -f "$CFG_JSON" ]]; then
+        HAS_RESET=$(jq -r --argjson now "$(( NOW * 1000 ))" '
+            .oauthAccount.accountUuid as $a
+            | .unusedLimitResetStatusCache
+            | if type == "object" and $a != null and .accountUuid == $a and .holdsUnusedReset == true
+                 and (.checkedAt | type) == "number" and (.validUntil | type) == "number"
+                 and .checkedAt <= $now and $now - .checkedAt < 259200000 and $now < .validUntil
+              then "1" else "" end' "$CFG_JSON" 2>/dev/null)
+    fi
+fi
+
 # ---------------------------------------------------------------- git (one call)
 GIT_OK="" BRANCH="" OID="" AHEAD=0 BEHIND=0 STAGED=0 UNSTAGED=0 UNTRACKED=0
 if command -v git >/dev/null 2>&1 && [[ -d "$CUR_DIR" ]]; then
@@ -419,11 +471,93 @@ ledger_where() {
 # vpad <colour> <pct> → VP = bold, right-aligned "  7%" / " 34%" / "100%"
 vpad() { local s; printf -v s '%3d%%' "$2"; VP="${BLD}$1${s}${RST}"; }
 
+# ---- prompt cache and free limit resets
+# hit_col → HC: green from 80% read from the cache, yellow from 50%, red below
+hit_col() { if (( PC_HIT >= 80 )); then HC=$c_green; elif (( PC_HIT >= 50 )); then HC=$c_yellow; else HC=$c_red; fi; }
+# ktok <tokens> → K = "850" | "45k" | "1.2M"
+ktok() {
+    if (( $1 >= 1000000 )); then K="$(( $1 / 1000000 )).$(( $1 % 1000000 / 100000 ))M"
+    elif (( $1 >= 1000 )); then K="$(( $1 / 1000 ))k"
+    else K=$1; fi
+}
+# miss_why → MW = the last miss's likely cause in words ("tools changed", "idle past 5m")
+miss_why() {
+    case "$PC_CAUSE" in
+        "")             MW="" ;;
+        ttl_expired_*)  MW="idle past ${PC_CAUSE#ttl_expired_}" ;;
+        likely_server_side) MW="server side" ;;
+        *)              MW=${PC_CAUSE//_/ } ;;
+    esac
+}
+# cache_seg <tiny|short|mid|long> → CS, empty until the session reports cache use
+#   tiny   cache 92%                 · cache cold
+#   short  cache 92% till 15:42      · cache 92% cold
+#   mid    cache 92% · warm till 15:42   · cache 92% · cold · next +350k
+#   long   cache 92% hit · warm till 15:42 · cache 92% hit · cold, next turn re-caches 350k
+cache_seg() {
+    CS=""
+    [[ -z "$PC_STATE" ]] && return
+    local key=$c_sky pct="" hit="" tail=""
+    [[ -n "$SIMPLE" ]] && key=$c_ov1
+    if [[ -n "$PC_HIT" ]]; then hit_col; pct=" ${BLD}${HC}${PC_HIT}%${RST}"; fi
+    [[ "$1" == long && -n "$pct" ]] && hit="${c_ov2} hit${RST}"
+    if [[ "$PC_STATE" == warm ]]; then
+        [[ -n "$PC_EXP" ]] && fmt_at "$PC_EXP" "%H:%M"
+        case "$1" in
+            tiny)  ;;
+            short) [[ -n "$PC_EXP" ]] && tail=" ${c_ov2}till ${D}${RST}" ;;
+            *)     tail="${c_ov2} · warm${PC_EXP:+ till ${D}}${RST}" ;;
+        esac
+    else
+        [[ -n "$PC_COLD" ]] && ktok "$PC_COLD"
+        case "$1" in
+            tiny)  pct=""; tail=" ${c_peach}cold${RST}" ;;
+            short) tail=" ${c_peach}cold${RST}" ;;
+            mid)   tail="${c_ov2} · ${RST}${c_peach}cold${RST}${PC_COLD:+${c_ov2} · next +${K}${RST}}" ;;
+            long)  tail="${c_ov2} · ${RST}${c_peach}cold${RST}${PC_COLD:+${c_ov2}, next turn re-caches ${K}${RST}}" ;;
+        esac
+    fi
+    CS="${key}cache${RST}${pct}${hit}${tail}"
+}
+# reset_seg <tiny|short|mid|long> → RS, empty unless a free limit reset is held
+reset_seg() {
+    RS=""
+    [[ -z "$HAS_RESET" ]] && return
+    case "$1" in
+        tiny)  RS="${c_green}${i_ticket:-+reset}${RST}" ;;
+        short) RS="${c_green}${i_ticket:-+}${i_ticket:+ }reset${RST}" ;;
+        mid)   RS="${c_green}${i_ticket}${i_ticket:+ }free reset${RST}" ;;
+        long)  RS="${c_green}${i_ticket}${i_ticket:+ }free reset available${RST}" ;;
+    esac
+}
+# cache_detail → CD = the xlarge line's tail: "hit · warm until 3:42pm · 1 miss (tools changed)"
+cache_detail() {
+    CD="${c_ov2}hit"
+    if [[ "$PC_STATE" == warm ]]; then
+        if [[ -n "$PC_EXP" ]]; then fmt_ampm "$PC_EXP"; CD+=" · warm until ${D}"; else CD+=" · warm"; fi
+    else
+        CD+=" · ${RST}${c_peach}cold${RST}${c_ov2}"
+        [[ -n "$PC_COLD" ]] && { ktok "$PC_COLD"; CD+=", next turn re-caches ${K}"; }
+    fi
+    if (( PC_MISS > 0 )) && [[ -z "$NARROW" ]]; then
+        miss_why; [[ "$PC_STATE" == cold ]] && MW=""   # cold: what comes next matters more
+        CD+=" · ${PC_MISS} miss"; (( PC_MISS > 1 )) && CD+="es"
+        [[ -n "$MW" ]] && CD+=" (${MW})"
+    fi
+    CD+="${RST}"
+}
+
 LOADING="${c_ov0}loading..${RST}"
 DASH="${BLD}${c_ov0}  --${RST}"
 
 LINES=()
 emit() { LINES+=("$1"); }
+# tail_reset <kind> [gap]: ends the last line, a limits line, with the free reset mark
+tail_reset() {
+    reset_seg "$1"
+    [[ -z "$RS" || ( -z "$FIVE_PCT" && -z "$SEVEN_PCT" ) ]] && return
+    LINES[${#LINES[@]}-1]+="${2-  }$RS"
+}
 
 # ================================================================ layouts
 case "$LAYOUT" in
@@ -444,6 +578,8 @@ xsmall)
         bar 7d "$SEVEN_PCT" 6; pctv 7d "$SEVEN_PCT"; L2+="  ${c_yellow}wk${RST} $BAR$PV"
         [[ -n "$SEVEN_LEFT" ]] && { rel "$SEVEN_LEFT"; L2+=" ${c_ov1}↻${R}${RST}"; }
     fi
+    reset_seg tiny; L2+="${RS:+ $RS}"
+    cache_seg tiny; L2+="${CS:+  $CS}"
     emit "$L1"; emit "$L2"
     ;;
 
@@ -468,6 +604,8 @@ small)
         bar 7d "$SEVEN_PCT" 10; pctv 7d "$SEVEN_PCT"; L2+="$SEP${c_yellow}Week${RST} $BAR $PV"
         if [[ -n "$SEVEN_LEFT" ]]; then fmt_at "$SEVEN_RESET" "%a %H:%M"; rel "$SEVEN_LEFT"; L2+=" ${c_ov2}${D} · ${R}${RST}"; fi
     fi
+    if [[ -n "$NARROW" ]]; then reset_seg tiny; else reset_seg short; fi; L2+="${RS:+ $RS}"
+    cache_seg tiny; L2+="${CS:+$SEP$CS}"
     emit "$L1"; emit "$L2"
     ;;
 
@@ -477,7 +615,8 @@ medium)
     join_sep "$ID" "$GS" "$ES" "$SS"; emit "$J"
     emit "${i_dir}${c_sub0}${DIR_SHOW}${RST}${BS}"
     bar ctx "$CTX_PCT" 40; pctv ctx "$CTX_PCT"; pad Context 9
-    emit "${i_ctx}${c_pink}${PADDED_T}${RST}${PADDED_S}$BAR $PV${c_ov2}  ${TOK_K}/${SIZE_K}${RST}"
+    if [[ -n "$NARROW" ]]; then cache_seg tiny; else cache_seg mid; fi
+    emit "${i_ctx}${c_pink}${PADDED_T}${RST}${PADDED_S}$BAR $PV${c_ov2}  ${TOK_K}/${SIZE_K}${RST}${CS:+$SEP$CS}"
     pad Usage 9; USAGE_LBL=$PADDED
     if [[ -z "$HAS_RL" ]]; then
         bar 5h 0 14; L4="${i_5h}${c_lav}${USAGE_LBL}5H${RST} $BAR$DASH"
@@ -498,6 +637,7 @@ medium)
         if [[ -n "$SEVEN_LEFT" ]]; then fmt_at "$SEVEN_RESET" "%a %H:%M"; rel "$SEVEN_LEFT"; L4+="${c_ov2}  ${D} · ${R}${BUDGET:+ · $BUDGET}${RST}"; fi
         emit "$L4"
     fi
+    [[ -n "$HAS_RL" ]] && if [[ -n "$NARROW" ]]; then tail_reset tiny; else tail_reset mid; fi
     ;;
 
 xlarge)
@@ -507,6 +647,17 @@ xlarge)
     join_sep "${i_dir}${c_sub0}${DIR_SHOW}${RST}${BS}" "${i_time}${c_sub0}${DUR}${RST}"; emit "$J"
     bar ctx "$CTX_PCT" 40; pctv ctx "$CTX_PCT"; pad Context 10
     emit "${i_ctx}${c_maroon}${PADDED_T}${RST}${PADDED_S}$BAR $PV${c_ov2}  used (${TOK_K} / $(( CTX_SIZE / 1000 ))k)${RST}"
+    pad Cache 10; CL="${i_cache}${c_sky}${PADDED_T}${RST}${PADDED_S}"
+    if [[ -z "$PC_SEEN" ]]; then
+        # before the first response; a Claude Code without prompt_cache (< 2.1.251) gets no line
+        (( CTX_TOK == 0 )) && { bar cache 0 40; emit "$CL$BAR$DASH  $LOADING"; }
+    elif [[ -z "$PC_ON" ]]; then
+        bar cache 0 40; emit "$CL$BAR$DASH  ${c_ov0}not reported (caching off)${RST}"
+    else
+        if [[ -n "$PC_HIT" ]]; then bar cache "$PC_HIT" 40; hit_col; printf -v PV ' %3d%%' "$PC_HIT"; PV="${BLD}${HC}${PV}${RST}"
+        else bar cache 0 40; PV=$DASH; fi
+        cache_detail; emit "$CL$BAR$PV  $CD"
+    fi
     if [[ -z "$HAS_RL" ]]; then
         bar 5h 0 40; pad "5H Limit" 10; emit "${i_5h}${c_lav}${PADDED_T}${RST}${PADDED_S}$BAR$DASH  $LOADING"
         bar 7d 0 40; pad "7D Limit" 10; emit "${i_7dxl}${c_yellow}${PADDED_T}${RST}${PADDED_S}$BAR$DASH  $LOADING"
@@ -529,6 +680,7 @@ xlarge)
             fi
             emit "$L"
         fi
+        tail_reset mid
     fi
     ;;
 
@@ -554,6 +706,8 @@ small-simple)
         L2+="   ${c_ov1}week ${RST}${BLD}${PC}${SEVEN_PCT}%${RST}"
         [[ -n "$SEVEN_LEFT" ]] && { fmt_at "$SEVEN_RESET" "%a %H:%M"; L2+=" ${c_ov2}${D}${BUDGET:+ · $BUDGET}${RST}"; }
     fi
+    reset_seg short; L2+="${RS:+ $RS}"
+    cache_seg short; L2+="${CS:+   $CS}"
     L2+="   ${c_ov1}time ${RST}${BLD}${c_sub1}${DUR}${RST}"
     emit "$L1"; emit "$L2"
     ;;
@@ -578,7 +732,9 @@ xsmall-simple)
                 [[ -n "$SEVEN_LEFT" ]] && { rel "$SEVEN_LEFT"; L+=" ${c_ov1}↻${R}${RST}"; }
             fi
         fi
+        reset_seg tiny; L+="${RS:+ $RS}"
     fi
+    cache_seg tiny; L+="${CS:+$SEP$CS}"
     [[ -n "$GIT_OK" && -n "$BRANCH" ]] && L+="$SEP${c_lgreen}${BRANCH}${RST}${DIRTY:+${BLD}${c_yellow}*${RST}}"
     emit "$L"
     ;;
@@ -586,8 +742,8 @@ xsmall-simple)
 medium-simple)
     ledger_head; emit "$LH"
     ledger_where; emit "$LW"
-    grad ctx "$CTX_PCT"; vpad "${E}[${G}m" "$CTX_PCT"; pad context 9
-    emit "${c_ov1}${PADDED}${RST}${VP}${c_ov2}   ${TOK_K} / ${SIZE_K}${RST}"
+    grad ctx "$CTX_PCT"; vpad "${E}[${G}m" "$CTX_PCT"; pad context 9; cache_seg mid
+    emit "${c_ov1}${PADDED}${RST}${VP}${c_ov2}   ${TOK_K} / ${SIZE_K}${RST}${CS:+   $CS}"
     pad limits 9; L="${c_ov1}${PADDED}${RST}"
     if [[ -z "$HAS_RL" ]]; then
         L+="$LOADING"
@@ -607,14 +763,14 @@ medium-simple)
     else
         L=""   # rate_limits without a 5h / 7d window (e.g. spend_limit only)
     fi
-    [[ -n "$L" ]] && emit "$L"
+    [[ -n "$L" ]] && { reset_seg mid; emit "$L${RS:+   $RS}"; }
     ;;
 
 large-simple)
     ledger_head; emit "$LH"
     ledger_where time; emit "$LW"
-    grad ctx "$CTX_PCT"; vpad "${E}[${G}m" "$CTX_PCT"; pad context 9
-    emit "${c_ov1}${PADDED}${RST}${VP}${c_ov2}   ${TOK_K} / ${SIZE_K}${RST}"
+    grad ctx "$CTX_PCT"; vpad "${E}[${G}m" "$CTX_PCT"; pad context 9; cache_seg long
+    emit "${c_ov1}${PADDED}${RST}${VP}${c_ov2}   ${TOK_K} / ${SIZE_K}${RST}${CS:+   $CS}"
     if [[ -z "$HAS_RL" ]]; then
         pad 5h 9; emit "${c_ov1}${PADDED}${RST}${DASH}   $LOADING"
         pad 7d 9; emit "${c_ov1}${PADDED}${RST}${DASH}   $LOADING"
@@ -637,6 +793,7 @@ large-simple)
             fi
             emit "$L"
         fi
+        tail_reset long "   "
     fi
     ;;
 
@@ -646,6 +803,15 @@ xlarge-simple)
     grad ctx "$CTX_PCT"; vpad "${E}[${G}m" "$CTX_PCT"; pad context 10
     FREE_K=$(( (CTX_SIZE - CTX_TOK) / 1000 )); (( FREE_K < 0 )) && FREE_K=0
     emit "${c_ov1}${PADDED}${RST}${VP}${c_ov2}   ${TOK_K} / $(( CTX_SIZE / 1000 ))k used · ${FREE_K}k free${RST}"
+    pad cache 10
+    if [[ -z "$PC_SEEN" ]]; then
+        (( CTX_TOK == 0 )) && emit "${c_ov1}${PADDED}${RST}${DASH}   $LOADING"
+    elif [[ -z "$PC_ON" ]]; then
+        emit "${c_ov1}${PADDED}${RST}${DASH}   ${c_ov0}not reported (caching off)${RST}"
+    else
+        if [[ -n "$PC_HIT" ]]; then hit_col; vpad "$HC" "$PC_HIT"; else VP=$DASH; fi
+        cache_detail; emit "${c_ov1}${PADDED}${RST}${VP}   $CD"
+    fi
     if [[ -z "$HAS_RL" ]]; then
         pad "5h limit" 10; emit "${c_ov1}${PADDED}${RST}${DASH}   $LOADING"
         pad "7d limit" 10; emit "${c_ov1}${PADDED}${RST}${DASH}   $LOADING"
@@ -668,6 +834,7 @@ xlarge-simple)
             fi
             emit "$L"
         fi
+        tail_reset long "   "
     fi
     ;;
 
@@ -677,7 +844,8 @@ xlarge-simple)
     join_sep "$ID" "$GS" "$ES" "$SS"; emit "$J"
     join_sep "${i_dir}${c_sub0}${DIR_SHOW}${RST}${BS}" "${i_time}${c_sub0}${DUR}${RST}"; emit "$J"
     bar ctx "$CTX_PCT" 20; pctv ctx "$CTX_PCT"; pad Context 10
-    emit "${i_ctx}${c_pink}${PADDED_T}${RST}${PADDED_S}$BAR $PV${c_ov2}  ${TOK_K}/${SIZE_K}${RST}"
+    if [[ -n "$NARROW" ]]; then cache_seg short; else cache_seg long; fi
+    emit "${i_ctx}${c_pink}${PADDED_T}${RST}${PADDED_S}$BAR $PV${c_ov2}  ${TOK_K}/${SIZE_K}${RST}${CS:+$SEP$CS}"
     if [[ -z "$HAS_RL" ]]; then
         bar 5h 0 20; pad "Usage 5H" 10; emit "${i_5h}${c_lav}${PADDED_T}${RST}${PADDED_S}$BAR$DASH  $LOADING"
         bar 7d 0 20; pad "Usage 7D" 10; emit "${i_7d}${c_yellow}${PADDED_T}${RST}${PADDED_S}$BAR$DASH  $LOADING"
@@ -700,6 +868,7 @@ xlarge-simple)
             fi
             emit "$L"
         fi
+        if [[ -n "$NARROW" ]]; then tail_reset mid; else tail_reset long; fi
     fi
     ;;
 esac

@@ -12,7 +12,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Live, Snapshot, StatusJson } from '../types'
+import type { CacheStats, Live, PromptCache, Snapshot, StatusJson } from '../types'
 import { parseAnsi } from './ansi'
 import { countTokens, isCockpitShown, markWorking, publishStatus, refreshCockpit, registerCockpit, startCockpit, syncCockpit } from './cockpit'
 
@@ -20,6 +20,20 @@ const snapshot = atom({ plugin: 'awesome-statusline-mod', key: 'snapshot' } as c
 const live = atom({ plugin: 'awesome-statusline-mod', key: 'live' } as const, { model: null, effort: null } as Live)
 const hasStatusLine = atom({ plugin: 'awesome-statusline-mod', key: 'hasStatusLine' } as const, false)
 const since = atom({ plugin: 'awesome-statusline-mod', key: 'since' } as const, null as number | null)
+
+export const NO_CACHE: CacheStats = {
+  startedAt: null,
+  requests: 0,
+  read: 0,
+  input: 0,
+  written: 0,
+  observed: false,
+  lastAt: null,
+  lastCached: false,
+  ttlS: 300,
+  lastInput: 0,
+}
+const cache = atom({ plugin: 'awesome-statusline-mod', key: 'cache' } as const, NO_CACHE)
 
 const PRESETS = new Set(
   ['xsmall', 'small', 'medium', 'large', 'xlarge'].flatMap(size => [size, `${size}-plain`, `${size}-simple`]),
@@ -33,15 +47,64 @@ const TICK_MS = 1_000
 // The card the desktop app draws the lines on: Catppuccin Mocha's base, the
 // palette the renderer's colours are picked for, so it reads on a light theme too.
 const CARD = '#1e1e2e'
+// About as many columns as the desktop app's card holds: the renderer takes the
+// shorter forms of its cache and free reset figures below 100.
+const DESKTOP_COLUMNS = 80
 
-// "claude-opus-5-5" -> "Opus 5.5"; an alias ("opus") or an unknown id as given.
+// "claude-fable-5-2" -> "Fable 5.2"; an alias ("opus") or an unknown id as given.
 export const prettyModel = (id: string): string => {
   const bare = id.replace(/\[[^\]]*\]$/, '')
-  const m = bare.match(/(opus|sonnet|haiku|fable)(?:-(\d{1,2})(?:-(\d{1,2}))?)?(?![\d])/i)
+  const m = bare.match(/(opus|sonnet|haiku|fable|mythos)(?:-(\d{1,2})(?:-(\d{1,2}))?)?(?![\d])/i)
   if (m === null) return bare
   const family = (m[1] ?? '').charAt(0).toUpperCase() + (m[1] ?? '').slice(1).toLowerCase()
   if (m[2] === undefined) return family
   return m[3] === undefined ? `${family} ${m[2]}` : `${family} ${m[2]}.${m[3]}`
+}
+
+const count = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v > 0 ? v : 0)
+
+/**
+ * Adds one main-loop request's usage (the API's: cache reads, writes and their
+ * TTLs) to the session's cache figures; a new `startedAt` (/clear) starts them over.
+ */
+export const addCacheUsage = (stats: CacheStats, usage: unknown, nowMs: number, startedAt: number): CacheStats => {
+  const base = stats.startedAt === startedAt ? stats : { ...NO_CACHE, startedAt }
+  const u = (usage ?? {}) as Record<string, unknown>
+  const read = count(u.cache_read_input_tokens)
+  const written = count(u.cache_creation_input_tokens)
+  const input = count(u.input_tokens) + read + written
+  if (input === 0) return base
+  const byTtl = (u.cache_creation ?? {}) as Record<string, unknown>
+  const ttlS = count(byTtl.ephemeral_1h_input_tokens) > 0 ? 3600 : count(byTtl.ephemeral_5m_input_tokens) > 0 ? 300 : base.ttlS
+  const cached = read + written > 0
+  return {
+    startedAt,
+    requests: base.requests + 1,
+    read: base.read + read,
+    input: base.input + input,
+    written: base.written + written,
+    observed: base.observed || cached,
+    lastAt: nowMs,
+    lastCached: cached,
+    ttlS,
+    lastInput: input,
+  }
+}
+
+/** The figures as the statusLine JSON's prompt_cache, or nothing before the first request. */
+export const promptCacheOf = (stats: CacheStats, nowMs: number): PromptCache | undefined => {
+  if (stats.requests === 0 || stats.lastAt === null) return undefined
+  const expiresMs = stats.lastCached ? stats.lastAt + stats.ttlS * 1000 : null
+  return {
+    warm: expiresMs !== null && nowMs < expiresMs,
+    caching_observed: stats.observed,
+    ttl: stats.ttlS === 3600 ? '1h' : '5m',
+    expires_at: expiresMs === null ? null : Math.ceil(expiresMs / 1000),
+    requests: stats.requests,
+    hit_ratio: stats.input === 0 ? null : stats.read / stats.input,
+    cache_write_tokens: stats.written,
+    recache_tokens_if_cold: stats.lastInput,
+  }
 }
 
 type RateLimits = Record<string, { used_percentage: number; resets_at?: number }>
@@ -71,7 +134,7 @@ const statusInput = async (
   settings: Record<string, unknown>,
   seen: Map<string, number>,
 ): Promise<StatusJson> => {
-  const [usage, cwd, root, sessionModel, sessionId, version, now, l, seenAt, envEffort, maxThinking] = await Promise.all([
+  const [usage, cwd, root, sessionModel, sessionId, version, now, l, seenAt, envEffort, maxThinking, cached] = await Promise.all([
     $.session.usage(),
     $.session.cwd(),
     $.session.root(),
@@ -83,7 +146,10 @@ const statusInput = async (
     read($, since),
     $.env.get('CLAUDE_EFFORT'),
     $.env.get('MAX_THINKING_TOKENS'),
+    read($, cache),
   ])
+  // Figures from before a /clear belong to the old conversation.
+  const promptCache = cached.startedAt === usage.startedAt ? promptCacheOf(cached, now) : undefined
 
   const modelId = l.model ?? sessionModel
   // Thinking is on unless switched off, as the statusLine JSON reports it.
@@ -129,10 +195,11 @@ const statusInput = async (
       ...(ctx.tokens === undefined ? {} : { current_usage: ctx.tokens }),
     },
     ...(Object.keys(rateLimits).length === 0 ? {} : { rate_limits: rateLimits }),
+    ...(promptCache === undefined ? {} : { prompt_cache: promptCache }),
   }
 }
 
-const renderOnce = async ($: EngineInterface, preset: string, seen: Map<string, number>) => {
+const renderOnce = async ($: EngineInterface, preset: string, seen: Map<string, number>, columns: number) => {
   const settings = ((await $.settings.read()) ?? {}) as Record<string, unknown>
   const statusLine = settings.statusLine as { command?: unknown } | undefined
   const isSet = typeof statusLine?.command === 'string' && statusLine.command.trim() !== ''
@@ -165,6 +232,8 @@ const renderOnce = async ($: EngineInterface, preset: string, seen: Map<string, 
         env: {
           PATH: [path, '/opt/homebrew/bin', '/usr/local/bin', '/usr/bin', '/bin'].filter(Boolean).join(':'),
           AWESOME_STATUSLINE_COLOR: 'truecolor',
+          // The width the band is drawn at, as Claude Code passes a statusLine its terminal's.
+          COLUMNS: String(columns),
         },
       })
       next =
@@ -190,6 +259,8 @@ export const register: Register = (on, options) => {
   let isDirty = true
   let isRunning = false
   let lastRun = 0
+  // The width of the surface that last drew the band.
+  let columns = DESKTOP_COLUMNS
   // Each usage window's last reset time this session (kind -> epoch s).
   const seenWindows = new Map<string, number>()
 
@@ -212,7 +283,7 @@ export const register: Register = (on, options) => {
       isRunning = true
       isDirty = false
       try {
-        await renderOnce($, preset, seenWindows)
+        await renderOnce($, preset, seenWindows, columns)
       } finally {
         lastRun = now
         isRunning = false
@@ -240,6 +311,12 @@ export const register: Register = (on, options) => {
     }
     const result = yield* next(e)
     await countTokens($, result.usage)
+    // The cache figures count the main loop only, as Claude Code's own do.
+    if (e.agentId === undefined) {
+      const [now, { startedAt }] = await Promise.all([$.clock.now(), $.session.usage()])
+      await update($, cache, stats => addCacheUsage(stats, result.usage, now, startedAt))
+      isDirty = true
+    }
     return result
   })
 
@@ -256,6 +333,12 @@ export const register: Register = (on, options) => {
     const isTerminal = e.surface === 'terminal'
     if (isTerminal && (terminal === 'hide' || (terminal === 'auto' && (await read($, hasStatusLine))))) {
       return next(e)
+    }
+    // Only a surface that draws the band sets the width it's rendered at.
+    const width = isTerminal && typeof e.props.bodyColumns === 'number' ? e.props.bodyColumns : DESKTOP_COLUMNS
+    if (width !== columns) {
+      columns = width
+      isDirty = true
     }
 
     const { output, error } = await read($, snapshot)

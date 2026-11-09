@@ -14,6 +14,11 @@
 # Ultra plan has no 5-hour limit, so a seven_day-only payload gets a weekly
 # layout with a per-day budget; Pro / Max show 5H + 7D. "loading.." appears
 # only while rate_limits is missing altogether (before the first response).
+#
+# Prompt cache (official prompt_cache, Claude Code 2.1.251+): the share of input
+# read from the cache, how long it stays warm, and once cold what the next turn
+# writes again. Free limit resets: Claude Code notes in ~/.claude.json whether
+# this account holds an unused one (no count); the "free reset" mark shows that.
 param([string]$Size = 'large')
 
 $ErrorActionPreference = 'SilentlyContinue'
@@ -42,6 +47,10 @@ switch ($Preset) {
   default                                 { $Mode = 'large' }
 }
 $Layout = if ($Simple) { "$Mode-simple" } else { $Mode }
+
+# Claude Code passes the terminal's width in COLUMNS. Below 100 columns the
+# cache and free reset figures take their shorter forms.
+$Narrow = ("$env:COLUMNS" -match '^\d+$') -and ([int]"$env:COLUMNS" -lt 100)
 
 # ---------------------------------------------------------------- parse
 # Read stdin as UTF-8 explicitly. Windows PowerShell 5.1 otherwise decodes it
@@ -116,6 +125,21 @@ $FiveReset = Parse-Reset (Get-JsonValue $Data @('rate_limits', 'five_hour', 'res
 $SevenReset = Parse-Reset (Get-JsonValue $Data @('rate_limits', 'seven_day', 'resets_at') $null)
 $Now = [DateTime]::UtcNow
 
+$PC = Get-JsonValue $Data @('prompt_cache') $null
+$PcSeen = $PC -is [System.Management.Automation.PSCustomObject]
+$PcOn = $PcSeen -and ((Get-JsonValue $PC @('caching_observed') $false) -eq $true)
+$PcHitRaw = As-Number (Get-JsonValue $PC @('hit_ratio') $null)
+$PcHit = if ($null -ne $PcHitRaw) { As-Pct ($PcHitRaw * 100) } else { $null }
+$PcWarm = (Get-JsonValue $PC @('warm') $false) -eq $true
+$PcExp = Parse-Reset (Get-JsonValue $PC @('expires_at') $null)
+$PcMiss = As-Number (Get-JsonValue $PC @('misses') 0); $PcMiss = if ($null -eq $PcMiss) { 0 } else { [long][Math]::Floor($PcMiss) }
+$PcCauses = @(Get-JsonValue $PC @('last_miss_cause', 'causes') @())
+$PcCause = if ($PcCauses.Count -gt 0 -and $null -ne $PcCauses[0]) { [string]$PcCauses[0] } else { '' }
+$PcCold = As-Number (Get-JsonValue $PC @('recache_tokens_if_cold') $null)
+# Warm until expires_at (Claude Code runs this again then), else cold.
+$PcState = ''
+if ($PcOn) { $PcState = if ($PcWarm -and ($null -eq $PcExp -or $PcExp -gt $Now)) { 'warm' } else { 'cold' } }
+
 # ---------------------------------------------------------------- palette
 $E = [char]27
 $Rst = "${E}[0m"
@@ -127,7 +151,7 @@ $cOv2 = Rgb 147 153 178;  $cOv1 = Rgb 127 132 156;  $cOv0 = Rgb 108 112 134
 $cSurf2 = Rgb 88 91 112
 $cTeal = Rgb 148 226 213; $cPink = Rgb 245 194 231; $cPeach = Rgb 250 179 135
 $cGreen = Rgb 166 227 161; $cLav = Rgb 180 190 254; $cYellow = Rgb 249 226 175
-$cRed = Rgb 243 139 168;  $cMaroon = Rgb 235 160 172
+$cRed = Rgb 243 139 168;  $cMaroon = Rgb 235 160 172; $cSky = Rgb 137 220 235
 $cLGreen = Rgb 64 160 43; $cLYellow = Rgb 223 142 29
 
 # ---------------------------------------------------------------- colour depth
@@ -145,12 +169,14 @@ switch ("$env:AWESOME_STATUSLINE_COLOR".ToLowerInvariant()) {
 $RampCtx = @(225, 218, 218, 211, 211, 204, 204, 203, 203, 203, 197, 197, 197, 197, 161, 161, 161, 161, 161, 161, 161)
 $Ramp5h = @(147, 147, 111, 111, 75, 69, 69, 33, 27, 27, 27, 63, 62, 98, 97, 133, 132, 168, 167, 161, 161)
 $Ramp7d = @(223, 223, 222, 222, 216, 215, 215, 209, 209, 208, 202, 202, 202, 202, 202, 196, 196, 160, 160, 161, 161)
+$RampCache = @(117, 117, 117, 117, 116, 116, 116, 116, 115, 115, 115, 115, 115, 151, 151, 151, 151, 151, 150, 150, 150)
 if ($ColorMode -eq '256') {
   $c256 = { param($n) "${E}[38;5;${n}m" }
   $cSub1 = & $c256 146; $cSub0 = & $c256 146; $cOv2 = & $c256 103; $cOv1 = & $c256 103
   $cOv0 = & $c256 60; $cSurf2 = & $c256 60; $cTeal = & $c256 116; $cPink = & $c256 225
   $cPeach = & $c256 216; $cGreen = & $c256 150; $cLav = & $c256 147; $cYellow = & $c256 223
   $cRed = & $c256 211; $cMaroon = & $c256 217; $cLGreen = & $c256 70; $cLYellow = & $c256 172
+  $cSky = & $c256 117
 }
 
 $Sep = "$cSurf2 │ $Rst"
@@ -158,12 +184,13 @@ $Dot = "$cOv0 · $Rst"
 
 # Emoji are only ever the first glyph of a segment, so a terminal that draws
 # them 1 cell wide shifts every line the same way and columns stay aligned.
+# The ticket of a free limit reset only ever ends a line, so it shifts nothing.
 if ($Plain) {
   $iModel = ''; $iDir = ''; $iBranch = ''; $iGit = ''; $iClean = ''; $iStyle = ''; $iEnv = ''; $iTime = ''
-  $iCtx = ''; $i5h = ''; $i7d = ''; $i7dxl = ''
+  $iCtx = ''; $i5h = ''; $i7d = ''; $i7dxl = ''; $iCache = ''; $iTicket = ''
 } else {
   $iModel = '🤖 '; $iDir = '📂 '; $iBranch = '🌿'; $iGit = '📝 '; $iClean = '✅ '; $iStyle = '🎨 '; $iEnv = '🐍 '; $iTime = '⏰ '
-  $iCtx = '🧠 '; $i5h = '🚀 '; $i7d = '⭐ '; $i7dxl = '🌟 '
+  $iCtx = '🧠 '; $i5h = '🚀 '; $i7d = '⭐ '; $i7dxl = '🌟 '; $iCache = '💾 '; $iTicket = '🎫'
 }
 
 # ---------------------------------------------------------------- helpers
@@ -175,9 +202,13 @@ function Grad([string]$Kind, [int]$p) {
   if ($p -lt 0) { $p = 0 }; if ($p -gt 100) { $p = 100 }
   if ($ColorMode -eq '256') {
     $k = IDiv ($p + 2) 5
-    switch ($Kind) { 'ctx' { return "38;5;$($RampCtx[$k])" } '7d' { return "38;5;$($Ramp7d[$k])" } default { return "38;5;$($Ramp5h[$k])" } }
+    switch ($Kind) { 'ctx' { return "38;5;$($RampCtx[$k])" } '7d' { return "38;5;$($Ramp7d[$k])" } 'cache' { return "38;5;$($RampCache[$k])" } default { return "38;5;$($Ramp5h[$k])" } }
   }
   switch ($Kind) {
+    'cache' {
+      # sky to green: more read from the cache is better
+      $r = 137 + (IDiv (29 * $p) 100); $g = 220 + (IDiv (7 * $p) 100); $b = 235 - (IDiv (74 * $p) 100)
+    }
     'ctx' {
       if ($p -lt 30) { $t = IDiv ($p * 100) 30; $r = 245 - (IDiv (15 * $t) 100); $g = 194 - (IDiv (125 * $t) 100); $b = 231 - (IDiv (148 * $t) 100) }
       elseif ($p -lt 70) { $t = IDiv (($p - 30) * 100) 40; $r = 230 - (IDiv (20 * $t) 100); $g = 69 - (IDiv (54 * $t) 100); $b = 83 - (IDiv (26 * $t) 100) }
@@ -274,6 +305,29 @@ $DirShow = $CurDir
 if ($HomeDir -and $CurDir.StartsWith($HomeDir, [StringComparison]::OrdinalIgnoreCase)) { $DirShow = '~' + $CurDir.Substring($HomeDir.Length) }
 $DirBase = Split-Path -Leaf $CurDir.TrimEnd('\', '/')
 if (-not $DirBase) { $DirBase = $DirShow }
+
+# A free limit reset this account holds, as Claude Code last noted it (subscribers
+# only). Read with a pattern: parsing the whole ~/.claude.json would take long.
+$HasReset = $false
+if ($HasRL) {
+  try {
+    $CfgPath = $null
+    if ($env:CLAUDE_CONFIG_DIR) { $c = Join-Path $env:CLAUDE_CONFIG_DIR '.claude.json'; if (Test-Path -LiteralPath $c) { $CfgPath = $c } }
+    if (-not $CfgPath -and $HomeDir) { $c = Join-Path $HomeDir '.claude.json'; if (Test-Path -LiteralPath $c) { $CfgPath = $c } }
+    if ($CfgPath) {
+      $Raw = [IO.File]::ReadAllText($CfgPath)
+      $mAcct = [regex]::Match($Raw, '"oauthAccount"\s*:\s*\{[^{}]*?"accountUuid"\s*:\s*"([^"]+)"')
+      $mRes = [regex]::Match($Raw, '"unusedLimitResetStatusCache"\s*:\s*(\{[^{}]*\})')
+      if ($mAcct.Success -and $mRes.Success) {
+        $o = $mRes.Groups[1].Value | ConvertFrom-Json
+        $NowMs = [double][DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+        $Ck = As-Number $o.checkedAt; $Vu = As-Number $o.validUntil
+        if ($o.accountUuid -eq $mAcct.Groups[1].Value -and $o.holdsUnusedReset -eq $true -and $null -ne $Ck -and $null -ne $Vu -and
+            $Ck -le $NowMs -and ($NowMs - $Ck) -lt 259200000 -and $NowMs -lt $Vu) { $HasReset = $true }
+      }
+    }
+  } catch { $HasReset = $false }
+}
 
 $EnvName = [Environment]::GetEnvironmentVariable('CONDA_DEFAULT_ENV')
 if (-not $EnvName) { $Venv = [Environment]::GetEnvironmentVariable('VIRTUAL_ENV'); if ($Venv) { $EnvName = Split-Path -Leaf $Venv } }
@@ -374,6 +428,79 @@ function LedgerWhere([bool]$WithTime) {
 }
 function VPad([string]$Color, [int]$p) { return "$Bld$Color$('{0,3}%' -f $p)$Rst" }
 
+# ---- prompt cache and free limit resets
+# Green from 80% read from the cache, yellow from 50%, red below
+function HitCol { if ($PcHit -ge 80) { return $cGreen }; if ($PcHit -ge 50) { return $cYellow }; return $cRed }
+# "850" | "45k" | "1.2M"
+function KTok([long]$n) {
+  if ($n -ge 1000000) { return "$(IDiv $n 1000000).$(IDiv ($n % 1000000) 100000)M" }
+  if ($n -ge 1000) { return "$(IDiv $n 1000)k" }
+  return "$n"
+}
+# The last miss's likely cause in words ("tools changed", "idle past 5m")
+function MissWhy {
+  if (-not $PcCause) { return '' }
+  if ($PcCause.StartsWith('ttl_expired_')) { return "idle past $($PcCause.Substring(12))" }
+  if ($PcCause -eq 'likely_server_side') { return 'server side' }
+  return $PcCause.Replace('_', ' ')
+}
+# tiny "cache 92%" · short "cache 92% till 15:42" · mid "cache 92% · warm till 15:42" ·
+# long "cache 92% hit · warm till 15:42"; cold: "cache cold" … "cache 92% hit · cold, next turn re-caches 350k"
+function CacheSeg([string]$Kind) {
+  if (-not $PcState) { return '' }
+  $key = if ($Simple) { $cOv1 } else { $cSky }
+  $pct = ''; $hit = ''; $tail = ''
+  if ($null -ne $PcHit) { $pct = " $Bld$(HitCol)$PcHit%$Rst" }
+  if ($Kind -eq 'long' -and $pct) { $hit = "$cOv2 hit$Rst" }
+  if ($PcState -eq 'warm') {
+    $at = if ($null -ne $PcExp) { Fmt $PcExp 'HH:mm' } else { '' }
+    if ($Kind -eq 'short') { if ($at) { $tail = " ${cOv2}till $at$Rst" } }
+    elseif ($Kind -ne 'tiny') { $tail = "$cOv2 · warm"; if ($at) { $tail += " till $at" }; $tail += $Rst }
+  } else {
+    $k = if ($null -ne $PcCold) { KTok $PcCold } else { '' }
+    switch ($Kind) {
+      'tiny' { $pct = ''; $tail = " ${cPeach}cold$Rst" }
+      'short' { $tail = " ${cPeach}cold$Rst" }
+      'mid' { $tail = "$cOv2 · $Rst${cPeach}cold$Rst"; if ($k) { $tail += "$cOv2 · next +$k$Rst" } }
+      default { $tail = "$cOv2 · $Rst${cPeach}cold$Rst"; if ($k) { $tail += "$cOv2, next turn re-caches $k$Rst" } }
+    }
+  }
+  return "${key}cache$Rst$pct$hit$tail"
+}
+# The free limit reset mark; empty unless one is held
+function ResetSeg([string]$Kind) {
+  if (-not $HasReset) { return '' }
+  $t = if ($iTicket) { "$iTicket " } else { '' }
+  switch ($Kind) {
+    'tiny' { if ($iTicket) { return "$cGreen$iTicket$Rst" }; return "$cGreen+reset$Rst" }
+    'short' { if ($iTicket) { return "$cGreen${t}reset$Rst" }; return "$cGreen+reset$Rst" }
+    'mid' { return "$cGreen${t}free reset$Rst" }
+    default { return "$cGreen${t}free reset available$Rst" }
+  }
+}
+# The xlarge line's tail: "hit · warm until 3:42pm · 1 miss (tools changed)"
+function CacheDetail {
+  $d = "${cOv2}hit"
+  if ($PcState -eq 'warm') {
+    if ($null -ne $PcExp) { $d += " · warm until $(AmPm $PcExp)" } else { $d += ' · warm' }
+  } else {
+    $d += " · $Rst${cPeach}cold$Rst$cOv2"
+    if ($null -ne $PcCold) { $d += ", next turn re-caches $(KTok $PcCold)" }
+  }
+  if ($PcMiss -gt 0 -and -not $Narrow) {
+    $w = if ($PcState -eq 'cold') { '' } else { MissWhy }   # cold: what comes next matters more
+    $d += " · $PcMiss miss"; if ($PcMiss -gt 1) { $d += 'es' }
+    if ($w) { $d += " ($w)" }
+  }
+  return "$d$Rst"
+}
+# Ends the last line, a limits line, with the free reset mark
+function TailReset([string]$Kind, [string]$Gap = '  ') {
+  $rs = ResetSeg $Kind
+  if (-not $rs -or ($null -eq $FivePct -and $null -eq $SevenPct) -or $Lines.Count -eq 0) { return }
+  $Lines[$Lines.Count - 1] = $Lines[$Lines.Count - 1] + "$Gap$rs"
+}
+
 $Loading = "${cOv0}loading..$Rst"
 $Dash = "$Bld$cOv0  --$Rst"
 $Lines = New-Object System.Collections.Generic.List[string]
@@ -394,6 +521,8 @@ switch ($Layout) {
       $L2 += "  ${cYellow}wk$Rst $(Bar '7d' $SevenPct 6)$(PctV '7d' $SevenPct)"
       if ($null -ne $SevenLeft) { $L2 += " $cOv1↻$(Rel $SevenLeft)$Rst" }
     }
+    $rs = ResetSeg 'tiny'; if ($rs) { $L2 += " $rs" }
+    $cs = CacheSeg 'tiny'; if ($cs) { $L2 += "  $cs" }
     $Lines.Add($L1); $Lines.Add($L2)
   }
   'small' {
@@ -414,12 +543,15 @@ switch ($Layout) {
       $L2 += "$Sep${cYellow}Week$Rst $(Bar '7d' $SevenPct 10) $(PctV '7d' $SevenPct)"
       if ($null -ne $SevenLeft) { $L2 += " $cOv2$(Fmt $SevenReset 'ddd HH:mm') · $(Rel $SevenLeft)$Rst" }
     }
+    $rs = ResetSeg $(if ($Narrow) { 'tiny' } else { 'short' }); if ($rs) { $L2 += " $rs" }
+    $cs = CacheSeg 'tiny'; if ($cs) { $L2 += "$Sep$cs" }
     $Lines.Add($L2)
   }
   'medium' {
     $Lines.Add((JoinSep @((Ident 'full' 'thinking'), (GitSeg ''), $ES, $SS)))
     $Lines.Add("$iDir$cSub0$DirShow$Rst$(BranchSeg $true)")
-    $Lines.Add("$iCtx$(Lbl $cPink 'Context' 9)$(Bar 'ctx' $CtxPct 40) $(PctV 'ctx' $CtxPct)$cOv2  $TokK/$SizeK$Rst")
+    $cs = CacheSeg $(if ($Narrow) { 'tiny' } else { 'mid' }); $cs = if ($cs) { "$Sep$cs" } else { '' }
+    $Lines.Add("$iCtx$(Lbl $cPink 'Context' 9)$(Bar 'ctx' $CtxPct 40) $(PctV 'ctx' $CtxPct)$cOv2  $TokK/$SizeK$Rst$cs")
     $UL = 'Usage'.PadRight(9)
     if (-not $HasRL) {
       $Lines.Add("$i5h$cLav${UL}5H$Rst $(Bar '5h' 0 14)$Dash$Sep${cYellow}7D$Rst $(Bar '7d' 0 14)$Dash  $Loading")
@@ -441,11 +573,22 @@ switch ($Layout) {
       }
       $Lines.Add($L4)
     }
+    if ($HasRL) { TailReset $(if ($Narrow) { 'tiny' } else { 'mid' }) }
   }
   'xlarge' {
     $Lines.Add((JoinSep @((Ident 'full' 'thinking'), $SS, (GitSeg 'dirty'), $ES)))
     $Lines.Add((JoinSep @("$iDir$cSub0$DirShow$Rst$(BranchSeg $true)", "$iTime$cSub0$Dur$Rst")))
     $Lines.Add("$iCtx$(Lbl $cMaroon 'Context' 10)$(Bar 'ctx' $CtxPct 40) $(PctV 'ctx' $CtxPct)$cOv2  used ($TokK / $(IDiv $CtxSize 1000)k)$Rst")
+    $CL = "$iCache$(Lbl $cSky 'Cache' 10)"
+    if (-not $PcSeen) {
+      # before the first response; a Claude Code without prompt_cache (< 2.1.251) gets no line
+      if ($CtxTok -eq 0) { $Lines.Add("$CL$(Bar 'cache' 0 40)$Dash  $Loading") }
+    } elseif (-not $PcOn) {
+      $Lines.Add("$CL$(Bar 'cache' 0 40)$Dash  ${cOv0}not reported (caching off)$Rst")
+    } else {
+      $v = if ($null -ne $PcHit) { "$(Bar 'cache' $PcHit 40) $Bld$(HitCol)$('{0,3}%' -f $PcHit)$Rst" } else { "$(Bar 'cache' 0 40)$Dash" }
+      $Lines.Add("$CL$v  $(CacheDetail)")
+    }
     if (-not $HasRL) {
       $Lines.Add("$i5h$(Lbl $cLav '5H Limit' 10)$(Bar '5h' 0 40)$Dash  $Loading")
       $Lines.Add("$i7dxl$(Lbl $cYellow '7D Limit' 10)$(Bar '7d' 0 40)$Dash  $Loading")
@@ -465,6 +608,7 @@ switch ($Layout) {
         }
         $Lines.Add($L)
       }
+      TailReset 'mid'
     }
   }
   'small-simple' {
@@ -488,6 +632,8 @@ switch ($Layout) {
         $L2 += $Rst
       }
     }
+    $rs = ResetSeg 'short'; if ($rs) { $L2 += " $rs" }
+    $cs = CacheSeg 'short'; if ($cs) { $L2 += "   $cs" }
     $L2 += "   ${cOv1}time $Rst$Bld$cSub1$Dur$Rst"
     $Lines.Add($L1); $Lines.Add($L2)
   }
@@ -502,14 +648,17 @@ switch ($Layout) {
         $L += "$Sep${cOv1}$Lbl $Rst$Bld$(PaceCol $SevenPct $SevenLeft 604800)$SevenPct%$Rst"
         if ($null -eq $FivePct -and $null -ne $SevenLeft) { $L += " $cOv1↻$(Rel $SevenLeft)$Rst" }
       }
+      $rs = ResetSeg 'tiny'; if ($rs) { $L += " $rs" }
     }
+    $cs = CacheSeg 'tiny'; if ($cs) { $L += "$Sep$cs" }
     if ($GitOk -and $Branch) { $L += "$Sep$cLGreen$Branch$Rst"; if ($Dirty) { $L += "$Bld$cYellow*$Rst" } }
     $Lines.Add($L)
   }
   'medium-simple' {
     $Lines.Add((LedgerHead ''))
     $Lines.Add((LedgerWhere $false))
-    $Lines.Add("$cOv1$('context'.PadRight(9))$Rst$(VPad "${E}[$(Grad 'ctx' $CtxPct)m" $CtxPct)$cOv2   $TokK / $SizeK$Rst")
+    $cs = CacheSeg 'mid'; $cs = if ($cs) { "   $cs" } else { '' }
+    $Lines.Add("$cOv1$('context'.PadRight(9))$Rst$(VPad "${E}[$(Grad 'ctx' $CtxPct)m" $CtxPct)$cOv2   $TokK / $SizeK$Rst$cs")
     $L = "$cOv1$('limits'.PadRight(9))$Rst"
     if (-not $HasRL) { $L += $Loading }
     elseif ($null -ne $FivePct) {
@@ -525,12 +674,13 @@ switch ($Layout) {
     } else {
       $L = ''   # rate_limits without a 5h / 7d window (e.g. spend_limit only)
     }
-    if ($L) { $Lines.Add($L) }
+    if ($L) { $rs = ResetSeg 'mid'; if ($rs) { $L += "   $rs" }; $Lines.Add($L) }
   }
   'large-simple' {
     $Lines.Add((LedgerHead ''))
     $Lines.Add((LedgerWhere $true))
-    $Lines.Add("$cOv1$('context'.PadRight(9))$Rst$(VPad "${E}[$(Grad 'ctx' $CtxPct)m" $CtxPct)$cOv2   $TokK / $SizeK$Rst")
+    $cs = CacheSeg 'long'; $cs = if ($cs) { "   $cs" } else { '' }
+    $Lines.Add("$cOv1$('context'.PadRight(9))$Rst$(VPad "${E}[$(Grad 'ctx' $CtxPct)m" $CtxPct)$cOv2   $TokK / $SizeK$Rst$cs")
     if (-not $HasRL) {
       $Lines.Add("$cOv1$('5h'.PadRight(9))$Rst$Dash   $Loading")
       $Lines.Add("$cOv1$('7d'.PadRight(9))$Rst$Dash   $Loading")
@@ -550,6 +700,7 @@ switch ($Layout) {
         }
         $Lines.Add($L)
       }
+      TailReset 'long' '   '
     }
   }
   'xlarge-simple' {
@@ -557,6 +708,10 @@ switch ($Layout) {
     $Lines.Add((LedgerWhere $true))
     $FreeK = [Math]::Max(0, (IDiv ($CtxSize - $CtxTok) 1000))
     $Lines.Add("$cOv1$('context'.PadRight(10))$Rst$(VPad "${E}[$(Grad 'ctx' $CtxPct)m" $CtxPct)$cOv2   $TokK / $(IDiv $CtxSize 1000)k used · ${FreeK}k free$Rst")
+    $CK = "$cOv1$('cache'.PadRight(10))$Rst"
+    if (-not $PcSeen) { if ($CtxTok -eq 0) { $Lines.Add("$CK$Dash   $Loading") } }
+    elseif (-not $PcOn) { $Lines.Add("$CK$Dash   ${cOv0}not reported (caching off)$Rst") }
+    else { $v = if ($null -ne $PcHit) { VPad (HitCol) $PcHit } else { $Dash }; $Lines.Add("$CK$v   $(CacheDetail)") }
     if (-not $HasRL) {
       $Lines.Add("$cOv1$('5h limit'.PadRight(10))$Rst$Dash   $Loading")
       $Lines.Add("$cOv1$('7d limit'.PadRight(10))$Rst$Dash   $Loading")
@@ -576,13 +731,15 @@ switch ($Layout) {
         }
         $Lines.Add($L)
       }
+      TailReset 'long' '   '
     }
   }
   default {
     # large
     $Lines.Add((JoinSep @((Ident 'full' 'thinking'), (GitSeg ''), $ES, $SS)))
     $Lines.Add((JoinSep @("$iDir$cSub0$DirShow$Rst$(BranchSeg $true)", "$iTime$cSub0$Dur$Rst")))
-    $Lines.Add("$iCtx$(Lbl $cPink 'Context' 10)$(Bar 'ctx' $CtxPct 20) $(PctV 'ctx' $CtxPct)$cOv2  $TokK/$SizeK$Rst")
+    $cs = CacheSeg $(if ($Narrow) { 'short' } else { 'long' }); $cs = if ($cs) { "$Sep$cs" } else { '' }
+    $Lines.Add("$iCtx$(Lbl $cPink 'Context' 10)$(Bar 'ctx' $CtxPct 20) $(PctV 'ctx' $CtxPct)$cOv2  $TokK/$SizeK$Rst$cs")
     if (-not $HasRL) {
       $Lines.Add("$i5h$(Lbl $cLav 'Usage 5H' 10)$(Bar '5h' 0 20)$Dash  $Loading")
       $Lines.Add("$i7d$(Lbl $cYellow 'Usage 7D' 10)$(Bar '7d' 0 20)$Dash  $Loading")
@@ -602,6 +759,7 @@ switch ($Layout) {
         }
         $Lines.Add($L)
       }
+      TailReset $(if ($Narrow) { 'mid' } else { 'long' })
     }
   }
 }

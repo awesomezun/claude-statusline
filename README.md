@@ -1,20 +1,9 @@
-<!-- gitreels:start -->
-<p align="center">
-  <img src="assets/reel.gif" alt="Awesome Statusline — 30-second motion reel" width="820">
-  <br>
-  <a href="https://gitreels.com"><img src="https://gitreels.com/badge.svg" alt="Made with GitReels" height="24"></a>
-  <a href="https://gitreels.com/awesomezun/claude-statusline"><img src="https://gitreels.com/api/badges/rotw/awesomezun/claude-statusline.svg" alt="Reel of the Week #2 on GitReels" height="24"></a>
-</p>
-<!-- gitreels:end -->
-
 <div align="center">
 
 # ⚡ Awesome Statusline
 
-**A statusline for [Claude Code](https://claude.com/claude-code) that shows model · reasoning effort · context · usage limits at a glance.**<br/>
+**Model · reasoning effort · context · prompt cache · usage limits, at a glance: a statusline for [Claude Code](https://claude.com/claude-code), now in the Claude desktop app too.**<br/>
 One line to install on macOS, Linux and Windows.
-
-[🇰🇷 한국어](README.ko.md) · [At a glance](#overview) · [Install](#install) · [Presets](#presets) · [Plan](#plans) · [Mods](#mods) · [What it shows](#fields) · [FAQ](#faq)
 
 <img src="https://img.shields.io/github/stars/awesomezun/claude-statusline?style=flat-square&color=cba6f7" alt="Stars"/>
 <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-89b4fa?style=flat-square" alt="Platforms"/>
@@ -24,11 +13,85 @@ One line to install on macOS, Linux and Windows.
 
 <br/><br/>
 
-<img src="assets/presets/hero.png" alt="The recommended preset, large — Opus 5.5 ⚡xhigh, context 32%, 5-hour limit 34%, weekly limit 65%" width="820"/>
+<img src="assets/reels/terminal.webp" alt="A Claude Code session at work with the large preset under the prompt: context climbing to 40%, the 5-hour limit to 34%, the weekly limit at 65%" width="820"/>
 
-<sub>▶ <a href="https://awesomezun.github.io/claude-statusline/">Live demo</a> · 15 presets: 5 sizes × 3 styles · Pro · Max · Ultra, automatic · 🧩 <a href="#mods">Mods (beta)</a>: also in the desktop app → <a href="#changelog">Changelog</a></sub>
+<br/><br/>
+
+<a href="#install"><img src="https://img.shields.io/badge/Install-one%20line-cba6f7?style=for-the-badge" alt="Install: one line"/></a>&nbsp;<a href="#desktop"><img src="https://img.shields.io/badge/New-desktop%20%2B%20%2Fcockpit-fab387?style=for-the-badge" alt="New: the desktop app and /cockpit"/></a>&nbsp;<a href="#presets"><img src="https://img.shields.io/badge/Presets-15-89b4fa?style=for-the-badge" alt="15 presets: 5 sizes × 3 styles"/></a>&nbsp;<a href="https://awesomezun.github.io/claude-statusline/"><img src="https://img.shields.io/badge/Gallery-web-a6e3a1?style=for-the-badge" alt="Web gallery: every preset"/></a>
+
+[🇰🇷 한국어](README.ko.md) · [Desktop & cockpit](#desktop) · [v3.7](#v37) · [At a glance](#overview) · [Install](#install) · [Presets](#presets) · [Plan](#plans) · [Mods](#mods) · [What it shows](#fields) · [FAQ](#faq)
 
 </div>
+
+---
+
+<a id="desktop"></a>
+
+## ✨ New: in the Claude desktop app, with a cockpit
+
+<div align="center">
+<img src="assets/reels/desktop.webp" alt="The Claude desktop app: the large preset in the band above the prompt; then /cockpit opens a pane beside the chat with two dials, a status strip, fuel gauges and the sessions, and switches to the dashboard" width="820"/>
+</div>
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+**🖥️ The desktop app**<br/>
+Its Code tab doesn't run a `statusLine`. As a mod, all 15 presets draw in a band above the prompt there, and in the terminal.
+
+</td>
+<td width="33%" valign="top">
+
+**🛩️ `/cockpit`**<br/>
+A pane beside the chat, drawn like [1top](https://1top.si)'s menu bar: dials, fuel gauges, a radial token chart, every session and limit. Dark or light.
+
+</td>
+<td width="33%" valign="top">
+
+**⚡ One flag**<br/>
+Add `--mods` to the install line, or pick *Mods* when the installer asks. → [Mods](#mods) · [Cockpit](#cockpit)
+
+</td>
+</tr>
+</table>
+
+<div align="center">
+<img src="assets/reels/cockpit.webp" alt="The cockpit, dark beside light: the cluster with its dials moving, then the dashboard with the radial token chart, the model mix and the account cards" width="820"/>
+
+<sub>Beta: needs a Claude Code with mods (early access), on macOS or Linux.</sub>
+</div>
+
+<a id="v37"></a>
+
+## 🆕 v3.7: Fable 5.2, the prompt cache, free limit resets
+
+<div align="center">
+<img src="assets/presets/xlarge.png" alt="xlarge on Fable 5.2: a Cache line at 92% hit, warm until 6:46pm with one miss after a tool change, and a free reset mark at the end of the 7D line" width="820"/>
+</div>
+
+<table>
+<tr>
+<td width="33%" valign="top">
+
+**🧠 Fable 5.2**<br/>
+Claude Code's new default Fable model, with its effort and its 1M context. Fable 5.1 and the Mythos models read the same way, in the band and the cockpit too.
+
+</td>
+<td width="33%" valign="top">
+
+**💾 Prompt cache**<br/>
+How much input came from the cache (`cache 92%`), until when it stays warm, and once it's cold what your next turn writes again. In every preset; xlarge gives it a line.
+
+</td>
+<td width="33%" valign="top">
+
+**🎫 Free limit resets**<br/>
+When claude.ai has given you a free limit reset you haven't used, the limits line ends with a 🎫 mark. Use it from Settings › Usage on the web or in the desktop app. → [FAQ](#faq)
+
+</td>
+</tr>
+</table>
 
 ---
 
@@ -38,13 +101,17 @@ One line to install on macOS, Linux and Windows.
 
 **15 presets: 5 sizes × 3 styles.** When you install, you pick a size (how much you see) and a style (how it looks). Your plan isn't a choice: Ultra included, it's applied automatically.
 
+<div align="center">
+<img src="assets/reels/presets.webp" alt="The presets one after another: xsmall, small, medium, large and xlarge, then large-plain, large-simple and xsmall-simple" width="820"/>
+</div>
+
 | Size ↓ · Style → | Emoji (default) | No emoji | Simple text |
 |---|---|---|---|
 | **[xsmall](#xsmall)** · 2 lines | `xsmall` | `xsmall-plain` | `xsmall-simple` (1 line) |
 | **[small](#small)** · 2 lines | `small` | `small-plain` | `small-simple` |
 | **[medium](#medium)** · 4 lines | `medium` | `medium-plain` | `medium-simple` |
 | **[large](#large)** · 5 lines ⭐ recommended | **`large`** | `large-plain` | `large-simple` |
-| **[xlarge](#xlarge)** · 5 lines | `xlarge` | `xlarge-plain` | `xlarge-simple` |
+| **[xlarge](#xlarge)** · 6 lines | `xlarge` | `xlarge-plain` | `xlarge-simple` |
 
 - **Emoji** is the default: icons and gradient bars. A size on its own means this style (`large`).
 - **No emoji** (`-plain`) keeps the layout and the bars and drops only the emoji. It's the steadiest choice where emoji widths drift: tmux, SSH, Windows consoles.
@@ -178,9 +245,9 @@ Adds the session time, and one line per limit with its reset time.
 
 <a id="xlarge"></a>
 
-### xlarge (`xl`) · 5 lines
+### xlarge (`xl`) · 6 lines
 
-Adds 40-block bars everywhere and full reset dates.
+Adds a prompt cache line with its misses, 40-block bars everywhere and full reset dates.
 
 <div align="center">
 <img src="assets/presets/xlarge.png" alt="xlarge: emoji style" width="820"/>
@@ -240,6 +307,8 @@ Then start a new session, in the terminal or in the desktop app's Code tab.
 - The VS Code extension has no band above the prompt, so the mod doesn't show there.
 - **Back to the statusline**: reinstall without `--mods`. **Remove the mod**: `claude plugin uninstall awesome-statusline-mod@awesome-statusline-local`, then delete `~/.claude/awesome-statusline-mod/`.
 
+<a id="cockpit"></a>
+
 ### Cockpit pane (prototype)
 
 With the mod installed, **`/cockpit`** opens a pane beside the chat drawn like [1top](https://1top.si)'s menu bar, in a dark and a light theme:
@@ -268,16 +337,18 @@ With the 1top app running on the same computer, the cockpit reads 1top's local r
 
 | Element | Meaning |
 |---------|---------|
-| 🤖 **Model** | Current model (`Opus 5.5`, …) |
+| 🤖 **Model** | Current model (`Fable 5.2`, `Opus 5.5`, …) |
 | ⚡ **Effort** | Reasoning effort: `low` · `medium` · `high` · `xhigh` · `max`. Live with `/effort`; hidden on models without effort |
 | 💡 **Thinking** | Extended thinking is on |
 | 🎨 **Output style** | Active output style (hidden while it's `default`) |
 | 📂 🌿 **Folder · Git** | Folder, branch, commits ahead ↑ / behind ↓, staged `+` · modified `!` · untracked `?` files |
 | 🐍 **Env** | Active conda / virtualenv (only when one is active) |
 | 🧠 **Context** | Context-window usage bar and token count |
+| 💾 **Cache** | Share of input read from the prompt cache (green from 80%, yellow from 50%), until when it stays warm, and once it's cold what the next turn writes again. Shows after the first reply (Claude Code 2.1.251+) |
 | ⏰ **Time** | Session duration |
 | 🚀 **5H** · ⭐ **7D** | 5-hour and weekly limit usage with reset times (Pro · Max) |
 | ⭐ **Weekly** | Weekly limit usage, reset time and per-day budget (Ultra) |
+| 🎫 **Free reset** | You hold a free limit reset from claude.ai that you haven't used (see the [FAQ](#faq)) |
 
 The no-emoji and simple-text styles use text labels such as `Context`, `Usage 5H` and `time` in place of the icons. Colors follow the [Catppuccin](https://catppuccin.com/) palette, and every glyph is a standard emoji or Unicode block — no Nerd Font needed.
 
@@ -323,6 +394,10 @@ On Windows the installer writes a native `awesome-statusline.ps1` and points Cla
 
 **I don't see `⚡effort`.** Your current model doesn't support effort, so the field is hidden on purpose. Switch to a model that supports `/effort` (e.g. Opus 5.5).
 
+**What does `cache 92%` mean, and why does it say `cold`?** Claude Code caches the start of your conversation, so the next turn reads it back instead of processing it again: reads are cheaper and count less toward your limits. `92%` is the share of this session's input that came from the cache. The cache stays warm for a while after each turn (5 minutes or an hour); past that it's `cold`, and the next turn writes the whole conversation again, the size shown after `re-caches`. A `miss` is a turn that processed again what the cache already held; xlarge names the likely cause (a tool or the system prompt changed, idle past the TTL).
+
+**Does it show how many free limit resets I have?** It shows whether you have one, not how many. claude.ai hands out free limit resets now and then; you use them from Settings › Usage on the web or in the desktop app, not from Claude Code. The statusline JSON doesn't carry them; Claude Code notes in its `~/.claude.json` only whether your account holds an unused one, and the 🎫 mark reads that. The count is only behind your login, and the statusline never touches your credentials. Nothing is sent anywhere.
+
 **Can I turn the emoji off?** Yes. Add `-plain` to any size for the same layout without emoji (`large-plain`), or `-simple` for text with no bars (`large-simple`).
 
 **Does it work in the Claude desktop app?** With [Mods (beta)](#mods), yes. The desktop app's Code tab doesn't run `statusLine` commands, but it draws the mod's band above the prompt.
@@ -349,6 +424,7 @@ Built to keep pace with Claude Code. Full notes for each release are on [Release
 
 | Date | Update |
 |------|--------|
+| **2026‑11‑09** | **v3.7.0** · **Fable 5.2** support (and the Mythos models, in the band and the cockpit) · **prompt cache** in every preset: hit ratio, warm until, and what a cold cache writes again; xlarge gets a cache line with misses and their likely cause · **free limit reset** mark when you hold an unused one · the mod works the cache figures out from each request, so the desktop app shows them too · README with motion reels and a desktop & cockpit section up front |
 | **2026‑11‑02** | **v3.6.0** · **Mods (beta)** · install as a Claude Code mod with `--mods`: the same 15 presets in the band above the prompt, so it also shows in the Claude desktop app (macOS / Linux) · the installer asks where it should show · `/cockpit` pane (prototype): 1top-style cluster and dashboard, dark and light, with accounts, token flow, usage map and running sessions · README shows the 15 presets size by size |
 | **2026‑11‑01** | **v3.5.1** · three styles for every size (simple text `m-simple`, `l-simple`, `xl-simple` added) · installs ask size, then style · **clean gradients inside tmux** (when Claude Code drops to 256 colours the bars use 256-colour gradients, and the installer turns on `CLAUDE_CODE_TMUX_TRUECOLOR` when tmux supports 24-bit colour) · fixed the first bar cell darkening on light themes with minimum contrast (VS Code, Orca) · README reorganized around "two choices (size, style) + one automatic (plan)" |
 | **2026‑10‑31** | **Ultra plan support + redesign** · Ultra has no 5-hour limit, so it gets a weekly bar with a per-day budget (the bars used to freeze at `0% (loading..)`) · every size redesigned (aligned columns, fixed-width %, resets shown as *in 2h10m · 01:50*, empty fields hidden) · no-emoji style (`-plain`) · text presets `simple` and `oneline` · one renderer for every preset, ~4× faster per refresh |
@@ -366,6 +442,8 @@ Built to keep pace with Claude Code. Full notes for each release are on [Release
 
 Built with 🩵 for the Claude Code community · [Catppuccin](https://catppuccin.com/) theme · MIT License
 
+<sub>Awesome Statusline is an independent community project, not affiliated with or endorsed by Anthropic. Claude and Claude Code are trademarks of Anthropic, PBC.</sub>
+
 ⭐ **Star it if it made your terminal nicer.**
 
 
@@ -379,3 +457,15 @@ Built with 🩵 for the Claude Code community · [Catppuccin](https://catppuccin
 </a>
 
 </div>
+
+<br/>
+
+<!-- gitreels:start -->
+<p align="center">
+  <img src="assets/reel.gif" alt="Awesome Statusline — 30-second motion reel" width="820">
+  <br>
+  <a href="https://gitreels.com"><img src="https://gitreels.com/badge.svg" alt="Made with GitReels" height="24"></a>
+  <a href="https://gitreels.com/awesomezun/claude-statusline"><img src="https://gitreels.com/api/badges/rotw/awesomezun/claude-statusline.svg" alt="Reel of the Week #2 on GitReels" height="24"></a>
+</p>
+<!-- gitreels:end -->
+

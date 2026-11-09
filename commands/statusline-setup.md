@@ -113,7 +113,7 @@ After it finishes, confirm the `statusLine` entry was written (Mods: that
 restart Claude Code to see it (Mods: a new session in the terminal or the
 Claude desktop app's Code tab). The sizes, smallest to
 largest, are: `xsmall` (2 lines) · `small` (2 lines) · `medium` (4 lines) ·
-`large` (5 lines) · `xlarge` (5 lines, full detail); each comes in three
+`large` (5 lines) · `xlarge` (6 lines, full detail); each comes in three
 styles — emoji (default), `-plain` (no emoji) and `-simple` (text only;
 `xsmall-simple` is a single line).
 

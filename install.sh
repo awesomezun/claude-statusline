@@ -15,7 +15,7 @@
 #   small  (s)    2 lines, labels + bars
 #   medium (m)    4 lines, wide context bar
 #   large  (l)    5 lines, session time / resets  (recommended)
-#   xlarge (xl)   5 lines, 40-block bars, full detail
+#   xlarge (xl)   6 lines, 40-block bars, full detail
 # Styles (suffix):
 #   (none)        emoji icons + gradient bars
 #   -plain        same layout, no emoji (e.g. l-plain)
@@ -205,7 +205,7 @@ prompt_size() {
     echo "  2. small  (s)    작게 — 2줄, 라벨과 막대"
     echo "  3. medium (m)    중간 — 4줄, 넓은 컨텍스트 막대"
     echo "  4. large  (l)    크게 — 5줄, 세션 시간·리셋 (추천 기본값)"
-    echo "  5. xlarge (xl)   가장 크게 — 5줄, 전체 상세"
+    echo "  5. xlarge (xl)   가장 크게 — 6줄, 전체 상세"
     echo
     printf '선택 [기본값: 4]: '
   else
@@ -216,7 +216,7 @@ prompt_size() {
     echo "  2. small  (s)    small — 2 lines, labels + bars"
     echo "  3. medium (m)    medium — 4 lines, wide context bar"
     echo "  4. large  (l)    large — 5 lines, session time / resets (recommended)"
-    echo "  5. xlarge (xl)   largest — 5 lines, full detail"
+    echo "  5. xlarge (xl)   largest — 6 lines, full detail"
     echo
     printf 'Choice [default: 4]: '
   fi

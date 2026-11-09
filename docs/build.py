@@ -21,107 +21,16 @@ import pathlib
 import re
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from _demo import ROOT, render  # noqa: E402
+from _demo import ROOT, ansi_to_html, render  # noqa: E402
 
 SIZES = [  # (preset, abbr, lines)
     ("xsmall", "xs", "2 lines"),
     ("small", "s", "2 lines"),
     ("medium", "m", "4 lines"),
     ("large", "l", "5 lines"),
-    ("xlarge", "xl", "5 lines"),
+    ("xlarge", "xl", "6 lines"),
 ]
 ABBR = {name: abbr for name, abbr, _ in SIZES}
-
-ANSI = re.compile(r'(\x1b\[[0-9;]*m)')
-CUSTOM_BLOCKS = {
-    "█": "full",
-    "░": "shade-light",
-    "▒": "shade-medium",
-    "▓": "shade-dark",
-}
-
-
-def ansi_to_html(s: str) -> str:
-    color = None
-    bold = False
-    out = []
-    pending_block = None
-
-    def style_attr(extra=None, use_color=None, use_bold=None):
-        use_color = color if use_color is None else use_color
-        use_bold = bold if use_bold is None else use_bold
-        st = []
-        if use_color:
-            st.append(f"color:rgb({use_color[0]},{use_color[1]},{use_color[2]})")
-        if use_bold:
-            st.append("font-weight:700")
-        if extra:
-            st.extend(extra)
-        return f' style="{";".join(st)}"' if st else ""
-
-    def flush_block():
-        nonlocal pending_block
-        if not pending_block:
-            return
-        cls, block_color, block_bold, count = pending_block
-        width = f"width:{count}ch" if count > 1 else None
-        extra = [width] if width else None
-        out.append(
-            f'<span class="cg cg-{cls}"'
-            f'{style_attr(extra, block_color, block_bold)}></span>'
-        )
-        pending_block = None
-
-    def text_span(txt):
-        flush_block()
-        return f"<span{style_attr()}>{H.escape(txt)}</span>"
-
-    def queue_block(ch):
-        nonlocal pending_block
-        cls = CUSTOM_BLOCKS[ch]
-        key = (cls, color, bold)
-        if pending_block and pending_block[:3] == key:
-            pending_block = (*key, pending_block[3] + 1)
-        else:
-            flush_block()
-            pending_block = (*key, 1)
-
-    def emit_text(txt):
-        buf = []
-        for ch in txt:
-            if ch in CUSTOM_BLOCKS:
-                if buf:
-                    out.append(text_span("".join(buf)))
-                    buf.clear()
-                queue_block(ch)
-            else:
-                buf.append(ch)
-        if buf:
-            out.append(text_span("".join(buf)))
-
-    for tok in ANSI.split(s):
-        if tok.startswith("\x1b["):
-            codes = tok[2:-1].split(";")
-            j = 0
-            while j < len(codes):
-                c = codes[j] or "0"
-                if c == "0":
-                    color = None
-                    bold = False
-                elif c == "1":
-                    bold = True
-                elif c == "38" and j + 2 < len(codes) and codes[j + 1] == "2":
-                    color = (int(codes[j + 2]), int(codes[j + 3]), int(codes[j + 4]))
-                    j += 4
-                j += 1
-        elif tok:
-            txt = tok.replace("\x1b[K", "").replace("\r", "")
-            if txt:
-                emit_text(txt)
-    flush_block()
-    return "".join(out)
-
-
 
 def rows(preset: str, plan: str = "pro") -> str:
     raw = render(preset, plan).rstrip("\n")
@@ -155,7 +64,7 @@ SIZE_NOTE = {
     "small": "+ full path, git changes, output style, time to reset",
     "medium": "+ wide context bar with token count, commits ahead",
     "large": "+ session time, one line per limit with its reset time",
-    "xlarge": "+ 40-block bars everywhere, full reset dates",
+    "xlarge": "+ a prompt cache line, 40-block bars everywhere, full reset dates",
 }
 
 

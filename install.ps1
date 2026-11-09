@@ -156,7 +156,7 @@ if ($Size) {
     Write-Host "  2. small  (s)    작게 — 2줄, 라벨과 막대"
     Write-Host "  3. medium (m)    중간 — 4줄, 넓은 컨텍스트 막대"
     Write-Host "  4. large  (l)    크게 — 5줄, 세션 시간·리셋 (추천 기본값)"
-    Write-Host "  5. xlarge (xl)   가장 크게 — 5줄, 전체 상세"
+    Write-Host "  5. xlarge (xl)   가장 크게 — 6줄, 전체 상세"
     Write-Host ""
     Write-Host -NoNewline "선택 [기본값: 4]: "
   } else {
@@ -167,7 +167,7 @@ if ($Size) {
     Write-Host "  2. small  (s)    small — 2 lines, labels + bars"
     Write-Host "  3. medium (m)    medium — 4 lines, wide context bar"
     Write-Host "  4. large  (l)    large — 5 lines, session time / resets (recommended)"
-    Write-Host "  5. xlarge (xl)   largest — 5 lines, full detail"
+    Write-Host "  5. xlarge (xl)   largest — 6 lines, full detail"
     Write-Host ""
     Write-Host -NoNewline "Choice [default: 4]: "
   }

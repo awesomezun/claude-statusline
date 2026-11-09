@@ -9,6 +9,36 @@ export type Live = { model: string | null; effort: string | null }
 /** One usage window, as the statusLine JSON has it (resets_at: epoch seconds). */
 export type RateWindow = { used_percentage: number; resets_at?: number }
 
+/** The main loop's prompt cache, as the statusLine JSON's prompt_cache has it (expires_at: epoch s). */
+export type PromptCache = {
+  warm: boolean
+  caching_observed: boolean
+  ttl: '5m' | '1h'
+  expires_at: number | null
+  requests: number
+  hit_ratio: number | null
+  cache_write_tokens: number
+  recache_tokens_if_cold: number | null
+}
+
+/** What the main loop's requests reported about the cache this session (times: ms). */
+export type CacheStats = {
+  /** The session's start the counts belong to; /clear moves it up and starts them over. */
+  startedAt: number | null
+  requests: number
+  /** Input read from the cache, and all input: uncached, written and read. */
+  read: number
+  input: number
+  written: number
+  observed: boolean
+  lastAt: number | null
+  /** Whether the last request read or wrote the cache. */
+  lastCached: boolean
+  ttlS: 300 | 3600
+  /** The last request's whole input: what a cold cache writes again. */
+  lastInput: number
+}
+
 /** The statusLine-shaped JSON the band last rendered from; the cockpit reads it too. */
 export type StatusJson = {
   session_id: string
@@ -27,6 +57,7 @@ export type StatusJson = {
     current_usage?: number
   }
   rate_limits?: Record<string, RateWindow>
+  prompt_cache?: PromptCache
 }
 
 /** One point of the cockpit's session-flow chart (t: ms; the rest: % used). */
@@ -107,6 +138,8 @@ declare module 'claude-code' {
       snapshot: Snapshot
       live: Live
       hasStatusLine: boolean
+      /** The main loop's prompt cache use, for the renderer's cache figures. */
+      cache: CacheStats
       /** When this process first saw the session (ms), so a resumed one counts from its relaunch. */
       since: number | null
       status: StatusJson | null
