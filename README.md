@@ -281,6 +281,24 @@ With the 1top app running on the same computer, the cockpit reads 1top's local r
 
 The no-emoji and simple-text styles use text labels such as `Context`, `Usage 5H` and `time` in place of the icons. Colors follow the [Catppuccin](https://catppuccin.com/) palette, and every glyph is a standard emoji or Unicode block — no Nerd Font needed.
 
+### Reset-time format (optional)
+
+By default reset times use a 12-hour clock with English day and month names (`1:12am`, `Tue Nov 3, 1pm`). Both can be changed. Set the options as environment variables, or put them in `~/.claude/awesome-statusline.conf`, one `KEY=value` per line (only these three keys are read; the file is never executed). The environment wins over the file.
+
+| Option | Values | Default |
+|--------|--------|---------|
+| `AWESOME_STATUSLINE_CLOCK` | `12` or `24` | `12` |
+| `AWESOME_STATUSLINE_LOCALE` | A locale for day and month names, e.g. `de_DE.UTF-8` (macOS · Linux; it must be installed, see `locale -a`) or `de-DE` (Windows) | English (`C`) |
+| `AWESOME_STATUSLINE_DATE_FORMAT` | Format of a reset date when the clock is `24` | `%a %d %b %H:%M` (Windows: `ddd dd MMM HH:mm`) |
+
+```ini
+# ~/.claude/awesome-statusline.conf
+AWESOME_STATUSLINE_CLOCK=24
+AWESOME_STATUSLINE_LOCALE=de_DE.UTF-8
+```
+
+With the 12-hour clock the long date stays `Tue Nov 3, 1pm` and only its names follow the locale. Decimal separators are never localized. `AWESOME_STATUSLINE_DATE_FORMAT` is a `strftime` format in the bash renderer and a .NET custom format in the Windows renderer, and an unknown locale falls back to English names. The Mods band runs the same bash renderer, so it reads the same file.
+
 ---
 
 <a id="change"></a>
