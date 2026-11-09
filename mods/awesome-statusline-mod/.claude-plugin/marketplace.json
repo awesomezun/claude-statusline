@@ -7,7 +7,7 @@
       "name": "awesome-statusline-mod",
       "source": "./",
       "description": "Awesome Statusline drawn in a band above the prompt (terminal and the Claude desktop app).",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "category": "mod"
     }
   ]
