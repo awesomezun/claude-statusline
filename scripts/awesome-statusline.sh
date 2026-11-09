@@ -24,8 +24,29 @@
 # A bundled jq copied next to this script (Windows / GUI launches with a
 # minimal PATH) must win over a missing one.
 export PATH="$(dirname "$0"):$PATH"
-# English day/month names and "." decimals regardless of the user's locale.
-export LC_NUMERIC=C LC_TIME=C
+# Time and date options. Each comes from the environment, or else from
+# ~/.claude/awesome-statusline.conf (KEY=value lines; nothing else is read):
+#   AWESOME_STATUSLINE_CLOCK=12|24        clock of reset times (default 12)
+#   AWESOME_STATUSLINE_LOCALE=<locale>    day/month names, e.g. de_DE.UTF-8
+#                                         (default C: English names)
+#   AWESOME_STATUSLINE_DATE_FORMAT=<fmt>  strftime format of a reset date
+#                                         with the 24h clock (default
+#                                         "%a %d %b %H:%M")
+AS_CONF="${AWESOME_STATUSLINE_CONF:-$HOME/.claude/awesome-statusline.conf}"
+if [[ -r "$AS_CONF" ]]; then
+    while IFS='=' read -r k v || [[ -n "$k" ]]; do
+        v=${v%$'\r'}; v=${v#\"}; v=${v%\"}
+        case "$k" in
+            AWESOME_STATUSLINE_CLOCK)       [[ -z "${AWESOME_STATUSLINE_CLOCK:-}" ]] && AWESOME_STATUSLINE_CLOCK=$v ;;
+            AWESOME_STATUSLINE_LOCALE)      [[ -z "${AWESOME_STATUSLINE_LOCALE:-}" ]] && AWESOME_STATUSLINE_LOCALE=$v ;;
+            AWESOME_STATUSLINE_DATE_FORMAT) [[ -z "${AWESOME_STATUSLINE_DATE_FORMAT:-}" ]] && AWESOME_STATUSLINE_DATE_FORMAT=$v ;;
+        esac
+    done < "$AS_CONF"
+fi
+AS_CLOCK=${AWESOME_STATUSLINE_CLOCK:-12}
+AS_DATE_FMT=${AWESOME_STATUSLINE_DATE_FORMAT:-%a %d %b %H:%M}
+# "." decimals always; day/month names in C (English) unless a locale is set.
+export LC_NUMERIC=C LC_TIME="${AWESOME_STATUSLINE_LOCALE:-C}"
 
 E=$'\033'
 RST="${E}[0m"
@@ -234,6 +255,7 @@ fi
 # "1:12am" / "Tue Nov 3, 1pm" without non-portable %-I / %-d
 fmt_ampm() {
     local h m
+    if [[ "$AS_CLOCK" == 24 ]]; then fmt_at "$1" "%H:%M"; return; fi
     fmt_at "$1" "%H %M"; h=${D% *}; m=${D#* }
     h=$((10#$h)); local ap=am; (( h >= 12 )) && ap=pm
     h=$(( h % 12 )); (( h == 0 )) && h=12
@@ -241,6 +263,7 @@ fmt_ampm() {
 }
 fmt_long() {
     local wd mo d h
+    if [[ "$AS_CLOCK" == 24 ]]; then fmt_at "$1" "$AS_DATE_FMT"; return; fi
     fmt_at "$1" "%a %b %d %H"
     set -- $D; wd=$1; mo=$2; d=$((10#$3)); h=$((10#$4))
     local ap=am; (( h >= 12 )) && ap=pm
