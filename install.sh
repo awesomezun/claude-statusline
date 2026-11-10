@@ -413,7 +413,10 @@ install_mods() {
 # identically on every platform. On Windows a bare `.sh` path is opened through
 # its file association (`bash --login -i ...`), which spawns visible terminal
 # windows and breaks stdin/stdout — calling bash explicitly avoids that.
-STATUSLINE_JSON="$(jq -n --arg c "bash ~/.claude/awesome-statusline.sh $MODE" '{type:"command",command:$c}')"
+# Point at the copy made above: with $CLAUDE_CONFIG_DIR set it lives there, not
+# in ~/.claude. The default keeps the portable ~ form.
+if [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then SL_PATH="\"$DEST\""; else SL_PATH="~/.claude/awesome-statusline.sh"; fi
+STATUSLINE_JSON="$(jq -n --arg c "bash $SL_PATH $MODE" '{type:"command",command:$c}')"
 if [ "$DISPLAY_MODE" = "mods" ]; then
   install_mods
 elif [ -f "$SETTINGS" ]; then
