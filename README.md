@@ -64,30 +64,36 @@ Add `--mods` to the install line, or pick *Mods* when the installer asks. → [M
 
 <a id="v37"></a>
 
-## 🆕 v3.7: Fable 5.2, the prompt cache, free limit resets
+## 🆕 v3.7: Fable 5.2, the prompt cache, free limit resets, your account
 
 <div align="center">
-<img src="assets/presets/xlarge.png" alt="xlarge on Fable 5.2: a Cache line at 92% hit, warm until 6:46pm with one miss after a tool change, and a free reset mark at the end of the 7D line" width="820"/>
+<img src="assets/presets/xlarge.png" alt="xlarge on Fable 5.2: the signed-in account and its plan beside the model, a Cache line at 92% hit, warm until 6:46pm with one miss after a tool change, and a free reset mark at the end of the 7D line" width="820"/>
 </div>
 
 <table>
 <tr>
-<td width="33%" valign="top">
+<td width="25%" valign="top">
 
 **🧠 Fable 5.2**<br/>
 Claude Code's new default Fable model, with its effort and its 1M context. Fable 5.1 and the Mythos models read the same way, in the band and the cockpit too.
 
 </td>
-<td width="33%" valign="top">
+<td width="25%" valign="top">
 
 **💾 Prompt cache**<br/>
 How much input came from the cache (`cache 92%`), until when it stays warm, and once it's cold what your next turn writes again. In every preset; xlarge gives it a line.
 
 </td>
-<td width="33%" valign="top">
+<td width="25%" valign="top">
 
 **🎫 Free limit resets**<br/>
 When claude.ai has given you a free limit reset you haven't used, the limits line ends with a 🎫 mark. Use it from Settings › Usage on the web or in the desktop app. → [FAQ](#faq)
+
+</td>
+<td width="25%" valign="top">
+
+**👤 Your account**<br/>
+The signed-in account's name and plan (`Alex · Max 5x`) beside the model, so you know which account the limits belong to. → [FAQ](#faq)
 
 </td>
 </tr>
@@ -338,6 +344,7 @@ With the 1top app running on the same computer, the cockpit reads 1top's local r
 | Element | Meaning |
 |---------|---------|
 | 🤖 **Model** | Current model (`Fable 5.2`, `Opus 5.5`, …) |
+| 👤 **Account** | The signed-in claude.ai account's name and plan (`Alex · Max 5x`); small screens show the name only |
 | ⚡ **Effort** | Reasoning effort: `low` · `medium` · `high` · `xhigh` · `max`. Live with `/effort`; hidden on models without effort |
 | 💡 **Thinking** | Extended thinking is on |
 | 🎨 **Output style** | Active output style (hidden while it's `default`) |
@@ -398,6 +405,8 @@ On Windows the installer writes a native `awesome-statusline.ps1` and points Cla
 
 **Does it show how many free limit resets I have?** It shows whether you have one, not how many. claude.ai hands out free limit resets now and then; you use them from Settings › Usage on the web or in the desktop app, not from Claude Code. The statusline JSON doesn't carry them; Claude Code notes in its `~/.claude.json` only whether your account holds an unused one, and the 🎫 mark reads that. The count is only behind your login, and the statusline never touches your credentials. Nothing is sent anywhere.
 
+**Can I hide my account name?** Yes. Add `"env": {"AWESOME_STATUSLINE_ACCOUNT": "off"}` to `~/.claude/settings.json`. The name and plan come from the login Claude Code keeps in `~/.claude.json` (your email is never shown). Sessions on an API key or a cloud provider don't show an account.
+
 **Can I turn the emoji off?** Yes. Add `-plain` to any size for the same layout without emoji (`large-plain`), or `-simple` for text with no bars (`large-simple`).
 
 **Does it work in the Claude desktop app?** With [Mods (beta)](#mods), yes. The desktop app's Code tab doesn't run `statusLine` commands, but it draws the mod's band above the prompt.
@@ -424,7 +433,7 @@ Built to keep pace with Claude Code. Full notes for each release are on [Release
 
 | Date | Update |
 |------|--------|
-| **2026‑11‑09** | **v3.7.0** · **Fable 5.2** support (and the Mythos models, in the band and the cockpit) · **prompt cache** in every preset: hit ratio, warm until, and what a cold cache writes again; xlarge gets a cache line with misses and their likely cause · **free limit reset** mark when you hold an unused one · the mod works the cache figures out from each request, so the desktop app shows them too · README with motion reels and a desktop & cockpit section up front |
+| **2026‑11‑09** | **v3.7.0** · **Fable 5.2** support (and the Mythos models, in the band and the cockpit) · **prompt cache** in every preset: hit ratio, warm until, and what a cold cache writes again; xlarge gets a cache line with misses and their likely cause · **free limit reset** mark when you hold an unused one · the signed-in **account** and its plan (`Alex · Max 5x`; `AWESOME_STATUSLINE_ACCOUNT=off` hides it) · the mod works the cache figures out from each request, so the desktop app shows them too · README with motion reels and a desktop & cockpit section up front |
 | **2026‑11‑02** | **v3.6.0** · **Mods (beta)** · install as a Claude Code mod with `--mods`: the same 15 presets in the band above the prompt, so it also shows in the Claude desktop app (macOS / Linux) · the installer asks where it should show · `/cockpit` pane (prototype): 1top-style cluster and dashboard, dark and light, with accounts, token flow, usage map and running sessions · README shows the 15 presets size by size |
 | **2026‑11‑01** | **v3.5.1** · three styles for every size (simple text `m-simple`, `l-simple`, `xl-simple` added) · installs ask size, then style · **clean gradients inside tmux** (when Claude Code drops to 256 colours the bars use 256-colour gradients, and the installer turns on `CLAUDE_CODE_TMUX_TRUECOLOR` when tmux supports 24-bit colour) · fixed the first bar cell darkening on light themes with minimum contrast (VS Code, Orca) · README reorganized around "two choices (size, style) + one automatic (plan)" |
 | **2026‑10‑31** | **Ultra plan support + redesign** · Ultra has no 5-hour limit, so it gets a weekly bar with a per-day budget (the bars used to freeze at `0% (loading..)`) · every size redesigned (aligned columns, fixed-width %, resets shown as *in 2h10m · 01:50*, empty fields hidden) · no-emoji style (`-plain`) · text presets `simple` and `oneline` · one renderer for every preset, ~4× faster per refresh |

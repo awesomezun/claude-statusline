@@ -28,6 +28,9 @@
 # in its own ~/.claude.json whether this account holds an unused one, without
 # a count, and that is what the "free reset" mark shows. Nothing is sent anywhere.
 #
+# Account: the signed-in claude.ai account's name and plan ("Seong-Jun · Max 5x"),
+# from the same ~/.claude.json. AWESOME_STATUSLINE_ACCOUNT=off hides it.
+#
 # Works on bash 3.2 (macOS default) and newer. Needs jq.
 # ============================================================================
 
@@ -165,10 +168,10 @@ DOT="${c_ov0} · ${RST}"
 # The ticket of a free limit reset only ever ends a line, so it shifts nothing.
 if [[ -n "$PLAIN" ]]; then
     i_model="" i_dir="" i_branch="" i_git="" i_clean="" i_style="" i_env="" i_time=""
-    i_ctx="" i_5h="" i_7d="" i_7dxl="" i_cache="" i_ticket=""
+    i_ctx="" i_5h="" i_7d="" i_7dxl="" i_cache="" i_ticket="" i_acct=""
 else
     i_model="🤖 " i_dir="📂 " i_branch="🌿" i_git="📝 " i_clean="✅ " i_style="🎨 " i_env="🐍 " i_time="⏰ "
-    i_ctx="🧠 " i_5h="🚀 " i_7d="⭐ " i_7dxl="🌟 " i_cache="💾 " i_ticket="🎫"
+    i_ctx="🧠 " i_5h="🚀 " i_7d="⭐ " i_7dxl="🌟 " i_cache="💾 " i_ticket="🎫" i_acct="👤 "
 fi
 
 # ---------------------------------------------------------------- helpers (no subshells)
@@ -361,19 +364,36 @@ if [[ -n "$PC_ON" ]]; then
     if [[ -n "$PC_WARM" ]] && { [[ -z "$PC_EXP" ]] || (( PC_EXP > NOW )); }; then PC_STATE=warm; else PC_STATE=cold; fi
 fi
 
-# A free limit reset this account holds, as Claude Code last noted it (subscribers only).
-HAS_RESET=""
-if [[ -n "$HAS_RL" ]]; then
+# The signed-in account and its plan, and a free limit reset it holds, as Claude
+# Code last noted them in its ~/.claude.json. A session on an API key or a cloud
+# provider (no rate_limits) isn't the account's, so it shows neither.
+ACCT_NAME="" ACCT_PLAN="" HAS_RESET=""
+SHOW_ACCT=""
+[[ "${AWESOME_STATUSLINE_ACCOUNT:-on}" != off ]] && \
+    { [[ -n "$HAS_RL" ]] || [[ -z "${ANTHROPIC_API_KEY:-}${ANTHROPIC_AUTH_TOKEN:-}${CLAUDE_CODE_USE_BEDROCK:-}${CLAUDE_CODE_USE_VERTEX:-}${CLAUDE_CODE_USE_FOUNDRY:-}" ]]; } && SHOW_ACCT=1
+if [[ -n "$HAS_RL" || -n "$SHOW_ACCT" ]]; then
     CFG_JSON="${CLAUDE_CONFIG_DIR:+${CLAUDE_CONFIG_DIR%/}/.claude.json}"
     [[ -n "$CFG_JSON" && -f "$CFG_JSON" ]] || CFG_JSON="${HOME:-}/.claude.json"
     if [[ -f "$CFG_JSON" ]]; then
-        HAS_RESET=$(jq -r --argjson now "$(( NOW * 1000 ))" '
-            .oauthAccount.accountUuid as $a
-            | .unusedLimitResetStatusCache
-            | if type == "object" and $a != null and .accountUuid == $a and .holdsUnusedReset == true
-                 and (.checkedAt | type) == "number" and (.validUntil | type) == "number"
-                 and .checkedAt <= $now and $now - .checkedAt < 259200000 and $now < .validUntil
-              then "1" else "" end' "$CFG_JSON" 2>/dev/null)
+        eval "$(jq -r --argjson now "$(( NOW * 1000 ))" --arg rl "$HAS_RL" --arg acct "$SHOW_ACCT" '
+            def clean: tostring | gsub("[\u0000-\u001f\u007f]"; "");
+            (.oauthAccount | if type == "object" then . else {} end) as $o
+            | ($o.organizationRateLimitTier // "" | tostring) as $t
+            | ($o.organizationType // "" | tostring) as $k
+            | [ "ACCT_NAME=" + (if $acct == "" then "" else
+                    ($o.displayName // $o.fullName // "") | clean | .[0:24] end | @sh),
+                "ACCT_PLAN=" + (if $acct == "" then ""
+                    elif ($t | test("max_20x")) then "Max 20x" elif ($t | test("max_5x")) then "Max 5x"
+                    elif ($k + $t | test("ultra")) then "Ultra" elif ($k | test("max")) then "Max"
+                    elif ($k | test("pro")) then "Pro" elif ($k | test("team")) then "Team"
+                    elif ($k | test("enterprise")) then "Enterprise" else "" end | @sh),
+                "HAS_RESET=" + (.unusedLimitResetStatusCache as $r
+                    | if $rl != "" and ($r | type) == "object" and $o.accountUuid != null
+                         and $r.accountUuid == $o.accountUuid and $r.holdsUnusedReset == true
+                         and ($r.checkedAt | type) == "number" and ($r.validUntil | type) == "number"
+                         and $r.checkedAt <= $now and $now - $r.checkedAt < 259200000 and $now < $r.validUntil
+                      then "1" else "" end)
+              ] | .[]' "$CFG_JSON" 2>/dev/null)"
     fi
 fi
 
@@ -441,6 +461,16 @@ branch_seg() {   # "🌿(main ↑1)" (empty outside git)
 style_seg() { SS=""; [[ -n "$STYLE" && "$STYLE" != "default" ]] && SS="${i_style}${c_peach}${STYLE}${RST}"; }
 env_seg()   { ES=""; [[ -n "$ENV_NAME" ]] && ES="${i_env}${c_green}${ENV_NAME}${RST}"; }
 
+# acct_seg <full|short> → AS = "👤 Seong-Jun · Max 5x" | "👤 Seong-Jun" (empty when off or unknown)
+acct_seg() {
+    AS=""
+    [[ -z "$ACCT_NAME$ACCT_PLAN" ]] && return
+    local plan=$ACCT_PLAN
+    [[ "$1" == short && -n "$ACCT_NAME" ]] && plan=""
+    AS="${i_acct}${ACCT_NAME:+${c_lav}${ACCT_NAME}${RST}}"
+    [[ -n "$plan" ]] && AS+="${ACCT_NAME:+${c_ov2} · ${RST}}${c_ov2}${plan}${RST}"
+}
+
 join_sep() {   # joins non-empty args with SEP → J
     J=""
     local a
@@ -455,6 +485,7 @@ join_sep() {   # joins non-empty args with SEP → J
 ledger_head() {
     ident full thinking
     LH=$ID
+    acct_seg full; [[ -n "$AS" ]] && LH+="   ${c_ov1}account ${RST}$AS"
     if [[ -n "$GIT_OK" ]]; then
         if [[ -n "$DIRTY" ]]; then LH+="   ${c_ov1}git ${RST}${1:+${c_lyellow}$1${RST} }${GC}"
         else LH+="   ${c_ov1}git ${RST}${c_lgreen}clean${RST}"; fi
@@ -566,6 +597,7 @@ xsmall)
     ident short think
     L1="$ID  ${i_dir}${c_sub0}${DIR_BASE}${RST}"
     [[ -n "$GIT_OK" && -n "$BRANCH" ]] && L1+=" ${i_branch}${c_lgreen}${BRANCH}${RST}${DIRTY:+${BLD}${c_yellow}*${RST}}"
+    acct_seg short; L1+="${AS:+  $AS}"
     if [[ -n "$PLAIN" ]]; then L2="${c_pink}ctx${RST} "; else L2="${c_pink}🧠${RST} "; fi
     bar ctx "$CTX_PCT" 6; pctv ctx "$CTX_PCT"; L2+="$BAR$PV"
     if [[ -z "$HAS_RL" ]]; then
@@ -587,7 +619,8 @@ small)
     ident full thinking
     branch_seg; style_seg
     L1="${i_dir}${c_sub0}${DIR_SHOW}${RST}${BS}${GC:+ $GC}"
-    join_sep "$ID" "$L1" "$SS"; L1=$J
+    if [[ -n "$NARROW" ]]; then acct_seg short; else acct_seg full; fi
+    join_sep "$ID" "$AS" "$L1" "$SS"; L1=$J
     bar ctx "$CTX_PCT" 10; pctv ctx "$CTX_PCT"
     L2="${i_ctx}${c_pink}Context${RST} $BAR $PV"
     if [[ -z "$HAS_RL" ]]; then
@@ -612,7 +645,7 @@ small)
 medium)
     ident full thinking
     git_seg; env_seg; style_seg; branch_seg ab
-    join_sep "$ID" "$GS" "$ES" "$SS"; emit "$J"
+    acct_seg full; join_sep "$ID" "$AS" "$GS" "$ES" "$SS"; emit "$J"
     emit "${i_dir}${c_sub0}${DIR_SHOW}${RST}${BS}"
     bar ctx "$CTX_PCT" 40; pctv ctx "$CTX_PCT"; pad Context 9
     if [[ -n "$NARROW" ]]; then cache_seg tiny; else cache_seg mid; fi
@@ -643,7 +676,7 @@ medium)
 xlarge)
     ident full thinking
     git_seg dirty; env_seg; style_seg; branch_seg ab
-    join_sep "$ID" "$SS" "$GS" "$ES"; emit "$J"
+    acct_seg full; join_sep "$ID" "$AS" "$SS" "$GS" "$ES"; emit "$J"
     join_sep "${i_dir}${c_sub0}${DIR_SHOW}${RST}${BS}" "${i_time}${c_sub0}${DUR}${RST}"; emit "$J"
     bar ctx "$CTX_PCT" 40; pctv ctx "$CTX_PCT"; pad Context 10
     emit "${i_ctx}${c_maroon}${PADDED_T}${RST}${PADDED_S}$BAR $PV${c_ov2}  used (${TOK_K} / $(( CTX_SIZE / 1000 ))k)${RST}"
@@ -688,6 +721,7 @@ small-simple)
     ident full thinking
     L1="$ID   ${c_sub0}${DIR_SHOW}${RST}"
     [[ -n "$GIT_OK" && -n "$BRANCH" ]] && L1+=" ${c_green}${BRANCH}${RST}${GC:+ $GC}"
+    if [[ -n "$NARROW" ]]; then acct_seg short; else acct_seg full; fi; L1+="${AS:+   $AS}"
     grad ctx "$CTX_PCT"
     L2="${c_ov1}ctx ${RST}${BLD}${E}[${G}m${CTX_PCT}%${RST}"
     if [[ -z "$HAS_RL" ]]; then
@@ -736,6 +770,7 @@ xsmall-simple)
     fi
     cache_seg tiny; L+="${CS:+$SEP$CS}"
     [[ -n "$GIT_OK" && -n "$BRANCH" ]] && L+="$SEP${c_lgreen}${BRANCH}${RST}${DIRTY:+${BLD}${c_yellow}*${RST}}"
+    acct_seg short; L+="${AS:+$SEP$AS}"
     emit "$L"
     ;;
 
@@ -841,7 +876,7 @@ xlarge-simple)
 *)  # large
     ident full thinking
     git_seg; env_seg; style_seg; branch_seg ab
-    join_sep "$ID" "$GS" "$ES" "$SS"; emit "$J"
+    acct_seg full; join_sep "$ID" "$AS" "$GS" "$ES" "$SS"; emit "$J"
     join_sep "${i_dir}${c_sub0}${DIR_SHOW}${RST}${BS}" "${i_time}${c_sub0}${DUR}${RST}"; emit "$J"
     bar ctx "$CTX_PCT" 20; pctv ctx "$CTX_PCT"; pad Context 10
     if [[ -n "$NARROW" ]]; then cache_seg short; else cache_seg long; fi

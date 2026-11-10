@@ -55,13 +55,14 @@ DEMO_REPO = _make_demo_repo()
 
 
 def _make_demo_config() -> pathlib.Path:
-    """A Claude Code config dir whose ~/.claude.json notes an unused free limit reset,
-    so the docs show the mark whatever the builder's own account holds."""
+    """A Claude Code config dir with a made-up signed-in account (Alex, Max 5x) that
+    holds an unused free limit reset, so the docs never show the builder's own."""
     base = pathlib.Path(tempfile.mkdtemp(prefix="awesome-statusline-config-"))
     atexit.register(shutil.rmtree, base, ignore_errors=True)
     now_ms = int(time.time() * 1000)
     (base / ".claude.json").write_text(json.dumps({
-        "oauthAccount": {"accountUuid": "demo-account"},
+        "oauthAccount": {"accountUuid": "demo-account", "displayName": "Alex",
+                         "organizationType": "claude_max", "organizationRateLimitTier": "default_claude_max_5x"},
         "unusedLimitResetStatusCache": {"accountUuid": "demo-account", "holdsUnusedReset": True,
                                         "checkedAt": now_ms - 60_000, "validUntil": now_ms + 86_400_000},
     }))

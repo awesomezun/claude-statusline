@@ -19,6 +19,8 @@
 # read from the cache, how long it stays warm, and once cold what the next turn
 # writes again. Free limit resets: Claude Code notes in ~/.claude.json whether
 # this account holds an unused one (no count); the "free reset" mark shows that.
+# Account: the signed-in claude.ai account's name and plan ("Seong-Jun · Max 5x"),
+# from the same file. AWESOME_STATUSLINE_ACCOUNT=off hides it.
 param([string]$Size = 'large')
 
 $ErrorActionPreference = 'SilentlyContinue'
@@ -187,10 +189,10 @@ $Dot = "$cOv0 · $Rst"
 # The ticket of a free limit reset only ever ends a line, so it shifts nothing.
 if ($Plain) {
   $iModel = ''; $iDir = ''; $iBranch = ''; $iGit = ''; $iClean = ''; $iStyle = ''; $iEnv = ''; $iTime = ''
-  $iCtx = ''; $i5h = ''; $i7d = ''; $i7dxl = ''; $iCache = ''; $iTicket = ''
+  $iCtx = ''; $i5h = ''; $i7d = ''; $i7dxl = ''; $iCache = ''; $iTicket = ''; $iAcct = ''
 } else {
   $iModel = '🤖 '; $iDir = '📂 '; $iBranch = '🌿'; $iGit = '📝 '; $iClean = '✅ '; $iStyle = '🎨 '; $iEnv = '🐍 '; $iTime = '⏰ '
-  $iCtx = '🧠 '; $i5h = '🚀 '; $i7d = '⭐ '; $i7dxl = '🌟 '; $iCache = '💾 '; $iTicket = '🎫'
+  $iCtx = '🧠 '; $i5h = '🚀 '; $i7d = '⭐ '; $i7dxl = '🌟 '; $iCache = '💾 '; $iTicket = '🎫'; $iAcct = '👤 '
 }
 
 # ---------------------------------------------------------------- helpers
@@ -306,24 +308,41 @@ if ($HomeDir -and $CurDir.StartsWith($HomeDir, [StringComparison]::OrdinalIgnore
 $DirBase = Split-Path -Leaf $CurDir.TrimEnd('\', '/')
 if (-not $DirBase) { $DirBase = $DirShow }
 
-# A free limit reset this account holds, as Claude Code last noted it (subscribers
-# only). Read with a pattern: parsing the whole ~/.claude.json would take long.
-$HasReset = $false
-if ($HasRL) {
+# The signed-in account and its plan, and a free limit reset it holds, as Claude
+# Code last noted them in its ~/.claude.json. A session on an API key or a cloud
+# provider (no rate_limits) isn't the account's, so it shows neither. Read with
+# patterns: parsing the whole file would take long.
+$ShowAcct = ("$env:AWESOME_STATUSLINE_ACCOUNT" -ne 'off') -and
+  ($HasRL -or -not "$env:ANTHROPIC_API_KEY$env:ANTHROPIC_AUTH_TOKEN$env:CLAUDE_CODE_USE_BEDROCK$env:CLAUDE_CODE_USE_VERTEX$env:CLAUDE_CODE_USE_FOUNDRY")
+$AcctName = ''; $AcctPlan = ''; $HasReset = $false
+if ($HasRL -or $ShowAcct) {
   try {
     $CfgPath = $null
     if ($env:CLAUDE_CONFIG_DIR) { $c = Join-Path $env:CLAUDE_CONFIG_DIR '.claude.json'; if (Test-Path -LiteralPath $c) { $CfgPath = $c } }
     if (-not $CfgPath -and $HomeDir) { $c = Join-Path $HomeDir '.claude.json'; if (Test-Path -LiteralPath $c) { $CfgPath = $c } }
     if ($CfgPath) {
       $Raw = [IO.File]::ReadAllText($CfgPath)
-      $mAcct = [regex]::Match($Raw, '"oauthAccount"\s*:\s*\{[^{}]*?"accountUuid"\s*:\s*"([^"]+)"')
-      $mRes = [regex]::Match($Raw, '"unusedLimitResetStatusCache"\s*:\s*(\{[^{}]*\})')
-      if ($mAcct.Success -and $mRes.Success) {
-        $o = $mRes.Groups[1].Value | ConvertFrom-Json
-        $NowMs = [double][DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
-        $Ck = As-Number $o.checkedAt; $Vu = As-Number $o.validUntil
-        if ($o.accountUuid -eq $mAcct.Groups[1].Value -and $o.holdsUnusedReset -eq $true -and $null -ne $Ck -and $null -ne $Vu -and
-            $Ck -le $NowMs -and ($NowMs - $Ck) -lt 259200000 -and $NowMs -lt $Vu) { $HasReset = $true }
+      # The oauthAccount object, nested braces balanced
+      $mAcct = [regex]::Match($Raw, '"oauthAccount"\s*:\s*(\{(?>[^{}]+|\{(?<d>)|\}(?<-d>))*(?(d)(?!))\})')
+      if ($mAcct.Success) {
+        $Acct = $mAcct.Groups[1].Value | ConvertFrom-Json
+        if ($ShowAcct) {
+          $n = if ($Acct.displayName) { [string]$Acct.displayName } elseif ($Acct.fullName) { [string]$Acct.fullName } else { '' }
+          $n = $n -replace '[\x00-\x1f\x7f]', ''
+          $AcctName = if ($n.Length -gt 24) { $n.Substring(0, 24) } else { $n }
+          $t = [string]$Acct.organizationRateLimitTier; $k = [string]$Acct.organizationType
+          $AcctPlan = if ($t -match 'max_20x') { 'Max 20x' } elseif ($t -match 'max_5x') { 'Max 5x' } elseif ("$k$t" -match 'ultra') { 'Ultra' }
+            elseif ($k -match 'max') { 'Max' } elseif ($k -match 'pro') { 'Pro' } elseif ($k -match 'team') { 'Team' }
+            elseif ($k -match 'enterprise') { 'Enterprise' } else { '' }
+        }
+        $mRes = [regex]::Match($Raw, '"unusedLimitResetStatusCache"\s*:\s*(\{[^{}]*\})')
+        if ($HasRL -and $mRes.Success -and $Acct.accountUuid) {
+          $o = $mRes.Groups[1].Value | ConvertFrom-Json
+          $NowMs = [double][DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()
+          $Ck = As-Number $o.checkedAt; $Vu = As-Number $o.validUntil
+          if ($o.accountUuid -eq $Acct.accountUuid -and $o.holdsUnusedReset -eq $true -and $null -ne $Ck -and $null -ne $Vu -and
+              $Ck -le $NowMs -and ($NowMs - $Ck) -lt 259200000 -and $NowMs -lt $Vu) { $HasReset = $true }
+        }
       }
     }
   } catch { $HasReset = $false }
@@ -407,11 +426,21 @@ function BranchSeg([bool]$WithAB) {
   return " $iBranch$cLGreen($Branch$a)$Rst"
 }
 $SS = if ($Style -and $Style -ne 'default') { "$iStyle$cPeach$Style$Rst" } else { '' }
+# "👤 Seong-Jun · Max 5x" | short: "👤 Seong-Jun" (empty when off or unknown)
+function AcctSeg([string]$Kind) {
+  if (-not ($AcctName -or $AcctPlan)) { return '' }
+  $plan = if ($Kind -eq 'short' -and $AcctName) { '' } else { $AcctPlan }
+  $a = $iAcct
+  if ($AcctName) { $a += "$cLav$AcctName$Rst" }
+  if ($plan) { if ($AcctName) { $a += "$cOv2 · $Rst" }; $a += "$cOv2$plan$Rst" }
+  return $a
+}
 $ES = if ($EnvName) { "$iEnv$cGreen$EnvName$Rst" } else { '' }
 
 # ---- text-only (simple) pieces: dim keys, bold values, no bars, no emoji
 function LedgerHead([string]$GitWord) {
   $h = Ident 'full' 'thinking'
+  $a = AcctSeg 'full'; if ($a) { $h += "   ${cOv1}account $Rst$a" }
   if ($GitOk) {
     if ($Dirty) { $w = if ($GitWord) { "$cLYellow$GitWord$Rst " } else { '' }; $h += "   ${cOv1}git $Rst$w$GC" }
     else { $h += "   ${cOv1}git $Rst${cLGreen}clean$Rst" }
@@ -510,6 +539,7 @@ switch ($Layout) {
   'xsmall' {
     $L1 = "$(Ident 'short' 'think')  $iDir$cSub0$DirBase$Rst"
     if ($GitOk -and $Branch) { $L1 += " $iBranch$cLGreen$Branch$Rst"; if ($Dirty) { $L1 += "$Bld$cYellow*$Rst" } }
+    $a = AcctSeg 'short'; if ($a) { $L1 += "  $a" }
     $L2 = if ($Plain) { "${cPink}ctx$Rst " } else { "${cPink}🧠$Rst " }
     $L2 += "$(Bar 'ctx' $CtxPct 6)$(PctV 'ctx' $CtxPct)"
     if (-not $HasRL) {
@@ -528,7 +558,7 @@ switch ($Layout) {
   'small' {
     $PathSeg = "$iDir$cSub0$DirShow$Rst$(BranchSeg $false)"
     if ($GC) { $PathSeg += " $GC" }
-    $Lines.Add((JoinSep @((Ident 'full' 'thinking'), $PathSeg, $SS)))
+    $Lines.Add((JoinSep @((Ident 'full' 'thinking'), (AcctSeg $(if ($Narrow) { 'short' } else { 'full' })), $PathSeg, $SS)))
     $L2 = "$iCtx${cPink}Context$Rst $(Bar 'ctx' $CtxPct 10) $(PctV 'ctx' $CtxPct)"
     if (-not $HasRL) {
       $L2 += "$Sep${cLav}5H$Rst $(Bar '5h' 0 10)$Dash$Sep${cYellow}7D$Rst $(Bar '7d' 0 10)$Dash  $Loading"
@@ -548,7 +578,7 @@ switch ($Layout) {
     $Lines.Add($L2)
   }
   'medium' {
-    $Lines.Add((JoinSep @((Ident 'full' 'thinking'), (GitSeg ''), $ES, $SS)))
+    $Lines.Add((JoinSep @((Ident 'full' 'thinking'), (AcctSeg 'full'), (GitSeg ''), $ES, $SS)))
     $Lines.Add("$iDir$cSub0$DirShow$Rst$(BranchSeg $true)")
     $cs = CacheSeg $(if ($Narrow) { 'tiny' } else { 'mid' }); $cs = if ($cs) { "$Sep$cs" } else { '' }
     $Lines.Add("$iCtx$(Lbl $cPink 'Context' 9)$(Bar 'ctx' $CtxPct 40) $(PctV 'ctx' $CtxPct)$cOv2  $TokK/$SizeK$Rst$cs")
@@ -576,7 +606,7 @@ switch ($Layout) {
     if ($HasRL) { TailReset $(if ($Narrow) { 'tiny' } else { 'mid' }) }
   }
   'xlarge' {
-    $Lines.Add((JoinSep @((Ident 'full' 'thinking'), $SS, (GitSeg 'dirty'), $ES)))
+    $Lines.Add((JoinSep @((Ident 'full' 'thinking'), (AcctSeg 'full'), $SS, (GitSeg 'dirty'), $ES)))
     $Lines.Add((JoinSep @("$iDir$cSub0$DirShow$Rst$(BranchSeg $true)", "$iTime$cSub0$Dur$Rst")))
     $Lines.Add("$iCtx$(Lbl $cMaroon 'Context' 10)$(Bar 'ctx' $CtxPct 40) $(PctV 'ctx' $CtxPct)$cOv2  used ($TokK / $(IDiv $CtxSize 1000)k)$Rst")
     $CL = "$iCache$(Lbl $cSky 'Cache' 10)"
@@ -614,6 +644,7 @@ switch ($Layout) {
   'small-simple' {
     $L1 = "$(Ident 'full' 'thinking')   $cSub0$DirShow$Rst"
     if ($GitOk -and $Branch) { $L1 += " $cGreen$Branch$Rst"; if ($GC) { $L1 += " $GC" } }
+    $a = AcctSeg $(if ($Narrow) { 'short' } else { 'full' }); if ($a) { $L1 += "   $a" }
     $L2 = "${cOv1}ctx $Rst$Bld${E}[$(Grad 'ctx' $CtxPct)m$CtxPct%$Rst"
     if (-not $HasRL) {
       $L2 += "   ${cOv1}limits $Rst$Loading"
@@ -652,6 +683,7 @@ switch ($Layout) {
     }
     $cs = CacheSeg 'tiny'; if ($cs) { $L += "$Sep$cs" }
     if ($GitOk -and $Branch) { $L += "$Sep$cLGreen$Branch$Rst"; if ($Dirty) { $L += "$Bld$cYellow*$Rst" } }
+    $a = AcctSeg 'short'; if ($a) { $L += "$Sep$a" }
     $Lines.Add($L)
   }
   'medium-simple' {
@@ -736,7 +768,7 @@ switch ($Layout) {
   }
   default {
     # large
-    $Lines.Add((JoinSep @((Ident 'full' 'thinking'), (GitSeg ''), $ES, $SS)))
+    $Lines.Add((JoinSep @((Ident 'full' 'thinking'), (AcctSeg 'full'), (GitSeg ''), $ES, $SS)))
     $Lines.Add((JoinSep @("$iDir$cSub0$DirShow$Rst$(BranchSeg $true)", "$iTime$cSub0$Dur$Rst")))
     $cs = CacheSeg $(if ($Narrow) { 'short' } else { 'long' }); $cs = if ($cs) { "$Sep$cs" } else { '' }
     $Lines.Add("$iCtx$(Lbl $cPink 'Context' 10)$(Bar 'ctx' $CtxPct 20) $(PctV 'ctx' $CtxPct)$cOv2  $TokK/$SizeK$Rst$cs")
