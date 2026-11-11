@@ -33,6 +33,46 @@ try {
 
 $Inv = [Globalization.CultureInfo]::InvariantCulture
 
+# ---------------------------------------------------------------- time options
+# Each option comes from the environment, or else from
+# ~/.claude/awesome-statusline.conf (KEY=value lines; nothing else is read):
+#   AWESOME_STATUSLINE_CLOCK=12|24        clock of reset times (default 12)
+#   AWESOME_STATUSLINE_LOCALE=<locale>    day/month names, e.g. de-DE or de_DE.UTF-8
+#                                         (default: English names)
+#   AWESOME_STATUSLINE_DATE_FORMAT=<fmt>  .NET custom format of a reset date with
+#                                         the 24h clock (default 'ddd dd MMM HH:mm').
+#                                         .NET format, not strftime as in the bash renderer.
+$Opt = @{}
+try {
+  $conf = if ($env:AWESOME_STATUSLINE_CONF) { $env:AWESOME_STATUSLINE_CONF } else { Join-Path $HOME '.claude/awesome-statusline.conf' }
+  if (Test-Path -LiteralPath $conf -PathType Leaf) {
+    foreach ($line in [IO.File]::ReadAllLines($conf, [Text.Encoding]::UTF8)) {
+      $i = $line.IndexOf('=')
+      if ($i -lt 1) { continue }
+      $k = $line.Substring(0, $i).Trim()
+      if ($k -notin 'AWESOME_STATUSLINE_CLOCK', 'AWESOME_STATUSLINE_LOCALE', 'AWESOME_STATUSLINE_DATE_FORMAT') { continue }
+      $Opt[$k] = $line.Substring($i + 1).TrimEnd("`r").Trim('"')
+    }
+  }
+} catch {}
+function Opt([string]$Name, [string]$Default) {
+  $v = [Environment]::GetEnvironmentVariable($Name)
+  if ([string]::IsNullOrEmpty($v)) { $v = $Opt[$Name] }
+  if ([string]::IsNullOrEmpty($v)) { return $Default }
+  return $v
+}
+$Clock24 = (Opt 'AWESOME_STATUSLINE_CLOCK' '12') -eq '24'
+$DateFmt = Opt 'AWESOME_STATUSLINE_DATE_FORMAT' 'ddd dd MMM HH:mm'
+$LocaleName = Opt 'AWESOME_STATUSLINE_LOCALE' ''
+$Cul = $Inv
+if ($LocaleName -and $LocaleName -ne 'C' -and $LocaleName -ne 'POSIX') {
+  try {
+    # "de_DE.UTF-8" / "de_DE@euro" -> "de-DE"
+    $Cul = ([Globalization.CultureInfo]::GetCultureInfo(($LocaleName -replace '[.@].*$', '' -replace '_', '-'))).Clone()
+    $Cul.DateTimeFormat.TimeSeparator = ':'   # some cultures (fi-FI) use '.'
+  } catch { $Cul = $Inv }   # unknown locale: keep English names
+}
+
 # ---------------------------------------------------------------- preset
 $Preset = if ($Size) { $Size.ToLowerInvariant() } else { 'large' }
 $Plain = $false    # no emoji
@@ -250,9 +290,15 @@ function Rel([double]$Seconds) {
   return "${m}m"
 }
 function SecLeft($dt) { if ($null -eq $dt) { return $null }; $s = ($dt - $Now).TotalSeconds; if ($s -lt 0) { $s = 0 }; return $s }
-function Fmt($dt, [string]$f) { return $dt.ToLocalTime().ToString($f, $Inv) }
-function AmPm($dt) { $l = $dt.ToLocalTime(); $h = $l.Hour % 12; if ($h -eq 0) { $h = 12 }; $ap = if ($l.Hour -ge 12) { 'pm' } else { 'am' }; return "${h}:$(Fmt $dt 'mm')$ap" }
-function LongDate($dt) { $l = $dt.ToLocalTime(); $h = $l.Hour % 12; if ($h -eq 0) { $h = 12 }; $ap = if ($l.Hour -ge 12) { 'pm' } else { 'am' }; return "$(Fmt $dt 'ddd MMM d'), $h$ap" }
+function Fmt($dt, [string]$f) { return $dt.ToLocalTime().ToString($f, $Cul) }
+function AmPm($dt) {
+  if ($Clock24) { return Fmt $dt 'HH:mm' }
+  $l = $dt.ToLocalTime(); $h = $l.Hour % 12; if ($h -eq 0) { $h = 12 }; $ap = if ($l.Hour -ge 12) { 'pm' } else { 'am' }; return "${h}:$(Fmt $dt 'mm')$ap"
+}
+function LongDate($dt) {
+  if ($Clock24) { return Fmt $dt $DateFmt }
+  $l = $dt.ToLocalTime(); $h = $l.Hour % 12; if ($h -eq 0) { $h = 12 }; $ap = if ($l.Hour -ge 12) { 'pm' } else { 'am' }; return "$(Fmt $dt 'ddd MMM d'), $h$ap"
+}
 
 # Usage vs. elapsed share of the window: green under, yellow even, red ahead (or ≥ 90%)
 function PaceCol([int]$Used, $Left, [double]$Span) {
