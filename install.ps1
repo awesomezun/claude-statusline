@@ -104,6 +104,16 @@ function Write-Info($m) { Write-Host $m -ForegroundColor Cyan }
 function Write-Ok($m)   { Write-Host $m -ForegroundColor Green }
 function Write-Err($m)  { Write-Host $m -ForegroundColor Red }
 
+# Keep every line of code in this file pure ASCII; only comments may hold other
+# characters. Windows PowerShell 5.1 reads a .ps1 that has no BOM in the system
+# ANSI code page (CP949 on Korean Windows), where UTF-8 text in a string can
+# swallow the closing quote and the whole script fails to parse. A BOM is no
+# way out: `irm ... | iex` keeps it as a U+FEFF character, and the param block
+# above then no longer binds. So menu text with non-ASCII characters (Korean,
+# the em dash) is written as \uXXXX escapes and decoded by Text. To escape:
+#   -join ($s.ToCharArray() | % { if ([int]$_ -gt 127) { '\u{0:X4}' -f [int]$_ } else { $_ } })
+function Text([string]$s) { return [regex]::Unescape($s) }
+
 # abbreviation OR full name (optionally with -plain / -simple) -> canonical preset, or $null
 function Normalize-Mode([string]$s) {
   $s = $s.Trim().ToLowerInvariant()
@@ -149,25 +159,25 @@ if ($Size) {
   $isKo = ([Globalization.CultureInfo]::CurrentUICulture.TwoLetterISOLanguageName -eq 'ko')
   Write-Host ""
   if ($isKo) {
-    Write-Host "statusline을 어떤 크기로 설치할까요? (예시는 github에서 확인)"
-    Write-Host "  예시: https://github.com/awesomezun/claude-statusline"
+    Write-Host (Text 'statusline\uC744 \uC5B4\uB5A4 \uD06C\uAE30\uB85C \uC124\uCE58\uD560\uAE4C\uC694? (\uC608\uC2DC\uB294 github\uC5D0\uC11C \uD655\uC778)')
+    Write-Host (Text '  \uC608\uC2DC: https://github.com/awesomezun/claude-statusline')
     Write-Host ""
-    Write-Host "  1. xsmall (xs)   가장 작게 — 2줄, 핵심만"
-    Write-Host "  2. small  (s)    작게 — 2줄, 라벨과 막대"
-    Write-Host "  3. medium (m)    중간 — 4줄, 넓은 컨텍스트 막대"
-    Write-Host "  4. large  (l)    크게 — 5줄, 세션 시간·리셋 (추천 기본값)"
-    Write-Host "  5. xlarge (xl)   가장 크게 — 6줄, 전체 상세"
+    Write-Host (Text '  1. xsmall (xs)   \uAC00\uC7A5 \uC791\uAC8C \u2014 2\uC904, \uD575\uC2EC\uB9CC')
+    Write-Host (Text '  2. small  (s)    \uC791\uAC8C \u2014 2\uC904, \uB77C\uBCA8\uACFC \uB9C9\uB300')
+    Write-Host (Text '  3. medium (m)    \uC911\uAC04 \u2014 4\uC904, \uB113\uC740 \uCEE8\uD14D\uC2A4\uD2B8 \uB9C9\uB300')
+    Write-Host (Text '  4. large  (l)    \uD06C\uAC8C \u2014 5\uC904, \uC138\uC158 \uC2DC\uAC04\u00B7\uB9AC\uC14B (\uCD94\uCC9C \uAE30\uBCF8\uAC12)')
+    Write-Host (Text '  5. xlarge (xl)   \uAC00\uC7A5 \uD06C\uAC8C \u2014 6\uC904, \uC804\uCCB4 \uC0C1\uC138')
     Write-Host ""
-    Write-Host -NoNewline "선택 [기본값: 4]: "
+    Write-Host -NoNewline (Text '\uC120\uD0DD [\uAE30\uBCF8\uAC12: 4]: ')
   } else {
     Write-Host "Which size would you like to install? (see examples on GitHub)"
     Write-Host "  Examples: https://github.com/awesomezun/claude-statusline"
     Write-Host ""
-    Write-Host "  1. xsmall (xs)   smallest — 2 lines, essentials"
-    Write-Host "  2. small  (s)    small — 2 lines, labels + bars"
-    Write-Host "  3. medium (m)    medium — 4 lines, wide context bar"
-    Write-Host "  4. large  (l)    large — 5 lines, session time / resets (recommended)"
-    Write-Host "  5. xlarge (xl)   largest — 6 lines, full detail"
+    Write-Host (Text '  1. xsmall (xs)   smallest \u2014 2 lines, essentials')
+    Write-Host (Text '  2. small  (s)    small \u2014 2 lines, labels + bars')
+    Write-Host (Text '  3. medium (m)    medium \u2014 4 lines, wide context bar')
+    Write-Host (Text '  4. large  (l)    large \u2014 5 lines, session time / resets (recommended)')
+    Write-Host (Text '  5. xlarge (xl)   largest \u2014 6 lines, full detail')
     Write-Host ""
     Write-Host -NoNewline "Choice [default: 4]: "
   }
@@ -191,7 +201,7 @@ if ($Size) {
       # Allow typing a preset name/alias directly instead of a number.
       $Mode = Normalize-Mode $answer
       if (-not $Mode) {
-        if ($isKo) { Write-Host "알 수 없는 입력 '$answer' — 'large'로 설치합니다." }
+        if ($isKo) { Write-Host ((Text '\uC54C \uC218 \uC5C6\uB294 \uC785\uB825 ''{0}'' \u2014 ''large''\uB85C \uC124\uCE58\uD569\uB2C8\uB2E4.') -f $answer) }
         else       { Write-Host "Unknown input '$answer', using 'large'." }
         $Mode = 'large'
       }
@@ -201,16 +211,16 @@ if ($Size) {
   if ($interactive -and -not ($Mode.EndsWith('-plain') -or $Mode.EndsWith('-simple'))) {
     Write-Host ""
     if ($isKo) {
-      Write-Host "어떤 스타일로 할까요?"
-      Write-Host "  1. 이모지 있음 — 아이콘과 그래디언트 막대 (기본값)"
-      Write-Host "  2. 이모지 없음 — 같은 배치, 아이콘 대신 글자"
-      Write-Host "  3. 심플 텍스트형 — 막대·이모지 없이 글자만"
-      Write-Host -NoNewline "선택 [기본값: 1]: "
+      Write-Host (Text '\uC5B4\uB5A4 \uC2A4\uD0C0\uC77C\uB85C \uD560\uAE4C\uC694?')
+      Write-Host (Text '  1. \uC774\uBAA8\uC9C0 \uC788\uC74C \u2014 \uC544\uC774\uCF58\uACFC \uADF8\uB798\uB514\uC5B8\uD2B8 \uB9C9\uB300 (\uAE30\uBCF8\uAC12)')
+      Write-Host (Text '  2. \uC774\uBAA8\uC9C0 \uC5C6\uC74C \u2014 \uAC19\uC740 \uBC30\uCE58, \uC544\uC774\uCF58 \uB300\uC2E0 \uAE00\uC790')
+      Write-Host (Text '  3. \uC2EC\uD50C \uD14D\uC2A4\uD2B8\uD615 \u2014 \uB9C9\uB300\u00B7\uC774\uBAA8\uC9C0 \uC5C6\uC774 \uAE00\uC790\uB9CC')
+      Write-Host -NoNewline (Text '\uC120\uD0DD [\uAE30\uBCF8\uAC12: 1]: ')
     } else {
       Write-Host "Which style?"
-      Write-Host "  1. With emoji — icons and gradient bars (default)"
-      Write-Host "  2. No emoji — same layout, text labels instead of icons"
-      Write-Host "  3. Simple text — text only, no bars or emoji"
+      Write-Host (Text '  1. With emoji \u2014 icons and gradient bars (default)')
+      Write-Host (Text '  2. No emoji \u2014 same layout, text labels instead of icons')
+      Write-Host (Text '  3. Simple text \u2014 text only, no bars or emoji')
       Write-Host -NoNewline "Choice [default: 1]: "
     }
     $st = ''
