@@ -120,6 +120,43 @@ $b = [System.IO.File]::ReadAllBytes("$HOME\.claude\awesome-statusline.ps1")
 
 ---
 
+## Windows — `install.ps1` itself fails to parse on a non-UTF-8 locale
+
+### Symptoms
+- Running the installer as a file (`./install.ps1 m`, or
+  `powershell -File .\install.ps1` after downloading it) stops before it does
+  anything, with a parser error such as:
+  ```
+  At C:\...\install.ps1:203 char:58
+  +       Write-Host "  2. ?대え吏 ?놁쓬 ??媛숈? 諛곗튂, ...
+  Missing closing ')' in expression.
+  ```
+- `irm ... | iex` works on the same machine.
+
+### Cause
+The same code page problem as above, in the installer. Windows PowerShell 5.1
+reads a `.ps1` file without a BOM in the ANSI code page (`CP949` on Korean
+Windows). The Korean menu text in older installers then decodes into bytes that
+swallow the closing `"` of the string, so the script never parses.
+`irm` is not affected because it decodes the download as UTF-8.
+
+A BOM is not the fix for the installer: `irm` keeps it as a leading U+FEFF
+character, PowerShell then no longer sees the `param(...)` block, and
+`irm ... | iex` prints "not recognized" errors (with
+`[scriptblock]::Create((irm ...))`, the preset argument is silently dropped).
+So the installer keeps every line of code pure ASCII instead, and writes its
+Korean text as `\uXXXX` escapes.
+
+### Fix
+Download `install.ps1` again; the current one parses the same in every code
+page. With an older copy, run it through `irm` instead of from the file:
+
+```powershell
+irm https://raw.githubusercontent.com/awesomezun/claude-statusline/main/install.ps1 | iex
+```
+
+---
+
 ## macOS / Linux — statusline characters wrap one-per-line inside tmux
 
 ### Symptoms
